@@ -37,7 +37,11 @@ import type { ModelObject } from "../types.js";
 export class GitHubModelsProvider extends BaseProvider {
   readonly id = "github";
   readonly name = "GitHub Models";
-  readonly baseUrl = "https://models.github.ai/inference";
+  override readonly supportsStreamUsage = true;
+
+  get baseUrl(): string {
+    return process.env["GITHUB_MODELS_BASE_URL"] ?? "https://models.github.ai/inference";
+  }
 
   readonly models: ModelObject[] = [
     {

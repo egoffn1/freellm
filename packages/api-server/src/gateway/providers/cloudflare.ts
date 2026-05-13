@@ -37,6 +37,7 @@ export class CloudflareProvider extends BaseProvider {
   readonly name = "Cloudflare Workers AI";
 
   get baseUrl(): string {
+    if (process.env["CLOUDFLARE_BASE_URL"]) return process.env["CLOUDFLARE_BASE_URL"];
     const accountId = process.env["CLOUDFLARE_ACCOUNT_ID"] ?? "";
     return `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/v1`;
   }

@@ -22,7 +22,11 @@ import type { ChatCompletionRequest, ModelObject } from "../types.js";
 export class NimProvider extends BaseProvider {
   readonly id = "nim";
   readonly name = "NVIDIA NIM";
-  readonly baseUrl = "https://integrate.api.nvidia.com/v1";
+  override readonly supportsStreamUsage = true;
+
+  get baseUrl(): string {
+    return process.env["NIM_BASE_URL"] ?? "https://integrate.api.nvidia.com/v1";
+  }
 
   readonly models: ModelObject[] = [
     { id: "nim/meta/llama-3.3-70b-instruct", object: "model", created: 1700000000, owned_by: "meta", provider: "nim" },

@@ -4,7 +4,11 @@ import type { ModelObject } from "../types.js";
 export class CerebrasProvider extends BaseProvider {
   readonly id = "cerebras";
   readonly name = "Cerebras";
-  readonly baseUrl = "https://api.cerebras.ai/v1";
+  override readonly supportsStreamUsage = true;
+
+  get baseUrl(): string {
+    return process.env["CEREBRAS_BASE_URL"] ?? "https://api.cerebras.ai/v1";
+  }
 
   readonly models: ModelObject[] = [
     { id: "cerebras/llama3.1-8b", object: "model", created: 1700000000, owned_by: "meta", provider: "cerebras" },

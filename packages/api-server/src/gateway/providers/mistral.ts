@@ -4,7 +4,11 @@ import type { ModelObject } from "../types.js";
 export class MistralProvider extends BaseProvider {
   readonly id = "mistral";
   readonly name = "Mistral";
-  readonly baseUrl = "https://api.mistral.ai/v1";
+  override readonly supportsStreamUsage = true;
+
+  get baseUrl(): string {
+    return process.env["MISTRAL_BASE_URL"] ?? "https://api.mistral.ai/v1";
+  }
 
   readonly models: ModelObject[] = [
     { id: "mistral/mistral-small-latest", object: "model", created: 1700000000, owned_by: "mistral", provider: "mistral" },

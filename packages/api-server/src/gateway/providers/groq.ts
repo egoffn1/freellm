@@ -4,7 +4,11 @@ import type { ModelObject } from "../types.js";
 export class GroqProvider extends BaseProvider {
   readonly id = "groq";
   readonly name = "Groq";
-  readonly baseUrl = "https://api.groq.com/openai/v1";
+  override readonly supportsStreamUsage = true;
+
+  get baseUrl(): string {
+    return process.env["GROQ_BASE_URL"] ?? "https://api.groq.com/openai/v1";
+  }
 
   readonly models: ModelObject[] = [
     { id: "groq/llama-3.3-70b-versatile", object: "model", created: 1700000000, owned_by: "meta", provider: "groq" },

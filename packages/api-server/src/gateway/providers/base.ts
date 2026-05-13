@@ -23,6 +23,7 @@ export abstract class BaseProvider implements ProviderAdapter {
   abstract readonly name: string;
   abstract readonly baseUrl: string;
   abstract readonly models: ModelObject[];
+  readonly supportsStreamUsage: boolean = false;
 
   protected circuitBreaker = new CircuitBreaker();
   protected rateLimiter = new RateLimiter();

@@ -10,6 +10,7 @@ export interface ProviderAdapter {
   readonly id: string;
   readonly name: string;
   readonly models: ModelObject[];
+  readonly supportsStreamUsage: boolean;
 
   isEnabled(): boolean;
   getStats(): ProviderStats;

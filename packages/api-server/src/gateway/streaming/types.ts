@@ -28,12 +28,19 @@ export interface ChatCompletionChunkChoice {
   [k: string]: unknown;
 }
 
+export interface StreamUsage {
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  total_tokens?: number;
+}
+
 export interface ChatCompletionChunk {
   id?: string;
   object?: string;
   created?: number;
   model?: string;
   choices: ChatCompletionChunkChoice[];
+  usage?: StreamUsage;
   [k: string]: unknown;
 }
 

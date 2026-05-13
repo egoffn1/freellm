@@ -15,13 +15,17 @@
  */
 import { SSEParser, serializeEvent, type SSEEvent } from "./sse.js";
 import { createNormalizer } from "./normalizer.js";
-import type { ChatCompletionChunk, Normalizer } from "./types.js";
+import type { ChatCompletionChunk, Normalizer, StreamUsage } from "./types.js";
 import { logger } from "../../lib/logger.js";
 
 export class StreamingPipeline {
   private parser = new SSEParser();
   private normalizer: Normalizer;
   private providerId: string;
+
+  /** Usage from the last chunk that carried a `usage` field. Populated when
+   *  the upstream respects `stream_options.include_usage: true`. */
+  lastUsage: StreamUsage | undefined = undefined;
 
   constructor(providerId: string) {
     this.providerId = providerId;
@@ -89,6 +93,7 @@ export class StreamingPipeline {
       let parsed: ChatCompletionChunk;
       try {
         parsed = JSON.parse(event.data) as ChatCompletionChunk;
+        if (parsed.usage) this.lastUsage = parsed.usage;
       } catch (err) {
         logger.warn(
           { err, provider: this.providerId, preview: event.data.slice(0, 200) },

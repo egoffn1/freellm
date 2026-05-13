@@ -89,7 +89,14 @@ chatRouter.post("/completions", validate(chatCompletionRequestSchema), async (re
   }
 
   if (body.stream) {
-    await handleStreamingRequest(req, res, body, strict, privacy, virtualKey, next);
+    // Inject stream_options.include_usage when a token-capped virtual key is
+    // active so the upstream returns usage in SSE chunks. Only sent to
+    // providers that declare supportsStreamUsage; others ignore or reject it.
+    const streamBody =
+      virtualKey?.dailyTokenCap !== undefined
+        ? { ...body, stream_options: { ...body.stream_options, include_usage: true } }
+        : body;
+    await handleStreamingRequest(req, res, streamBody, strict, privacy, virtualKey, next);
   } else {
     await handleNonStreamingRequest(req, res, body, strict, privacy, virtualKey, next);
   }
@@ -231,7 +238,16 @@ async function handleStreamingRequest(
         streaming: true,
       });
       if (virtualKey) {
-        getVirtualKeyStore().recordRequest(virtualKey, 0);
+        const streamTokens = pipeline.lastUsage
+          ? (pipeline.lastUsage.prompt_tokens ?? 0) + (pipeline.lastUsage.completion_tokens ?? 0)
+          : 0;
+        getVirtualKeyStore().recordRequest(virtualKey, streamTokens);
+      }
+      // Update dashboard token counter when the upstream returned usage.
+      if (pipeline.lastUsage && provider.supportsStreamUsage) {
+        const pt = pipeline.lastUsage.prompt_tokens ?? 0;
+        const ct = pipeline.lastUsage.completion_tokens ?? 0;
+        if (pt + ct > 0) gatewayRouter.usageTracker.record(provider.id, pt, ct);
       }
     } catch (streamErr) {
       // Stream read failed after headers were sent
