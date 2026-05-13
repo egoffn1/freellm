@@ -1,9 +1,10 @@
 import type { ProviderRegistry } from "./registry.js";
 import type { ProviderAdapter } from "./providers/types.js";
 import type { ChatCompletionRequest, ChatCompletionResponse, RoutingStrategy } from "./types.js";
-import { RequestLog } from "./request-log.js";
-import { UsageTracker } from "./usage-tracker.js";
-import { ResponseCache } from "./cache.js";
+import type { RequestLog } from "./request-log.js";
+import type { UsageTracker } from "./usage-tracker.js";
+import type { ResponseCache } from "./cache.js";
+import { ObservabilityStore } from "./observability.js";
 import { META_MODELS, DEFAULT_MODELS, NON_RETRIABLE_STATUSES } from "./config.js";
 import { assertStrictModeAllowed } from "./strict.js";
 import { parseRetryAfter } from "./retry-after.js";
@@ -40,10 +41,10 @@ export class GatewayRouter {
   public usageTracker: UsageTracker;
   public cache: ResponseCache;
 
-  constructor(private registry: ProviderRegistry) {
-    this.requestLog = new RequestLog();
-    this.usageTracker = new UsageTracker();
-    this.cache = new ResponseCache();
+  constructor(private registry: ProviderRegistry, private obs: ObservabilityStore = new ObservabilityStore()) {
+    this.requestLog = obs.requestLog;
+    this.usageTracker = obs.usageTracker;
+    this.cache = obs.cache;
   }
 
   private pickProvider(
