@@ -15,7 +15,7 @@
  */
 import { SSEParser, serializeEvent, type SSEEvent } from "./sse.js";
 import { createNormalizer } from "./normalizer.js";
-import type { ChatCompletionChunk, Normalizer, StreamUsage } from "./types.js";
+import type { ChatCompletionChunk, FlushResult, Normalizer, StreamUsage } from "./types.js";
 import { logger } from "../../lib/logger.js";
 
 export class StreamingPipeline {
@@ -24,8 +24,9 @@ export class StreamingPipeline {
   private providerId: string;
 
   /** Usage from the last chunk that carried a `usage` field. Populated when
-   *  the upstream respects `stream_options.include_usage: true`. */
-  lastUsage: StreamUsage | undefined = undefined;
+   *  the upstream respects `stream_options.include_usage: true`. Exposed via
+   *  the FlushResult returned by flush(). */
+  private _lastUsage: StreamUsage | undefined = undefined;
 
   constructor(providerId: string) {
     this.providerId = providerId;
@@ -54,7 +55,7 @@ export class StreamingPipeline {
   }
 
   /** Drain the pipeline after the upstream closes. */
-  flush(): string {
+  flush(): FlushResult {
     let events: SSEEvent[];
     try {
       events = this.parser.flush();
@@ -73,7 +74,7 @@ export class StreamingPipeline {
       logger.warn({ err, provider: this.providerId }, "normalizer flush threw");
     }
 
-    return this.renderEvents(events);
+    return { output: this.renderEvents(events), usage: this._lastUsage };
   }
 
   /**
@@ -93,7 +94,7 @@ export class StreamingPipeline {
       let parsed: ChatCompletionChunk;
       try {
         parsed = JSON.parse(event.data) as ChatCompletionChunk;
-        if (parsed.usage) this.lastUsage = parsed.usage;
+        if (parsed.usage) this._lastUsage = parsed.usage;
       } catch (err) {
         logger.warn(
           { err, provider: this.providerId, preview: event.data.slice(0, 200) },

@@ -1,5 +1,6 @@
 import { BaseProvider, parseApiKeys } from "./base.js";
 import type { ChatCompletionRequest, ModelObject } from "../types.js";
+import { translateRequestForProvider } from "../json-mode.js";
 
 /**
  * NVIDIA NIM OpenAI-compatibility adapter.
@@ -52,16 +53,6 @@ export class NimProvider extends BaseProvider {
     request: ChatCompletionRequest,
   ): ChatCompletionRequest {
     const mapped = super.mapRequest(request);
-
-    if (
-      mapped.response_format?.type === "json_schema" &&
-      mapped.response_format.json_schema?.schema
-    ) {
-      const schema = mapped.response_format.json_schema.schema;
-      (mapped as unknown as Record<string, unknown>).nvext = { guided_json: schema };
-      delete mapped.response_format;
-    }
-
-    return mapped;
+    return translateRequestForProvider(mapped, "nim");
   }
 }

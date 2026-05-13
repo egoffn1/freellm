@@ -13,6 +13,7 @@ import { VirtualKeyCheckError, type VirtualKey } from "../../gateway/virtual-key
 import { freellmError } from "../../errors/index.js";
 import { StreamingPipeline } from "../../gateway/streaming/pipeline.js";
 import { serializeHeartbeat } from "../../gateway/streaming/sse.js";
+import { annotateResponse } from "../../gateway/json-mode.js";
 
 const STREAM_IDLE_TIMEOUT_MS = parseInt(
   process.env["STREAM_IDLE_TIMEOUT_MS"] ?? "30000",
@@ -123,13 +124,10 @@ async function handleNonStreamingRequest(
       getVirtualKeyStore().recordRequest(virtualKey, tokens);
     }
 
-    // Warn callers when a JSON-mode response was likely truncated by max_tokens.
-    const fmt = body.response_format?.type;
-    if (
-      (fmt === "json_object" || fmt === "json_schema") &&
-      data.choices?.[0]?.finish_reason === "length"
-    ) {
-      res.setHeader("X-FreeLLM-Warning", "json-possibly-truncated");
+    // Warn callers about JSON-mode issues (truncation, schema validation).
+    const warnings = annotateResponse(data, body);
+    if (warnings.length > 0) {
+      res.setHeader("X-FreeLLM-Warning", warnings.join(", "));
     }
 
     res.json(data);
@@ -225,7 +223,7 @@ async function handleStreamingRequest(
       }
 
       // Drain any final event buffered by the pipeline.
-      const tail = pipeline.flush();
+      const { output: tail, usage: streamUsage } = pipeline.flush();
       if (tail.length > 0) res.write(tail);
 
       // Log success once, provider.onSuccess was already called in route()
@@ -238,15 +236,15 @@ async function handleStreamingRequest(
         streaming: true,
       });
       if (virtualKey) {
-        const streamTokens = pipeline.lastUsage
-          ? (pipeline.lastUsage.prompt_tokens ?? 0) + (pipeline.lastUsage.completion_tokens ?? 0)
+        const streamTokens = streamUsage
+          ? (streamUsage.prompt_tokens ?? 0) + (streamUsage.completion_tokens ?? 0)
           : 0;
         getVirtualKeyStore().recordRequest(virtualKey, streamTokens);
       }
       // Update dashboard token counter when the upstream returned usage.
-      if (pipeline.lastUsage && provider.supportsStreamUsage) {
-        const pt = pipeline.lastUsage.prompt_tokens ?? 0;
-        const ct = pipeline.lastUsage.completion_tokens ?? 0;
+      if (streamUsage && provider.supportsStreamUsage) {
+        const pt = streamUsage.prompt_tokens ?? 0;
+        const ct = streamUsage.completion_tokens ?? 0;
         if (pt + ct > 0) gatewayRouter.usageTracker.record(provider.id, pt, ct);
       }
     } catch (streamErr) {

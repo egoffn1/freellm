@@ -122,6 +122,10 @@ export class ResponseCache {
   } | undefined {
     if (!this.enabled) return undefined;
     if (request.stream) return undefined;
+    // json_schema responses are never served from cache because the caller
+    // may want to re-validate against a different schema or receive fresh
+    // content for annotation (schema-validation warnings depend on content).
+    if (request.response_format?.type === "json_schema") return undefined;
 
     const key = this.buildKey(request);
     const entry = this.store.get(key);
@@ -165,6 +169,9 @@ export class ResponseCache {
   ): void {
     if (!this.enabled) return;
     if (request.stream) return;
+    // json_schema responses are never cached — schema-validation annotations
+    // depend on fresh content and the schema may differ across callers.
+    if (request.response_format?.type === "json_schema") return;
     if (!ResponseCache.isCacheable(response)) return;
 
     const key = this.buildKey(request);

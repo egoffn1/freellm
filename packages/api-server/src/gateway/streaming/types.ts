@@ -44,6 +44,11 @@ export interface ChatCompletionChunk {
   [k: string]: unknown;
 }
 
+export interface FlushResult {
+  output: string;
+  usage?: StreamUsage;
+}
+
 /**
  * A Normalizer is a stateful per-stream object. Create one for every
  * upstream response and call `transform(chunk)` for each parsed chunk.

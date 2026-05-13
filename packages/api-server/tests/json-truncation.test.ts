@@ -153,6 +153,6 @@ describe("JSON truncation detection header", () => {
       });
 
     expect(res.status).toBe(200);
-    expect(res.headers["x-freellm-warning"]).toBe("json-possibly-truncated");
+    expect(res.headers["x-freellm-warning"]).toContain("json-possibly-truncated");
   });
 });
