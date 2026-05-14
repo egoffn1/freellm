@@ -5,6 +5,7 @@ export class CerebrasProvider extends BaseProvider {
   readonly id = "cerebras";
   readonly name = "Cerebras";
   override readonly supportsStreamUsage = true;
+  override readonly supportsTools = false;
 
   get baseUrl(): string {
     return process.env["CEREBRAS_BASE_URL"] ?? "https://api.cerebras.ai/v1";

@@ -51,6 +51,7 @@ export class GatewayRouter {
     modelId: string,
     excluded: Set<string>,
     privacy: PrivacyRequest = "any",
+    requiresTools = false,
   ): ProviderAdapter | undefined {
     // Merge privacy exclusions into the caller-supplied exclude set so the
     // registry never sees providers the privacy posture forbids.
@@ -60,6 +61,15 @@ export class GatewayRouter {
         if (!providerSatisfiesPrivacy(p.id, privacy)) {
           effectiveExcluded.add(p.id);
         }
+      }
+    }
+
+    // Exclude providers that can't handle tool-calling when the request
+    // contains tools. Without this Cerebras (and similar providers) return
+    // 400 and cause a retry cascade on every tool-use request.
+    if (requiresTools) {
+      for (const p of this.registry.getAll()) {
+        if (!p.supportsTools) effectiveExcluded.add(p.id);
       }
     }
 
@@ -161,7 +171,12 @@ export class GatewayRouter {
         );
       }
 
-      const provider = this.pickProvider(request.model, excluded, privacy);
+      const provider = this.pickProvider(
+        request.model,
+        excluded,
+        privacy,
+        (request.tools?.length ?? 0) > 0,
+      );
 
       if (!provider) {
         throw new AllProvidersExhaustedError(
