@@ -1,0 +1,438 @@
+---
+import "../../styles/theme.css";
+import "../../styles/landing.css";
+import LandingHeader from "../../components/landing-header.astro";
+import LandingFooter from "../../components/landing-footer.astro";
+
+const canonicalURL = "https://freellms.vercel.app/alternatives/litellm/";
+---
+
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="canonical" href={canonicalURL} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <title>FreeLLM vs LiteLLM: HTTP gateway focused on free provider tiers</title>
+    <meta
+      name="description"
+      content="FreeLLM is a lightweight HTTP gateway alternative to LiteLLM. Focused on free-tier providers with automatic failover and a real-time dashboard."
+    />
+    <meta property="og:title" content="FreeLLM vs LiteLLM: HTTP gateway focused on free provider tiers" />
+    <meta
+      property="og:description"
+      content="FreeLLM is a lightweight HTTP gateway alternative to LiteLLM. Focused on free-tier providers with automatic failover and a real-time dashboard."
+    />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <style>
+      .alt-page {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 5rem 1.5rem 8rem;
+      }
+
+      .alt-page .page-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.375rem 0.875rem;
+        border-radius: 999px;
+        background: hsla(158, 50%, 40%, 0.08);
+        border: 1px solid hsla(158, 50%, 40%, 0.18);
+        color: hsl(158, 50%, 65%);
+        font-family: "Geist Mono", monospace;
+        font-size: 0.6875rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        margin-bottom: 1.5rem;
+      }
+
+      .alt-page h1 {
+        font-family: "Geist", sans-serif;
+        font-size: clamp(2rem, 5vw, 3rem);
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        line-height: 1.05;
+        color: #ffffff;
+        margin: 0 0 1.25rem;
+      }
+
+      .alt-page .lead {
+        font-size: 1.0625rem;
+        line-height: 1.65;
+        color: hsl(0, 0%, 65%);
+        margin: 0 0 3.5rem;
+        letter-spacing: -0.005em;
+      }
+
+      .alt-page h2 {
+        font-family: "Geist", sans-serif;
+        font-size: 1.375rem;
+        font-weight: 700;
+        letter-spacing: -0.025em;
+        color: #ffffff;
+        margin: 3rem 0 1rem;
+      }
+
+      .alt-page p {
+        font-size: 0.9375rem;
+        line-height: 1.65;
+        color: hsl(0, 0%, 65%);
+        margin: 0 0 1rem;
+      }
+
+      .alt-page ul {
+        margin: 0 0 1.5rem;
+        padding-left: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .alt-page ul li {
+        font-size: 0.9375rem;
+        line-height: 1.6;
+        color: hsl(0, 0%, 65%);
+      }
+
+      .table-shell {
+        border-radius: 14px;
+        border: 1px solid hsl(224, 12%, 22%);
+        overflow: hidden;
+        margin: 2rem 0 3rem;
+      }
+
+      .alt-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: "Geist", sans-serif;
+        font-size: 0.9rem;
+        background: hsl(224, 14%, 15%);
+      }
+
+      .alt-table th {
+        padding: 0.875rem 1.25rem;
+        text-align: left;
+        background: hsl(224, 14%, 13%);
+        color: hsl(158, 50%, 65%);
+        font-family: "Geist Mono", monospace;
+        font-size: 0.6875rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        border-bottom: 1px solid hsl(224, 12%, 22%);
+      }
+
+      .alt-table td {
+        padding: 0.875rem 1.25rem;
+        border-bottom: 1px solid hsla(158, 50%, 40%, 0.07);
+        color: hsl(0, 0%, 75%);
+        vertical-align: top;
+      }
+
+      .alt-table tbody tr:last-child td {
+        border-bottom: none;
+      }
+
+      .alt-table tbody tr:hover {
+        background: hsla(158, 50%, 40%, 0.03);
+      }
+
+      .alt-table td:first-child {
+        color: hsl(0, 0%, 85%);
+        font-weight: 500;
+      }
+
+      .alt-table .freellm-col {
+        background: hsla(158, 50%, 40%, 0.05);
+      }
+
+      .yes {
+        color: hsl(158, 50%, 60%);
+        font-weight: 600;
+        font-family: "Geist Mono", monospace;
+      }
+
+      .no {
+        color: hsl(0, 50%, 55%);
+        font-family: "Geist Mono", monospace;
+      }
+
+      .partial {
+        color: hsl(38, 90%, 55%);
+        font-family: "Geist Mono", monospace;
+      }
+
+      .code-shell {
+        border-radius: 14px;
+        border: 1px solid hsl(224, 12%, 22%);
+        overflow: hidden;
+        margin: 1.5rem 0 2.5rem;
+      }
+
+      .code-label {
+        padding: 0.625rem 1.25rem;
+        background: hsl(224, 14%, 13%);
+        border-bottom: 1px solid hsl(224, 12%, 22%);
+        font-family: "Geist Mono", monospace;
+        font-size: 0.75rem;
+        color: hsl(0, 0%, 50%);
+        letter-spacing: 0.05em;
+      }
+
+      .code-shell pre {
+        margin: 0;
+        padding: 1.5rem 1.25rem;
+        background: hsl(224, 14%, 15%);
+        font-family: "Geist Mono", monospace;
+        font-size: 0.875rem;
+        line-height: 1.7;
+        color: hsl(0, 0%, 88%);
+        overflow-x: auto;
+      }
+
+      .code-shell code {
+        background: transparent;
+        border: none;
+        padding: 0;
+        color: inherit;
+        font-size: inherit;
+      }
+
+      .token-comment { color: hsl(0, 0%, 45%); }
+      .token-keyword { color: hsl(200, 80%, 65%); }
+      .token-string  { color: hsl(158, 50%, 60%); }
+      .token-var     { color: hsl(0, 0%, 85%); }
+
+      .cta-block {
+        margin-top: 4rem;
+        padding: 2.5rem;
+        border-radius: 16px;
+        border: 1px solid hsla(158, 50%, 40%, 0.2);
+        background: hsla(158, 50%, 40%, 0.04);
+        text-align: center;
+      }
+
+      .cta-block p {
+        color: hsl(0, 0%, 65%);
+        margin-bottom: 1.5rem;
+      }
+
+      .cta-block .btn-primary {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        border-radius: 999px;
+        background: hsl(158, 50%, 46%);
+        color: #04140a;
+        font-family: "Geist", sans-serif;
+        font-size: 0.9375rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        border: none;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 280ms cubic-bezier(0.32, 0.72, 0, 1);
+      }
+
+      .cta-block .btn-primary:hover {
+        background: hsl(158, 50%, 50%);
+        transform: translateY(-1px);
+      }
+
+      .cta-links {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-top: 1rem;
+      }
+
+      .cta-links .btn-ghost {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.625rem 1.25rem;
+        border-radius: 999px;
+        background: transparent;
+        color: hsl(0, 0%, 65%);
+        font-family: "Geist", sans-serif;
+        font-size: 0.9375rem;
+        font-weight: 500;
+        border: 1px solid hsl(224, 12%, 28%);
+        text-decoration: none;
+        transition: all 280ms cubic-bezier(0.32, 0.72, 0, 1);
+      }
+
+      .cta-links .btn-ghost:hover {
+        border-color: hsl(224, 12%, 40%);
+        color: hsl(0, 0%, 85%);
+      }
+
+      .divider {
+        border: none;
+        border-top: 1px solid hsl(224, 12%, 20%);
+        margin: 3rem 0;
+      }
+    </style>
+  </head>
+  <body>
+    <LandingHeader />
+    <main>
+      <article class="alt-page">
+        <span class="page-eyebrow">comparison</span>
+        <h1>FreeLLM vs LiteLLM</h1>
+        <p class="lead">
+          LiteLLM is a Python SDK that translates between 100+ provider APIs. FreeLLM is a
+          language-agnostic HTTP gateway focused on routing across free tiers with automatic
+          failover. Both solve the multi-provider problem, but they take different approaches
+          and fit different setups.
+        </p>
+
+        <h2>Side-by-side comparison</h2>
+
+        <div class="table-shell">
+          <table class="alt-table">
+            <thead>
+              <tr>
+                <th>Feature</th>
+                <th class="freellm-col">FreeLLM</th>
+                <th>LiteLLM</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Interface type</td>
+                <td class="freellm-col yes">HTTP gateway (any language)</td>
+                <td>Python SDK</td>
+              </tr>
+              <tr>
+                <td>Language support</td>
+                <td class="freellm-col yes">Any OpenAI SDK (Python, Node, Go, etc.)</td>
+                <td>Python only</td>
+              </tr>
+              <tr>
+                <td>Free-tier focus</td>
+                <td class="freellm-col yes">Yes, free-tier providers only</td>
+                <td class="partial">Partial (supports paid and free)</td>
+              </tr>
+              <tr>
+                <td>Automatic failover built in</td>
+                <td class="freellm-col yes">Yes, built in</td>
+                <td class="partial">Manual setup required</td>
+              </tr>
+              <tr>
+                <td>Real-time dashboard</td>
+                <td class="freellm-col yes">Yes, included</td>
+                <td class="no">No (separate tool)</td>
+              </tr>
+              <tr>
+                <td>Virtual sub-keys</td>
+                <td class="freellm-col yes">Yes</td>
+                <td class="no">No</td>
+              </tr>
+              <tr>
+                <td>Provider count</td>
+                <td class="freellm-col">8 free-tier providers</td>
+                <td>100+ (paid and free)</td>
+              </tr>
+              <tr>
+                <td>Setup</td>
+                <td class="freellm-col">~2 min Docker or Railway deploy</td>
+                <td>pip install litellm</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2>When to use LiteLLM instead</h2>
+        <p>
+          LiteLLM is the better fit when:
+        </p>
+        <ul>
+          <li>Your codebase is Python-only and you want SDK-level control over every request.</li>
+          <li>You need 100+ provider integrations including paid models like Claude, GPT-4o, or Gemini Ultra.</li>
+          <li>You want to call providers directly from Python code without an HTTP layer in between.</li>
+          <li>You are not hitting rate limits and do not need automatic failover.</li>
+        </ul>
+
+        <hr class="divider" />
+
+        <h2>When FreeLLM makes sense</h2>
+        <p>
+          FreeLLM fits better when:
+        </p>
+        <ul>
+          <li>Your stack is not Python. FreeLLM exposes a standard HTTP API that any OpenAI SDK can talk to, regardless of language.</li>
+          <li>You want failover and a dashboard without configuring them separately. Both are included out of the box.</li>
+          <li>You are working with a free-tier-only budget. FreeLLM is built around that constraint.</li>
+          <li>You want virtual sub-keys with per-key rate and token limits to isolate different apps or team members.</li>
+        </ul>
+
+        <hr class="divider" />
+
+        <h2>What the code looks like</h2>
+        <p>
+          LiteLLM is called as a Python library. FreeLLM is called through a base URL change on
+          any OpenAI SDK.
+        </p>
+
+        <div class="code-shell">
+          <div class="code-label">python — LiteLLM</div>
+          <pre><code><span class="token-keyword">import</span> <span class="token-var">litellm</span>
+
+<span class="token-var">response</span> = <span class="token-var">litellm</span>.<span class="token-var">completion</span>(
+    <span class="token-var">model</span>=<span class="token-string">"groq/llama3-70b-8192"</span>,
+    <span class="token-var">messages</span>=[&lbrace;<span class="token-string">"role"</span>: <span class="token-string">"user"</span>, <span class="token-string">"content"</span>: <span class="token-string">"Hello"</span>&rbrace;]
+)</code></pre>
+        </div>
+
+        <div class="code-shell">
+          <div class="code-label">python — FreeLLM (base URL change only)</div>
+          <pre><code><span class="token-keyword">from</span> <span class="token-var">openai</span> <span class="token-keyword">import</span> <span class="token-var">OpenAI</span>
+
+<span class="token-var">client</span> = <span class="token-var">OpenAI</span>(
+    <span class="token-var">base_url</span>=<span class="token-string">"https://your-freellm-instance/v1"</span>,  <span class="token-comment"># only change</span>
+    <span class="token-var">api_key</span>=<span class="token-string">"your-freellm-key"</span>
+)
+
+<span class="token-var">response</span> = <span class="token-var">client</span>.<span class="token-var">chat</span>.<span class="token-var">completions</span>.<span class="token-var">create</span>(
+    <span class="token-var">model</span>=<span class="token-string">"llama-3.3-70b-versatile"</span>,
+    <span class="token-var">messages</span>=[&lbrace;<span class="token-string">"role"</span>: <span class="token-string">"user"</span>, <span class="token-string">"content"</span>: <span class="token-string">"Hello"</span>&rbrace;]
+)</code></pre>
+        </div>
+
+        <div class="code-shell">
+          <div class="code-label">node.js — FreeLLM</div>
+          <pre><code><span class="token-keyword">import</span> <span class="token-var">OpenAI</span> <span class="token-keyword">from</span> <span class="token-string">"openai"</span>;
+
+<span class="token-keyword">const</span> <span class="token-keyword">client</span> = <span class="token-keyword">new</span> <span class="token-var">OpenAI</span>(&lbrace;
+  <span class="token-var">baseURL</span>: <span class="token-string">"https://your-freellm-instance/v1"</span>,  <span class="token-comment">// only change</span>
+  <span class="token-var">apiKey</span>: <span class="token-string">"your-freellm-key"</span>,
+&rbrace;);</code></pre>
+        </div>
+
+        <div class="cta-block">
+          <p>Deploy FreeLLM to Railway or Render in about 2 minutes. Works with any language that has an OpenAI SDK.</p>
+          <a href="/quickstart/" class="btn-primary">Deploy FreeLLM in 2 minutes</a>
+          <div class="cta-links">
+            <a href="https://github.com/Devansh-365/freellm" class="btn-ghost">Star on GitHub</a>
+          </div>
+        </div>
+      </article>
+    </main>
+    <LandingFooter />
+  </body>
+</html>

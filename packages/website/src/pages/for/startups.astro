@@ -1,0 +1,625 @@
+---
+import "../../styles/theme.css";
+import "../../styles/landing.css";
+import LandingHeader from "../../components/landing-header.astro";
+import LandingFooter from "../../components/landing-footer.astro";
+---
+
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <meta
+      name="description"
+      content="Pre-PMF startups use FreeLLM to route dev and staging environments to free LLM providers. Keep OpenAI for production. Cut non-production API costs to zero."
+    />
+    <meta property="og:title" content="FreeLLM for Startups: Cut LLM costs in dev and staging to zero" />
+    <meta
+      property="og:description"
+      content="Pre-PMF startups use FreeLLM to route dev and staging environments to free LLM providers. Keep OpenAI for production. Cut non-production API costs to zero."
+    />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <title>FreeLLM for Startups: Cut LLM costs in dev and staging to zero</title>
+  </head>
+  <body>
+    <LandingHeader />
+    <main>
+
+      <!-- Hero -->
+      <section class="page-hero">
+        <div class="container">
+          <span class="eyebrow">For Startups</span>
+          <h1>Cut your LLM costs in dev and staging to zero</h1>
+          <p class="page-subtitle">
+            Before product-market fit, you should not be paying for API calls in your dev and staging environments. FreeLLM routes those environments to free-tier providers. You keep your production setup unchanged.
+          </p>
+          <div class="hero-cta-row">
+            <a href="https://railway.app/template/freellm" target="_blank" rel="noopener" class="btn btn-primary">
+              Deploy FreeLLM
+              <span class="btn-icon-circle">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+                </svg>
+              </span>
+            </a>
+            <a href="https://github.com/Devansh-365/freellm" target="_blank" rel="noopener" class="btn btn-secondary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.69-3.88-1.54-3.88-1.54-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.74.4-1.25.73-1.54-2.55-.29-5.24-1.27-5.24-5.66 0-1.25.45-2.27 1.18-3.07-.12-.29-.51-1.46.11-3.05 0 0 .96-.31 3.16 1.17.92-.26 1.9-.38 2.88-.39.98.01 1.96.13 2.88.39 2.2-1.48 3.16-1.17 3.16-1.17.62 1.59.23 2.76.11 3.05.74.8 1.18 1.82 1.18 3.07 0 4.4-2.69 5.36-5.25 5.65.41.36.78 1.06.78 2.13 0 1.54-.01 2.78-.01 3.16 0 .31.21.68.8.56 4.56-1.52 7.85-5.82 7.85-10.9C23.5 5.65 18.35.5 12 .5Z"/>
+              </svg>
+              View on GitHub
+            </a>
+          </div>
+          <div class="hero-meta">
+            <span>MIT licensed</span>
+            <span class="dot">·</span>
+            <span>Self-hosted</span>
+            <span class="dot">·</span>
+            <span>Production stays on OpenAI</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Numbers -->
+      <section class="section">
+        <div class="container">
+          <div class="section-head">
+            <span class="eyebrow">The numbers matter</span>
+            <h2>$0 in dev is not a rounding error</h2>
+            <p class="lead">Every dollar you spend before PMF is a dollar that did not go toward finding out if your thing works.</p>
+          </div>
+          <div class="numbers-grid">
+            <div class="number-card number-card-bad">
+              <div class="number-card-label">Without FreeLLM</div>
+              <div class="number-card-value">$60<span>/day</span></div>
+              <div class="number-card-desc">10,000 GPT-4 calls per day in dev, every day, before you know if the feature works.</div>
+            </div>
+            <div class="number-card-divider">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+              </svg>
+            </div>
+            <div class="number-card number-card-good">
+              <div class="number-card-label">With FreeLLM in dev</div>
+              <div class="number-card-value">$0<span>/day</span></div>
+              <div class="number-card-desc">Same 10,000 calls routed through FreeLLM. Failover, rate limits, and key rotation handled automatically.</div>
+            </div>
+          </div>
+          <div class="numbers-note">
+            <p>That is $1,800 per month in dev API costs gone. Reinvest it in distribution, infrastructure, or runway.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Multi-tenant -->
+      <section class="section section-dark">
+        <div class="container">
+          <div class="section-head">
+            <span class="eyebrow">Multi-tenant support</span>
+            <h2>One key per engineer. Full visibility.</h2>
+            <p class="lead">Virtual sub-keys let you give each engineer their own key with rate and token limits. You see exactly who is using what in the dashboard. No shared key abuse.</p>
+          </div>
+          <div class="feature-row">
+            <div class="feature-item">
+              <div class="feature-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/>
+                </svg>
+              </div>
+              <div class="feature-text">
+                <h3>Per-key rate limits</h3>
+                <p>Set request-per-minute and token-per-day caps on each virtual key. Junior devs cannot accidentally burn through your quota.</p>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>
+                </svg>
+              </div>
+              <div class="feature-text">
+                <h3>Real-time dashboard</h3>
+                <p>See request volume, model usage, and token spend per key. No guessing where the traffic is coming from.</p>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
+                </svg>
+              </div>
+              <div class="feature-text">
+                <h3>Key rotation built in</h3>
+                <p>Add 3 keys per provider. FreeLLM rotates across them automatically with cooldowns on rate-limited keys.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Privacy -->
+      <section class="section">
+        <div class="container">
+          <div class="privacy-card">
+            <div class="privacy-card-inner">
+              <div class="privacy-header">
+                <span class="eyebrow">Privacy routing</span>
+                <div class="privacy-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  </svg>
+                </div>
+              </div>
+              <h2>One header for anything your lawyers worry about</h2>
+              <p>Some free-tier providers train on the prompts you send. If you are passing customer data or proprietary logic through dev, that matters even before production.</p>
+              <div class="privacy-code">
+                <pre class="code-block"><code>x-freellm-privacy: no-train</code></pre>
+              </div>
+              <p>Add that header. FreeLLM skips providers that use free-tier prompts for training and routes to ones that do not. One header. No code changes. Works for any client.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Migration -->
+      <section class="section section-dark">
+        <div class="container">
+          <div class="section-head">
+            <span class="eyebrow">The migration</span>
+            <h2>Change the base URL in your dev config. Done.</h2>
+            <p class="lead">Works with LangChain, LlamaIndex, any OpenAI-compatible client. Production stays on OpenAI. No code changes.</p>
+          </div>
+          <div class="migration-wrapper">
+            <div class="migration-block">
+              <div class="migration-label migration-label-before">dev config</div>
+              <pre class="code-block"><code># .env.development
+OPENAI_BASE_URL=http://localhost:3000/v1
+OPENAI_API_KEY=your-freellm-key</code></pre>
+            </div>
+            <div class="migration-divider">
+              <span>production stays unchanged</span>
+            </div>
+            <div class="migration-block">
+              <div class="migration-label migration-label-after">prod config</div>
+              <pre class="code-block"><code># .env.production
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_API_KEY=sk-prod-...</code></pre>
+            </div>
+          </div>
+          <p class="migration-note">Your application code never changes. The environment variable controls which endpoint gets traffic.</p>
+        </div>
+      </section>
+
+      <!-- CTA -->
+      <section class="section cta">
+        <div class="container">
+          <h2>Stop paying for dev environment LLM calls.</h2>
+          <p>Deploy FreeLLM, point your dev config at it, and route all non-production traffic through free tiers. Your production setup stays exactly where it is.</p>
+          <div class="deploy-cta-row">
+            <a
+              href="https://railway.app/template/freellm"
+              target="_blank"
+              rel="noopener"
+              class="btn btn-primary"
+            >
+              Deploy to Railway
+              <span class="btn-icon-circle">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+                </svg>
+              </span>
+            </a>
+            <a
+              href="https://github.com/Devansh-365/freellm"
+              target="_blank"
+              rel="noopener"
+              class="btn btn-secondary"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.69-3.88-1.54-3.88-1.54-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.74.4-1.25.73-1.54-2.55-.29-5.24-1.27-5.24-5.66 0-1.25.45-2.27 1.18-3.07-.12-.29-.51-1.46.11-3.05 0 0 .96-.31 3.16 1.17.92-.26 1.9-.38 2.88-.39.98.01 1.96.13 2.88.39 2.2-1.48 3.16-1.17 3.16-1.17.62 1.59.23 2.76.11 3.05.74.8 1.18 1.82 1.18 3.07 0 4.4-2.69 5.36-5.25 5.65.41.36.78 1.06.78 2.13 0 1.54-.01 2.78-.01 3.16 0 .31.21.68.8.56 4.56-1.52 7.85-5.82 7.85-10.9C23.5 5.65 18.35.5 12 .5Z"/>
+              </svg>
+              View on GitHub
+            </a>
+          </div>
+        </div>
+      </section>
+
+    </main>
+    <LandingFooter />
+  </body>
+</html>
+
+<style>
+  .page-hero {
+    position: relative;
+    padding: 8rem 0 5rem;
+    text-align: center;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .page-hero::before {
+    content: "";
+    position: absolute;
+    top: -10%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 600px;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: -1;
+    background: radial-gradient(
+      ellipse at center,
+      hsl(224 14% 20% / 0.5) 0%,
+      hsl(224 14% 14% / 0.2) 40%,
+      transparent 70%
+    );
+  }
+
+  .page-hero .eyebrow {
+    margin-bottom: 1.5rem;
+  }
+
+  .page-hero h1 {
+    font-family: "Geist", sans-serif;
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    margin: 0 0 1.5rem;
+    color: #ffffff;
+    text-wrap: balance;
+  }
+
+  .page-subtitle {
+    font-size: 1.125rem;
+    line-height: 1.6;
+    color: hsl(0 0% 65%);
+    max-width: 640px;
+    margin: 0 auto 2.5rem;
+    text-wrap: pretty;
+    letter-spacing: -0.01em;
+  }
+
+  .hero-cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.875rem;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .hero-meta {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.875rem;
+    font-family: "Geist Mono", monospace;
+    font-size: 0.75rem;
+    color: hsl(0 0% 50%);
+    letter-spacing: 0.01em;
+  }
+
+  .hero-meta .dot {
+    color: hsl(0 0% 25%);
+  }
+
+  /* Numbers */
+  .numbers-grid {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    max-width: 860px;
+    margin: 0 auto 2rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .number-card {
+    flex: 1;
+    min-width: 280px;
+    border-radius: 16px;
+    border: 1px solid hsl(224 12% 22%);
+    padding: 2.5rem 2rem;
+    text-align: center;
+  }
+
+  .number-card-bad {
+    border-color: hsl(0 50% 40% / 0.3);
+    background: hsl(0 50% 40% / 0.05);
+  }
+
+  .number-card-good {
+    border-color: hsl(158 50% 40% / 0.3);
+    background: hsl(158 50% 40% / 0.06);
+  }
+
+  .number-card-label {
+    font-family: "Geist Mono", monospace;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: hsl(0 0% 50%);
+    margin-bottom: 1rem;
+  }
+
+  .number-card-value {
+    font-family: "Geist", sans-serif;
+    font-size: 3.5rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    margin-bottom: 1rem;
+  }
+
+  .number-card-bad .number-card-value {
+    color: hsl(0 50% 60%);
+  }
+
+  .number-card-good .number-card-value {
+    color: hsl(158 50% 60%);
+  }
+
+  .number-card-value span {
+    font-size: 1.25rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    opacity: 0.7;
+  }
+
+  .number-card-desc {
+    font-size: 0.875rem;
+    color: hsl(0 0% 60%);
+    line-height: 1.55;
+  }
+
+  .number-card-divider {
+    color: hsl(0 0% 35%);
+    flex-shrink: 0;
+  }
+
+  .numbers-note {
+    text-align: center;
+    max-width: 560px;
+    margin: 0 auto;
+  }
+
+  .numbers-note p {
+    font-size: 0.9375rem;
+    color: hsl(0 0% 55%);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  /* Feature row */
+  .section-dark {
+    background: hsl(228 18% 6%);
+    border-top: 1px solid hsl(225 12% 16% / 0.5);
+    border-bottom: 1px solid hsl(225 12% 16% / 0.5);
+  }
+
+  .feature-row {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  .feature-item {
+    display: flex;
+    gap: 1.25rem;
+    align-items: flex-start;
+    background: hsl(224 14% 15%);
+    border: 1px solid hsl(224 12% 22%);
+    border-radius: 14px;
+    padding: 1.75rem;
+    transition: all 400ms cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .feature-item:hover {
+    border-color: hsl(224 12% 28%);
+    transform: translateY(-1px);
+  }
+
+  .feature-icon {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: hsl(158 50% 46% / 0.1);
+    border: 1px solid hsl(158 50% 46% / 0.15);
+    border-radius: 10px;
+    color: hsl(158 50% 60%);
+  }
+
+  .feature-text h3 {
+    font-family: "Geist", sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 0 0 0.5rem;
+    color: #ffffff;
+  }
+
+  .feature-text p {
+    font-size: 0.9rem;
+    color: hsl(0 0% 60%);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  /* Privacy card */
+  .privacy-card {
+    border-radius: 16px;
+    border: 1px solid hsl(224 12% 22%);
+    max-width: 780px;
+    margin: 0 auto;
+  }
+
+  .privacy-card-inner {
+    background: hsl(224 14% 15%);
+    border-radius: 15px;
+    padding: 3rem;
+  }
+
+  .privacy-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .privacy-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: hsl(158 50% 46% / 0.1);
+    border: 1px solid hsl(158 50% 46% / 0.15);
+    border-radius: 10px;
+    color: hsl(158 50% 60%);
+  }
+
+  .privacy-card-inner h2 {
+    font-family: "Geist", sans-serif;
+    font-size: clamp(1.375rem, 3vw, 1.875rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin: 0 0 1rem;
+    color: #ffffff;
+    text-align: left;
+    line-height: 1.15;
+  }
+
+  .privacy-card-inner p {
+    font-size: 0.9375rem;
+    color: hsl(0 0% 60%);
+    line-height: 1.65;
+    margin: 0 0 1.25rem;
+  }
+
+  .privacy-code {
+    margin: 1.25rem 0;
+  }
+
+  /* Migration */
+  .migration-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    max-width: 900px;
+    margin: 0 auto 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .migration-block {
+    flex: 1;
+    min-width: 280px;
+  }
+
+  .migration-label {
+    font-family: "Geist Mono", monospace;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 0.75rem;
+  }
+
+  .migration-label-before {
+    color: hsl(0 0% 45%);
+  }
+
+  .migration-label-after {
+    color: hsl(158 50% 60%);
+  }
+
+  .migration-divider {
+    flex-shrink: 0;
+    font-family: "Geist Mono", monospace;
+    font-size: 0.6875rem;
+    color: hsl(0 0% 35%);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    text-align: center;
+    max-width: 100px;
+    line-height: 1.5;
+  }
+
+  .code-block {
+    background: #1E293B;
+    border-radius: 12px;
+    border: 1px solid hsl(224 12% 26%);
+    padding: 1.25rem 1.5rem;
+    margin: 0;
+    font-family: "Geist Mono", monospace;
+    font-size: 0.875rem;
+    line-height: 1.7;
+    color: hsl(0 0% 88%);
+    overflow-x: auto;
+  }
+
+  .migration-note {
+    text-align: center;
+    font-size: 0.9rem;
+    color: hsl(0 0% 50%);
+    max-width: 540px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* CTA */
+  .deploy-cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.875rem;
+    justify-content: center;
+  }
+
+  @media (max-width: 768px) {
+    .page-hero {
+      padding: 6rem 0 4rem;
+    }
+
+    .numbers-grid {
+      flex-direction: column;
+    }
+
+    .number-card-divider {
+      transform: rotate(90deg);
+    }
+
+    .migration-wrapper {
+      flex-direction: column;
+    }
+
+    .migration-divider {
+      max-width: none;
+    }
+
+    .privacy-card-inner,
+    .feature-item {
+      padding: 1.5rem;
+    }
+  }
+</style>

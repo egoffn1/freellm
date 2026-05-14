@@ -1,0 +1,648 @@
+---
+import "../../styles/theme.css";
+import "../../styles/landing.css";
+import LandingHeader from "../../components/landing-header.astro";
+import LandingFooter from "../../components/landing-footer.astro";
+---
+
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <meta
+      name="description"
+      content="Stop writing provider-switching logic. FreeLLM handles failover, rate limit retries, circuit breakers, and key rotation so your code doesn't have to."
+    />
+    <meta property="og:title" content="FreeLLM for Developers: One endpoint, eight LLM providers, zero retry logic" />
+    <meta
+      property="og:description"
+      content="Stop writing provider-switching logic. FreeLLM handles failover, rate limit retries, circuit breakers, and key rotation so your code doesn't have to."
+    />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <title>FreeLLM for Developers: One endpoint, eight LLM providers, zero retry logic</title>
+  </head>
+  <body>
+    <LandingHeader />
+    <main>
+
+      <!-- Hero -->
+      <section class="page-hero">
+        <div class="container">
+          <span class="eyebrow">For Developers</span>
+          <h1>Stop writing provider-switching logic</h1>
+          <p class="page-subtitle">
+            Every LLM provider ships its own SDK, its own error codes, and its own rate limit behavior. When Groq 429s at 2am, you get paged. Or you write glue code nobody wants to maintain. FreeLLM replaces that glue code with one HTTP endpoint.
+          </p>
+          <div class="hero-cta-row">
+            <a href="https://railway.app/template/freellm" target="_blank" rel="noopener" class="btn btn-primary">
+              Deploy FreeLLM
+              <span class="btn-icon-circle">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+                </svg>
+              </span>
+            </a>
+            <a href="https://github.com/Devansh-365/freellm" target="_blank" rel="noopener" class="btn btn-secondary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.69-3.88-1.54-3.88-1.54-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.74.4-1.25.73-1.54-2.55-.29-5.24-1.27-5.24-5.66 0-1.25.45-2.27 1.18-3.07-.12-.29-.51-1.46.11-3.05 0 0 .96-.31 3.16 1.17.92-.26 1.9-.38 2.88-.39.98.01 1.96.13 2.88.39 2.2-1.48 3.16-1.17 3.16-1.17.62 1.59.23 2.76.11 3.05.74.8 1.18 1.82 1.18 3.07 0 4.4-2.69 5.36-5.25 5.65.41.36.78 1.06.78 2.13 0 1.54-.01 2.78-.01 3.16 0 .31.21.68.8.56 4.56-1.52 7.85-5.82 7.85-10.9C23.5 5.65 18.35.5 12 .5Z"/>
+              </svg>
+              View on GitHub
+            </a>
+          </div>
+          <div class="hero-meta">
+            <span>MIT licensed</span>
+            <span class="dot">·</span>
+            <span>Self-hosted</span>
+            <span class="dot">·</span>
+            <span>OpenAI-compatible</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- What FreeLLM removes -->
+      <section class="section">
+        <div class="container">
+          <div class="section-head">
+            <span class="eyebrow">What FreeLLM removes from your codebase</span>
+            <h2>Code you should never have written in the first place</h2>
+            <p class="lead">Every item below is something your team wrote, maintains, and debugs. FreeLLM handles all of it at the gateway layer.</p>
+          </div>
+          <div class="removal-list">
+            <div class="removal-item">
+              <div class="removal-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+                </svg>
+              </div>
+              <div class="removal-text">
+                <h3>Circuit breaker logic</h3>
+                <p>Providers that error repeatedly get sidelined automatically. No manual tracking of which provider is healthy.</p>
+              </div>
+            </div>
+            <div class="removal-item">
+              <div class="removal-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+                </svg>
+              </div>
+              <div class="removal-text">
+                <h3>Retry handlers</h3>
+                <p>429s route to the next provider, not back to you. Your application never sees a rate limit error.</p>
+              </div>
+            </div>
+            <div class="removal-item">
+              <div class="removal-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+                </svg>
+              </div>
+              <div class="removal-text">
+                <h3>Key rotation code</h3>
+                <p>Round-robin across keys per provider, with cooldowns on rate-limited keys. Written once, running at the gateway.</p>
+              </div>
+            </div>
+            <div class="removal-item">
+              <div class="removal-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+                </svg>
+              </div>
+              <div class="removal-text">
+                <h3>Provider-specific SDK imports</h3>
+                <p>One OpenAI client handles every provider. No groq-sdk, no google-generativeai, no per-provider initialization boilerplate.</p>
+              </div>
+            </div>
+            <div class="removal-item">
+              <div class="removal-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+                </svg>
+              </div>
+              <div class="removal-text">
+                <h3>Streaming normalization</h3>
+                <p>Gemini and Ollama streaming quirks are handled at the gateway. Your streaming consumer code works the same regardless of which provider answers.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Before/After code -->
+      <section class="section section-dark">
+        <div class="container">
+          <div class="section-head">
+            <span class="eyebrow">What you keep</span>
+            <h2>Your OpenAI SDK. Your existing code. One changed line.</h2>
+          </div>
+          <div class="code-compare">
+            <div class="code-compare-block">
+              <div class="code-compare-label code-compare-label-before">
+                <span>Before</span>
+                <span class="code-compare-tag">managing multiple providers</span>
+              </div>
+              <pre class="code-block"><code><span class="token-comment"># Before: managing multiple providers</span>
+<span class="token-keyword">from</span> groq <span class="token-keyword">import</span> Groq
+<span class="token-keyword">from</span> anthropic <span class="token-keyword">import</span> Anthropic
+<span class="token-comment"># ...retry logic, key rotation, error handling...</span>
+
+groq_client = Groq(api_key=os.environ["GROQ_API_KEY"])
+<span class="token-comment"># if groq fails, retry with anthropic</span>
+<span class="token-comment"># if anthropic fails, retry with mistral</span>
+<span class="token-comment"># track cooldowns per key per provider</span>
+<span class="token-comment"># normalize streaming differences</span>
+<span class="token-comment"># handle provider-specific error codes</span></code></pre>
+            </div>
+            <div class="code-compare-block">
+              <div class="code-compare-label code-compare-label-after">
+                <span>After</span>
+                <span class="code-compare-tag">one client, all providers</span>
+              </div>
+              <pre class="code-block"><code><span class="token-comment"># After: one client, all providers</span>
+<span class="token-keyword">import</span> openai
+
+client = openai.OpenAI(
+    base_url=<span class="token-string">"http://localhost:3000/v1"</span>,
+    api_key=<span class="token-string">"your-key"</span>
+)
+
+<span class="token-comment"># That is it. FreeLLM handles everything else.</span></code></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Self-hosted -->
+      <section class="section">
+        <div class="container">
+          <div class="infra-grid">
+            <div class="infra-card">
+              <div class="infra-card-inner">
+                <div class="infra-icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/>
+                  </svg>
+                </div>
+                <h3>It stays on your infra</h3>
+                <p>Self-hosted. Your API keys never leave your servers. No third-party proxy sees your prompts or your keys.</p>
+                <p>MIT licensed so you can read the code, fork it, modify it, or audit it before deploying.</p>
+              </div>
+            </div>
+            <div class="infra-card">
+              <div class="infra-card-inner">
+                <div class="infra-icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/>
+                  </svg>
+                </div>
+                <h3>LangChain and LlamaIndex work out of the box</h3>
+                <p>Any client that speaks OpenAI's API format works. Change the base URL in your LangChain config. Done.</p>
+                <p>No custom integration, no plugin, no adapter layer needed.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Numbers -->
+      <section class="section section-dark">
+        <div class="container">
+          <div class="section-head">
+            <span class="eyebrow">Real numbers</span>
+            <h2>Measured, not estimated</h2>
+          </div>
+          <div class="stats-row">
+            <div class="stat-item">
+              <div class="stat-value">~23ms</div>
+              <div class="stat-label">Cache hit response time</div>
+              <div class="stat-note">Identical prompts served from cache. Zero quota burn.</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">~450</div>
+              <div class="stat-label">Free req/min</div>
+              <div class="stat-note">Across 8 providers with 3 keys each, stacked and rotated.</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">32+</div>
+              <div class="stat-label">Models available</div>
+              <div class="stat-note">Including Llama 3.3 70B, Gemini 2.5 Pro, and Mistral Medium.</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">8</div>
+              <div class="stat-label">Providers</div>
+              <div class="stat-note">Groq, Gemini, Mistral, Cerebras, NVIDIA NIM, Cloudflare, GitHub Models, Ollama.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CTA -->
+      <section class="section cta">
+        <div class="container">
+          <h2>Replace your glue code with one endpoint.</h2>
+          <p>Deploy FreeLLM, point your OpenAI client at it, and delete the retry logic. Takes 2 minutes to deploy, one line to migrate.</p>
+          <div class="deploy-cta-row">
+            <a
+              href="https://railway.app/template/freellm"
+              target="_blank"
+              rel="noopener"
+              class="btn btn-primary"
+            >
+              Deploy to Railway
+              <span class="btn-icon-circle">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+                </svg>
+              </span>
+            </a>
+            <a
+              href="https://github.com/Devansh-365/freellm"
+              target="_blank"
+              rel="noopener"
+              class="btn btn-secondary"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.69-3.88-1.54-3.88-1.54-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.74.4-1.25.73-1.54-2.55-.29-5.24-1.27-5.24-5.66 0-1.25.45-2.27 1.18-3.07-.12-.29-.51-1.46.11-3.05 0 0 .96-.31 3.16 1.17.92-.26 1.9-.38 2.88-.39.98.01 1.96.13 2.88.39 2.2-1.48 3.16-1.17 3.16-1.17.62 1.59.23 2.76.11 3.05.74.8 1.18 1.82 1.18 3.07 0 4.4-2.69 5.36-5.25 5.65.41.36.78 1.06.78 2.13 0 1.54-.01 2.78-.01 3.16 0 .31.21.68.8.56 4.56-1.52 7.85-5.82 7.85-10.9C23.5 5.65 18.35.5 12 .5Z"/>
+              </svg>
+              View on GitHub
+            </a>
+          </div>
+        </div>
+      </section>
+
+    </main>
+    <LandingFooter />
+  </body>
+</html>
+
+<style>
+  .page-hero {
+    position: relative;
+    padding: 8rem 0 5rem;
+    text-align: center;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .page-hero::before {
+    content: "";
+    position: absolute;
+    top: -10%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 600px;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: -1;
+    background: radial-gradient(
+      ellipse at center,
+      hsl(224 14% 20% / 0.5) 0%,
+      hsl(224 14% 14% / 0.2) 40%,
+      transparent 70%
+    );
+  }
+
+  .page-hero .eyebrow {
+    margin-bottom: 1.5rem;
+  }
+
+  .page-hero h1 {
+    font-family: "Geist", sans-serif;
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    margin: 0 0 1.5rem;
+    color: #ffffff;
+    text-wrap: balance;
+  }
+
+  .page-subtitle {
+    font-size: 1.125rem;
+    line-height: 1.6;
+    color: hsl(0 0% 65%);
+    max-width: 640px;
+    margin: 0 auto 2.5rem;
+    text-wrap: pretty;
+    letter-spacing: -0.01em;
+  }
+
+  .hero-cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.875rem;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .hero-meta {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.875rem;
+    font-family: "Geist Mono", monospace;
+    font-size: 0.75rem;
+    color: hsl(0 0% 50%);
+    letter-spacing: 0.01em;
+  }
+
+  .hero-meta .dot {
+    color: hsl(0 0% 25%);
+  }
+
+  /* Removal list */
+  .removal-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  .removal-item {
+    display: flex;
+    gap: 1.25rem;
+    align-items: flex-start;
+    background: hsl(224 14% 15%);
+    border: 1px solid hsl(224 12% 22%);
+    border-radius: 14px;
+    padding: 1.5rem 1.75rem;
+    transition: all 400ms cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .removal-item:hover {
+    border-color: hsl(224 12% 28%);
+    transform: translateY(-1px);
+  }
+
+  .removal-icon {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: hsl(0 50% 50% / 0.08);
+    border: 1px solid hsl(0 50% 50% / 0.12);
+    border-radius: 8px;
+    color: hsl(0 50% 60%);
+    margin-top: 0.125rem;
+  }
+
+  .removal-text h3 {
+    font-family: "Geist", sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 0 0 0.375rem;
+    color: #ffffff;
+  }
+
+  .removal-text p {
+    font-size: 0.9rem;
+    color: hsl(0 0% 60%);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  /* Code compare */
+  .section-dark {
+    background: hsl(228 18% 6%);
+    border-top: 1px solid hsl(225 12% 16% / 0.5);
+    border-bottom: 1px solid hsl(225 12% 16% / 0.5);
+  }
+
+  .code-compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  @media (max-width: 768px) {
+    .code-compare {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .code-compare-block {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .code-compare-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+    font-family: "Geist Mono", monospace;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  .code-compare-label-before {
+    color: hsl(0 0% 45%);
+  }
+
+  .code-compare-label-after {
+    color: hsl(158 50% 60%);
+  }
+
+  .code-compare-tag {
+    font-size: 0.625rem;
+    letter-spacing: 0.08em;
+    opacity: 0.7;
+  }
+
+  .code-block {
+    background: #1E293B;
+    border-radius: 12px;
+    border: 1px solid hsl(224 12% 26%);
+    padding: 1.25rem 1.5rem;
+    margin: 0;
+    font-family: "Geist Mono", monospace;
+    font-size: 0.8125rem;
+    line-height: 1.7;
+    color: hsl(0 0% 88%);
+    overflow-x: auto;
+    flex: 1;
+  }
+
+  .token-comment { color: hsl(0 0% 45%); }
+  .token-keyword { color: hsl(220 70% 75%); }
+  .token-string { color: hsl(158 50% 65%); }
+
+  /* Infra grid */
+  .infra-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  @media (max-width: 640px) {
+    .infra-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .infra-card {
+    border-radius: 16px;
+    border: 1px solid hsl(224 12% 22%);
+    transition: all 400ms cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .infra-card:hover {
+    transform: translateY(-2px);
+    border-color: hsl(224 12% 28%);
+  }
+
+  .infra-card-inner {
+    background: hsl(224 14% 15%);
+    border-radius: 15px;
+    padding: 2.25rem;
+    height: 100%;
+  }
+
+  .infra-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: hsl(158 50% 46% / 0.1);
+    border: 1px solid hsl(158 50% 46% / 0.15);
+    border-radius: 10px;
+    color: hsl(158 50% 60%);
+    margin-bottom: 1.25rem;
+  }
+
+  .infra-card-inner h3 {
+    font-family: "Geist", sans-serif;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 0 0 0.75rem;
+    color: #ffffff;
+  }
+
+  .infra-card-inner p {
+    font-size: 0.9rem;
+    color: hsl(0 0% 60%);
+    line-height: 1.65;
+    margin: 0 0 0.625rem;
+  }
+
+  .infra-card-inner p:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    background: hsl(224 14% 15%);
+    border-radius: 16px;
+    border: 1px solid hsl(224 12% 22%);
+    padding: 3rem 2rem;
+  }
+
+  @media (max-width: 768px) {
+    .stats-row {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2rem 1rem;
+      padding: 2rem 1.5rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .stats-row {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .stat-item {
+    text-align: center;
+    position: relative;
+    padding: 0 1rem;
+  }
+
+  .stat-item:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 15%;
+    bottom: 15%;
+    width: 1px;
+    background: hsl(224 12% 22%);
+  }
+
+  @media (max-width: 768px) {
+    .stat-item:nth-child(2n)::after {
+      display: none;
+    }
+  }
+
+  .stat-value {
+    font-family: "Geist", sans-serif;
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 800;
+    line-height: 1;
+    color: hsl(158 50% 60%);
+    letter-spacing: -0.04em;
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 0.5rem;
+  }
+
+  .stat-label {
+    font-family: "Geist Mono", monospace;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: hsl(0 0% 65%);
+    margin-bottom: 0.375rem;
+  }
+
+  .stat-note {
+    font-family: "Geist", sans-serif;
+    font-size: 0.8rem;
+    color: hsl(0 0% 40%);
+    line-height: 1.5;
+  }
+
+  /* CTA */
+  .deploy-cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.875rem;
+    justify-content: center;
+  }
+
+  @media (max-width: 768px) {
+    .page-hero {
+      padding: 6rem 0 4rem;
+    }
+
+    .infra-card-inner {
+      padding: 1.75rem;
+    }
+  }
+</style>

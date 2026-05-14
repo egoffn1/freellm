@@ -1,0 +1,428 @@
+---
+import "../../styles/theme.css";
+import "../../styles/landing.css";
+import LandingHeader from "../../components/landing-header.astro";
+import LandingFooter from "../../components/landing-footer.astro";
+
+const canonicalURL = "https://freellms.vercel.app/alternatives/groq/";
+---
+
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="canonical" href={canonicalURL} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <title>FreeLLM with Groq: Route past rate limits automatically</title>
+    <meta
+      name="description"
+      content="FreeLLM includes Groq as one of 8 providers and automatically routes away when Groq rate-limits. Stack 3 Groq keys for 3x the free RPM."
+    />
+    <meta property="og:title" content="FreeLLM with Groq: Route past rate limits automatically" />
+    <meta
+      property="og:description"
+      content="FreeLLM includes Groq as one of 8 providers and automatically routes away when Groq rate-limits. Stack 3 Groq keys for 3x the free RPM."
+    />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+  </head>
+  <body>
+    <LandingHeader />
+    <main>
+      <article class="alt-page">
+        <span class="page-eyebrow">rate limits</span>
+        <h1>Beyond Groq alone: route past rate limits</h1>
+        <p class="lead">
+          Groq is fast. Its free tier is capped at around 30 req/min per key. When you hit that
+          cap, requests fail with a 429. FreeLLM includes Groq as one of 8 providers and
+          routes elsewhere when Groq rate-limits, so you keep getting responses.
+        </p>
+
+        <h2>What FreeLLM adds on top of Groq</h2>
+        <p>
+          FreeLLM does not replace Groq. It wraps it along with 7 other providers and adds
+          three things that make the free tier actually usable at scale.
+        </p>
+
+        <div class="feature-list">
+          <div class="feature-item">
+            <span class="feature-label">Multi-key rotation</span>
+            <span class="feature-desc">
+              Add 3 Groq API keys and FreeLLM round-robins across them. You get roughly
+              90 req/min from Groq alone, without any changes to your application code.
+            </span>
+          </div>
+          <div class="feature-item">
+            <span class="feature-label">Automatic failover</span>
+            <span class="feature-desc">
+              When Groq returns a 429, the next request goes to Gemini, Mistral, Cerebras,
+              or whichever provider has capacity. Your app sees a successful response.
+            </span>
+          </div>
+          <div class="feature-item">
+            <span class="feature-label">Circuit breakers</span>
+            <span class="feature-desc">
+              If Groq has an outage or sustained rate-limiting, FreeLLM sidelines it until
+              it recovers. Other providers absorb traffic in the meantime.
+            </span>
+          </div>
+        </div>
+
+        <h2>By the numbers</h2>
+
+        <div class="table-shell">
+          <table class="alt-table">
+            <thead>
+              <tr>
+                <th>Feature</th>
+                <th class="freellm-col">FreeLLM + Groq</th>
+                <th>Groq direct</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Rate limit (single key)</td>
+                <td class="freellm-col">~30 req/min per key</td>
+                <td>~30 req/min</td>
+              </tr>
+              <tr>
+                <td>Max throughput with key stacking</td>
+                <td class="freellm-col yes">~450 req/min (8 providers, 3 keys each)</td>
+                <td>~90 req/min (3 keys, manual rotation)</td>
+              </tr>
+              <tr>
+                <td>Failover on 429</td>
+                <td class="freellm-col yes">Yes, automatic</td>
+                <td class="no">No</td>
+              </tr>
+              <tr>
+                <td>Circuit breakers</td>
+                <td class="freellm-col yes">Yes</td>
+                <td class="no">No</td>
+              </tr>
+              <tr>
+                <td>Providers</td>
+                <td class="freellm-col yes">8 (Groq, Gemini, Mistral, Cerebras, and more)</td>
+                <td>1</td>
+              </tr>
+              <tr>
+                <td>Dashboard</td>
+                <td class="freellm-col yes">Yes, real-time</td>
+                <td class="no">No</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2>If you only need Groq</h2>
+        <p>
+          If you never hit rate limits and only want Llama models via Groq, using Groq directly
+          is the simpler choice. There is no gateway to deploy, no extra latency from an
+          intermediate service, and no configuration to maintain. Keep it simple when simple works.
+        </p>
+
+        <hr class="divider" />
+
+        <h2>If rate limits are your problem</h2>
+        <p>
+          FreeLLM routes around rate limits automatically. You add your Groq keys (and keys
+          for other providers), deploy in 2 minutes, and change one line of code. After that,
+          a Groq 429 is invisible to your application.
+        </p>
+        <ul>
+          <li>Stack multiple Groq keys. FreeLLM rotates across them without any logic in your app.</li>
+          <li>When Groq is saturated, Gemini, Mistral, and Cerebras take over. Same model family, similar output quality.</li>
+          <li>Response caching cuts repeat requests to around 23ms. Groq never sees them.</li>
+        </ul>
+
+        <hr class="divider" />
+
+        <h2>The code change is one line</h2>
+        <p>
+          If you are already calling Groq directly with the OpenAI SDK, the change is a base URL swap.
+          Your model names and message format stay the same.
+        </p>
+
+        <div class="code-shell">
+          <div class="code-label">python — before (Groq direct)</div>
+          <pre><code><span class="token-keyword">from</span> <span class="token-var">openai</span> <span class="token-keyword">import</span> <span class="token-var">OpenAI</span>
+
+<span class="token-var">client</span> = <span class="token-var">OpenAI</span>(
+    <span class="token-var">base_url</span>=<span class="token-string">"https://api.groq.com/openai/v1"</span>,
+    <span class="token-var">api_key</span>=<span class="token-string">"gsk_..."</span>
+)</code></pre>
+        </div>
+
+        <div class="code-shell">
+          <div class="code-label">python — after (FreeLLM, routes through Groq + 7 others)</div>
+          <pre><code><span class="token-keyword">from</span> <span class="token-var">openai</span> <span class="token-keyword">import</span> <span class="token-var">OpenAI</span>
+
+<span class="token-var">client</span> = <span class="token-var">OpenAI</span>(
+    <span class="token-var">base_url</span>=<span class="token-string">"https://your-freellm-instance/v1"</span>,  <span class="token-comment"># only change</span>
+    <span class="token-var">api_key</span>=<span class="token-string">"your-freellm-key"</span>
+)</code></pre>
+        </div>
+
+        <div class="cta-block">
+          <p>Deploy FreeLLM in 2 minutes. Add your Groq keys and 7 other providers. Route past rate limits automatically.</p>
+          <a href="/quickstart/" class="btn-primary">Deploy FreeLLM in 2 minutes</a>
+          <div class="cta-links">
+            <a href="https://github.com/Devansh-365/freellm" class="btn-ghost">Star on GitHub</a>
+          </div>
+        </div>
+      </article>
+    </main>
+    <LandingFooter />
+  </body>
+</html>
+
+<style>
+  .alt-page {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 5rem 1.5rem 8rem;
+  }
+
+  .alt-page .page-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0.875rem;
+    border-radius: 999px;
+    background: hsla(158, 50%, 40%, 0.08);
+    border: 1px solid hsla(158, 50%, 40%, 0.18);
+    color: hsl(158, 50%, 65%);
+    font-family: "Geist Mono", monospace;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: 1.5rem;
+  }
+
+  .alt-page h1 {
+    font-family: "Geist", sans-serif;
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1.05;
+    color: #ffffff;
+    margin: 0 0 1.25rem;
+    text-wrap: balance;
+  }
+
+  .alt-page .lead {
+    font-size: 1.0625rem;
+    line-height: 1.65;
+    color: hsl(0, 0%, 65%);
+    margin: 0 0 3.5rem;
+    letter-spacing: -0.005em;
+  }
+
+  .alt-page h2 {
+    font-family: "Geist", sans-serif;
+    font-size: 1.375rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: #ffffff;
+    margin: 3rem 0 1rem;
+  }
+
+  .alt-page p {
+    font-size: 0.9375rem;
+    line-height: 1.65;
+    color: hsl(0, 0%, 65%);
+    margin: 0 0 1rem;
+  }
+
+  .alt-page ul {
+    margin: 0 0 1.5rem;
+    padding-left: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .alt-page ul li {
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: hsl(0, 0%, 65%);
+  }
+
+  .table-shell {
+    border-radius: 14px;
+    border: 1px solid hsl(224, 12%, 22%);
+    overflow: hidden;
+    margin: 2rem 0 3rem;
+  }
+
+  .alt-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: "Geist", sans-serif;
+    font-size: 0.9rem;
+    background: hsl(224, 14%, 15%);
+  }
+
+  .alt-table th {
+    padding: 0.875rem 1.25rem;
+    text-align: left;
+    background: hsl(224, 14%, 13%);
+    color: hsl(158, 50%, 65%);
+    font-family: "Geist Mono", monospace;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    border-bottom: 1px solid hsl(224, 12%, 22%);
+  }
+
+  .alt-table td {
+    padding: 0.875rem 1.25rem;
+    border-bottom: 1px solid hsla(158, 50%, 40%, 0.07);
+    color: hsl(0, 0%, 75%);
+    vertical-align: top;
+  }
+
+  .alt-table tbody tr:last-child td { border-bottom: none; }
+  .alt-table tbody tr:hover { background: hsla(158, 50%, 40%, 0.03); }
+  .alt-table td:first-child { color: hsl(0, 0%, 85%); font-weight: 500; }
+  .alt-table .freellm-col { background: hsla(158, 50%, 40%, 0.05); }
+
+  .yes { color: hsl(158, 50%, 60%); font-weight: 600; font-family: "Geist Mono", monospace; }
+  .no { color: hsl(0, 50%, 55%); font-family: "Geist Mono", monospace; }
+  .partial { color: hsl(38, 90%, 55%); font-family: "Geist Mono", monospace; }
+
+  .code-shell {
+    border-radius: 14px;
+    border: 1px solid hsl(224, 12%, 22%);
+    overflow: hidden;
+    margin: 1.5rem 0 2.5rem;
+  }
+
+  .code-label {
+    padding: 0.625rem 1.25rem;
+    background: hsl(224, 14%, 13%);
+    border-bottom: 1px solid hsl(224, 12%, 22%);
+    font-family: "Geist Mono", monospace;
+    font-size: 0.75rem;
+    color: hsl(0, 0%, 50%);
+    letter-spacing: 0.05em;
+  }
+
+  .code-shell pre {
+    margin: 0;
+    padding: 1.5rem 1.25rem;
+    background: hsl(224, 14%, 15%);
+    font-family: "Geist Mono", monospace;
+    font-size: 0.875rem;
+    line-height: 1.7;
+    color: hsl(0, 0%, 88%);
+    overflow-x: auto;
+  }
+
+  .code-shell code { background: transparent; border: none; padding: 0; color: inherit; font-size: inherit; }
+  .token-comment { color: hsl(0, 0%, 45%); }
+  .token-keyword { color: hsl(200, 80%, 65%); }
+  .token-string  { color: hsl(158, 50%, 60%); }
+  .token-var     { color: hsl(0, 0%, 85%); }
+
+  .feature-list {
+    margin: 1.5rem 0 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .feature-item {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.75rem 1rem;
+    align-items: start;
+  }
+
+  .feature-label {
+    font-family: "Geist Mono", monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: hsl(158, 50%, 60%);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding-top: 0.125rem;
+    white-space: nowrap;
+  }
+
+  .feature-desc {
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: hsl(0, 0%, 65%);
+  }
+
+  .cta-block {
+    margin-top: 4rem;
+    padding: 2.5rem;
+    border-radius: 16px;
+    border: 1px solid hsla(158, 50%, 40%, 0.2);
+    background: hsla(158, 50%, 40%, 0.04);
+    text-align: center;
+  }
+
+  .cta-block p { color: hsl(0, 0%, 65%); margin-bottom: 1.5rem; }
+
+  .cta-block .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 999px;
+    background: hsl(158, 50%, 46%);
+    color: #04140a;
+    font-family: "Geist", sans-serif;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 280ms cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .cta-block .btn-primary:hover { background: hsl(158, 50%, 50%); transform: translateY(-1px); }
+
+  .cta-links {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+  }
+
+  .cta-links .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.625rem 1.25rem;
+    border-radius: 999px;
+    background: transparent;
+    color: hsl(0, 0%, 65%);
+    font-family: "Geist", sans-serif;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    border: 1px solid hsl(224, 12%, 28%);
+    text-decoration: none;
+    transition: all 280ms cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .cta-links .btn-ghost:hover { border-color: hsl(224, 12%, 40%); color: hsl(0, 0%, 85%); }
+
+  .divider { border: none; border-top: 1px solid hsl(224, 12%, 20%); margin: 3rem 0; }
+</style>

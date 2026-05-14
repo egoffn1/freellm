@@ -26,17 +26,114 @@ import LandingFooter from "../components/landing-footer.astro";
     />
     <meta
       name="description"
-      content="OpenAI-compatible gateway aggregating 6 free LLM providers (Groq, Gemini, Mistral, Cerebras, NVIDIA NIM, Ollama) with automatic failover, multi-key rotation, and a real-time dashboard. Zero cost."
+      content="OpenAI-compatible gateway aggregating 8 free LLM providers (Groq, Gemini, Mistral, Cerebras, NVIDIA NIM, Cloudflare Workers AI, GitHub Models, Ollama) with automatic failover, multi-key rotation, and a real-time dashboard. Zero cost."
     />
     <meta property="og:title" content="FreeLLM · Stack free LLM tiers into one endpoint" />
     <meta
       property="og:description"
-      content="OpenAI-compatible gateway aggregating 6 free LLM providers with automatic failover, multi-key rotation, and a real-time dashboard. Zero cost."
+      content="OpenAI-compatible gateway aggregating 8 free LLM providers with automatic failover, multi-key rotation, and a real-time dashboard. Zero cost."
     />
     <meta property="og:image" content="/og-image.png" />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <title>FreeLLM · Stack free LLM tiers into one endpoint</title>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "FreeLLM",
+        "description": "OpenAI-compatible gateway aggregating 8 free LLM providers with automatic failover, circuit breakers, and smart routing. 32+ models, zero cost.",
+        "url": "https://freellms.vercel.app",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Any",
+        "programmingLanguage": "TypeScript",
+        "license": "https://opensource.org/licenses/MIT",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "codeRepository": "https://github.com/Devansh-365/freellm",
+        "featureList": [
+          "Automatic failover across 8 LLM providers",
+          "OpenAI-compatible API",
+          "Multi-key rotation",
+          "Response caching",
+          "Circuit breakers",
+          "Real-time dashboard",
+          "Streaming support",
+          "Virtual sub-keys"
+        ]
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "FreeLLM",
+        "url": "https://freellms.vercel.app",
+        "logo": "https://freellms.vercel.app/logo.svg",
+        "sameAs": [
+          "https://github.com/Devansh-365/freellm"
+        ]
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What is FreeLLM?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "FreeLLM is an open-source, self-hosted API gateway that routes LLM requests across 8 free-tier providers including Groq, Gemini, Mistral, Cerebras, NVIDIA NIM, Cloudflare Workers AI, GitHub Models, and Ollama. It exposes a single OpenAI-compatible endpoint so you can use any OpenAI SDK without changing your code."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is FreeLLM really free?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. FreeLLM uses the free tier of each provider. All 8 providers offer free API access. With 3 keys per provider you get roughly 450 free requests per minute. You pay nothing."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can I use FreeLLM with the OpenAI Python or Node.js SDK?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. Change your base URL to your FreeLLM instance and keep your existing code. FreeLLM is fully OpenAI API-compatible."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What happens when a provider rate-limits?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "FreeLLM automatically routes to the next available provider. If Groq hits its rate limit, the next request goes to Gemini, then Mistral, then others. You never see a 429 error."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can I self-host FreeLLM?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. FreeLLM is MIT-licensed and designed for self-hosting. Deploy to Railway or Render in under 2 minutes using the one-click deploy buttons."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What LLM models does FreeLLM support?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "FreeLLM supports 32+ models including Llama 3.3 70B via Groq, Gemini 2.5 Pro and Flash via Google, Mistral Small and Medium, Cerebras Llama and Qwen3, NVIDIA NIM models, and local models via Ollama."
+            }
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <LandingHeader />

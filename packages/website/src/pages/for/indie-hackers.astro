@@ -1,0 +1,470 @@
+---
+import "../../styles/theme.css";
+import "../../styles/landing.css";
+import LandingHeader from "../../components/landing-header.astro";
+import LandingFooter from "../../components/landing-footer.astro";
+---
+
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <meta
+      name="description"
+      content="Build AI-powered side projects without burning money on API costs. FreeLLM routes across 8 free LLM providers so your dev environment costs nothing."
+    />
+    <meta property="og:title" content="FreeLLM for Indie Hackers: AI features before you have an AI budget" />
+    <meta
+      property="og:description"
+      content="Build AI-powered side projects without burning money on API costs. FreeLLM routes across 8 free LLM providers so your dev environment costs nothing."
+    />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <title>FreeLLM for Indie Hackers: AI features before you have an AI budget</title>
+  </head>
+  <body>
+    <LandingHeader />
+    <main>
+
+      <!-- Hero -->
+      <section class="page-hero">
+        <div class="container">
+          <span class="eyebrow">For Indie Hackers</span>
+          <h1>Build AI features before you have an AI budget</h1>
+          <p class="page-subtitle">
+            You are building something real. But OpenAI charges by the token, and every test run burns money before you have a single paying user. FreeLLM routes your requests across free-tier providers so your dev environment costs nothing.
+          </p>
+          <div class="hero-cta-row">
+            <a href="https://railway.app/template/freellm" target="_blank" rel="noopener" class="btn btn-primary">
+              Deploy FreeLLM
+              <span class="btn-icon-circle">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+                </svg>
+              </span>
+            </a>
+            <a href="https://github.com/Devansh-365/freellm" target="_blank" rel="noopener" class="btn btn-secondary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.69-3.88-1.54-3.88-1.54-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.74.4-1.25.73-1.54-2.55-.29-5.24-1.27-5.24-5.66 0-1.25.45-2.27 1.18-3.07-.12-.29-.51-1.46.11-3.05 0 0 .96-.31 3.16 1.17.92-.26 1.9-.38 2.88-.39.98.01 1.96.13 2.88.39 2.2-1.48 3.16-1.17 3.16-1.17.62 1.59.23 2.76.11 3.05.74.8 1.18 1.82 1.18 3.07 0 4.4-2.69 5.36-5.25 5.65.41.36.78 1.06.78 2.13 0 1.54-.01 2.78-.01 3.16 0 .31.21.68.8.56 4.56-1.52 7.85-5.82 7.85-10.9C23.5 5.65 18.35.5 12 .5Z"/>
+              </svg>
+              View on GitHub
+            </a>
+          </div>
+          <div class="hero-meta">
+            <span>MIT licensed</span>
+            <span class="dot">·</span>
+            <span>No credit card</span>
+            <span class="dot">·</span>
+            <span>Self-hosted</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- What you get for free -->
+      <section class="section">
+        <div class="container">
+          <div class="section-head">
+            <span class="eyebrow">What you get for free</span>
+            <h2>Real models. Real throughput. $0.</h2>
+            <p class="lead">These are production-grade models available right now on free tiers. No waitlist, no credit card, no quota purchase.</p>
+          </div>
+          <div class="free-grid">
+            <div class="free-card">
+              <div class="free-card-label">Groq</div>
+              <div class="free-card-model">Llama 3.3 70B</div>
+              <div class="free-card-note">Fast. Token-for-token one of the best open models available.</div>
+            </div>
+            <div class="free-card">
+              <div class="free-card-label">Google</div>
+              <div class="free-card-model">Gemini 2.5 Pro</div>
+              <div class="free-card-note">The best free reasoning model available today.</div>
+            </div>
+            <div class="free-card">
+              <div class="free-card-label">Mistral</div>
+              <div class="free-card-model">Small + Medium</div>
+              <div class="free-card-note">Strong instruction following. Good for structured output tasks.</div>
+            </div>
+            <div class="free-card free-card-highlight">
+              <div class="free-card-label">Stacked keys</div>
+              <div class="free-card-model">~450 req/min</div>
+              <div class="free-card-note">Add 3 keys per provider. FreeLLM round-robins across them.</div>
+            </div>
+            <div class="free-card">
+              <div class="free-card-label">SDK</div>
+              <div class="free-card-model">OpenAI-compatible</div>
+              <div class="free-card-note">The same Python or Node SDK you already use. No new libraries.</div>
+            </div>
+            <div class="free-card">
+              <div class="free-card-label">Providers</div>
+              <div class="free-card-model">8 total</div>
+              <div class="free-card-note">Groq, Gemini, Mistral, Cerebras, NVIDIA NIM, Cloudflare, GitHub Models, Ollama.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Migration -->
+      <section class="section section-dark">
+        <div class="container">
+          <div class="section-head">
+            <span class="eyebrow">The migration</span>
+            <h2>One line. That is the whole change.</h2>
+            <p class="lead">Your existing code works unchanged. You only add a base URL.</p>
+          </div>
+          <div class="migration-wrapper">
+            <div class="migration-block">
+              <div class="migration-label migration-label-before">Before</div>
+              <pre class="code-block"><code>client = openai.OpenAI(
+    api_key="sk-..."
+)</code></pre>
+            </div>
+            <div class="migration-arrow">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+              </svg>
+            </div>
+            <div class="migration-block">
+              <div class="migration-label migration-label-after">After</div>
+              <pre class="code-block"><code>client = openai.OpenAI(
+    api_key="sk-...",
+    base_url="http://localhost:3000/v1"
+)</code></pre>
+            </div>
+          </div>
+          <p class="migration-note">Every model call, streaming request, and structured output that worked before still works. FreeLLM handles the routing.</p>
+        </div>
+      </section>
+
+      <!-- Honest section -->
+      <section class="section">
+        <div class="container">
+          <div class="honest-card">
+            <div class="honest-card-inner">
+              <span class="eyebrow">When to move on</span>
+              <h2>FreeLLM is for zero-to-launch</h2>
+              <p>When you have real users who depend on uptime guarantees, move to a paid provider with an SLA. Free tiers can be slow during peak hours, and they can change without notice.</p>
+              <p>FreeLLM is optimized for the phase where you are figuring out whether the thing even works. Once you have paying users and a known traffic pattern, switch production to a provider with contractual commitments. Keep FreeLLM in dev and staging if you want.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Deploy -->
+      <section class="section cta" style="padding-top: 0;">
+        <div class="container">
+          <h2>Deploy in 2 minutes</h2>
+          <p>One-click Railway deploy. Bring your free-tier API keys. Point your base URL at the instance. Done.</p>
+          <div class="deploy-cta-row">
+            <a
+              href="https://railway.app/template/freellm"
+              target="_blank"
+              rel="noopener"
+              class="btn btn-primary"
+            >
+              Deploy to Railway
+              <span class="btn-icon-circle">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+                </svg>
+              </span>
+            </a>
+            <a
+              href="https://github.com/Devansh-365/freellm"
+              target="_blank"
+              rel="noopener"
+              class="btn btn-secondary"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.69-3.88-1.54-3.88-1.54-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.74.4-1.25.73-1.54-2.55-.29-5.24-1.27-5.24-5.66 0-1.25.45-2.27 1.18-3.07-.12-.29-.51-1.46.11-3.05 0 0 .96-.31 3.16 1.17.92-.26 1.9-.38 2.88-.39.98.01 1.96.13 2.88.39 2.2-1.48 3.16-1.17 3.16-1.17.62 1.59.23 2.76.11 3.05.74.8 1.18 1.82 1.18 3.07 0 4.4-2.69 5.36-5.25 5.65.41.36.78 1.06.78 2.13 0 1.54-.01 2.78-.01 3.16 0 .31.21.68.8.56 4.56-1.52 7.85-5.82 7.85-10.9C23.5 5.65 18.35.5 12 .5Z"/>
+              </svg>
+              View on GitHub
+            </a>
+          </div>
+        </div>
+      </section>
+
+    </main>
+    <LandingFooter />
+  </body>
+</html>
+
+<style>
+  .page-hero {
+    position: relative;
+    padding: 8rem 0 5rem;
+    text-align: center;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .page-hero::before {
+    content: "";
+    position: absolute;
+    top: -10%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 600px;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: -1;
+    background: radial-gradient(
+      ellipse at center,
+      hsl(224 14% 20% / 0.5) 0%,
+      hsl(224 14% 14% / 0.2) 40%,
+      transparent 70%
+    );
+  }
+
+  .page-hero .eyebrow {
+    margin-bottom: 1.5rem;
+  }
+
+  .page-hero h1 {
+    font-family: "Geist", sans-serif;
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    margin: 0 0 1.5rem;
+    color: #ffffff;
+    text-wrap: balance;
+  }
+
+  .page-subtitle {
+    font-size: 1.125rem;
+    line-height: 1.6;
+    color: hsl(0 0% 65%);
+    max-width: 640px;
+    margin: 0 auto 2.5rem;
+    text-wrap: pretty;
+    letter-spacing: -0.01em;
+  }
+
+  .hero-cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.875rem;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .hero-meta {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.875rem;
+    font-family: "Geist Mono", monospace;
+    font-size: 0.75rem;
+    color: hsl(0 0% 50%);
+    letter-spacing: 0.01em;
+  }
+
+  .hero-meta .dot {
+    color: hsl(0 0% 25%);
+  }
+
+  /* Free grid */
+  .free-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+
+  @media (max-width: 768px) {
+    .free-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 480px) {
+    .free-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .free-card {
+    border-radius: 14px;
+    border: 1px solid hsl(224 12% 22%);
+    background: hsl(224 14% 15%);
+    padding: 1.75rem 1.5rem;
+    transition: all 400ms cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .free-card:hover {
+    transform: translateY(-2px);
+    border-color: hsl(224 12% 28%);
+  }
+
+  .free-card-highlight {
+    border-color: hsl(158 50% 40% / 0.3);
+    background: hsl(158 50% 40% / 0.06);
+  }
+
+  .free-card-label {
+    font-family: "Geist Mono", monospace;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: hsl(0 0% 50%);
+    margin-bottom: 0.5rem;
+  }
+
+  .free-card-model {
+    font-family: "Geist", sans-serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: hsl(158 50% 65%);
+    margin-bottom: 0.625rem;
+  }
+
+  .free-card-note {
+    font-size: 0.875rem;
+    color: hsl(0 0% 60%);
+    line-height: 1.5;
+  }
+
+  /* Migration */
+  .section-dark {
+    background: hsl(228 18% 6%);
+    border-top: 1px solid hsl(225 12% 16% / 0.5);
+    border-bottom: 1px solid hsl(225 12% 16% / 0.5);
+  }
+
+  .migration-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    max-width: 860px;
+    margin: 0 auto 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .migration-block {
+    flex: 1;
+    min-width: 280px;
+  }
+
+  .migration-label {
+    font-family: "Geist Mono", monospace;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 0.75rem;
+  }
+
+  .migration-label-before {
+    color: hsl(0 0% 45%);
+  }
+
+  .migration-label-after {
+    color: hsl(158 50% 60%);
+  }
+
+  .migration-arrow {
+    color: hsl(0 0% 35%);
+    flex-shrink: 0;
+  }
+
+  .code-block {
+    background: #1E293B;
+    border-radius: 12px;
+    border: 1px solid hsl(224 12% 26%);
+    padding: 1.25rem 1.5rem;
+    margin: 0;
+    font-family: "Geist Mono", monospace;
+    font-size: 0.875rem;
+    line-height: 1.7;
+    color: hsl(0 0% 88%);
+    overflow-x: auto;
+  }
+
+  .migration-note {
+    text-align: center;
+    font-size: 0.9rem;
+    color: hsl(0 0% 50%);
+    max-width: 540px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* Honest card */
+  .honest-card {
+    border-radius: 16px;
+    border: 1px solid hsl(224 12% 22%);
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .honest-card-inner {
+    background: hsl(224 14% 15%);
+    border-radius: 15px;
+    padding: 3rem;
+  }
+
+  .honest-card-inner .eyebrow {
+    margin-bottom: 1.25rem;
+  }
+
+  .honest-card-inner h2 {
+    font-family: "Geist", sans-serif;
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin: 0 0 1rem;
+    color: #ffffff;
+    text-align: left;
+  }
+
+  .honest-card-inner p {
+    font-size: 0.9375rem;
+    color: hsl(0 0% 60%);
+    line-height: 1.65;
+    margin: 0 0 0.875rem;
+  }
+
+  .honest-card-inner p:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Deploy CTA */
+  .deploy-cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.875rem;
+    justify-content: center;
+  }
+
+  @media (max-width: 768px) {
+    .page-hero {
+      padding: 6rem 0 4rem;
+    }
+
+    .migration-wrapper {
+      flex-direction: column;
+    }
+
+    .migration-arrow {
+      transform: rotate(90deg);
+    }
+
+    .honest-card-inner {
+      padding: 2rem;
+    }
+  }
+</style>

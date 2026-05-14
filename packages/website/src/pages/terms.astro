@@ -1,0 +1,181 @@
+---
+import "../styles/theme.css";
+import "../styles/landing.css";
+import LandingHeader from "../components/landing-header.astro";
+import LandingFooter from "../components/landing-footer.astro";
+---
+
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <meta name="description" content="Terms of service for FreeLLM, the open-source LLM gateway." />
+    <title>Terms of Service · FreeLLM</title>
+  </head>
+  <body>
+    <LandingHeader />
+    <main class="legal-main">
+      <div class="container">
+        <article class="legal-article">
+          <a href="/" class="back-link">← Back to home</a>
+
+          <h1>Terms of Service</h1>
+          <p class="legal-meta">Last updated: May 2025</p>
+
+          <p>
+            FreeLLM is free, open-source software. Using it is straightforward,
+            and so are the terms.
+          </p>
+
+          <h2>MIT license</h2>
+          <p>
+            FreeLLM is released under the
+            <a href="https://github.com/Devansh-365/freellm/blob/main/LICENSE" target="_blank" rel="noopener">MIT license</a>.
+            You can use it, modify it, and distribute it for any purpose,
+            including commercial use, at no cost. The full license text is in the
+            repository.
+          </p>
+
+          <h2>Provided as-is</h2>
+          <p>
+            FreeLLM is provided without warranty of any kind. The maintainers
+            make no guarantees about uptime, correctness, fitness for a
+            particular purpose, or anything else. You use it at your own risk.
+            There is no SLA.
+          </p>
+
+          <h2>Your responsibility for provider terms</h2>
+          <p>
+            FreeLLM routes your requests to third-party LLM providers: Groq,
+            Google Gemini, Mistral, Cerebras, NVIDIA NIM, Ollama, and others you
+            configure. Each of those providers has their own terms of service.
+          </p>
+          <p>
+            You are responsible for reading and complying with each provider's
+            terms. FreeLLM does not modify or intercept what you send to
+            providers. If you violate a provider's terms (automated abuse, free
+            tier misuse, scraping, spam), that is on you. The maintainers of
+            FreeLLM are not party to your relationship with any provider.
+          </p>
+
+          <h2>Free tier use</h2>
+          <p>
+            FreeLLM is designed to help developers get the most out of free API
+            tiers. Using it to run bots, scrapers, or other high-volume automated
+            workloads in a way that violates a provider's acceptable use policy
+            is your responsibility, not ours. If a provider bans your account or
+            rate-limits your keys, that is between you and the provider.
+          </p>
+
+          <h2>No liability for costs or data loss</h2>
+          <p>
+            The maintainers are not liable for API costs you incur, rate limit
+            bans, data loss, or any other damages arising from your use of
+            FreeLLM. This includes situations where a bug in FreeLLM causes
+            unexpected behavior with a provider's API.
+          </p>
+
+          <h2>No support obligation</h2>
+          <p>
+            FreeLLM is a community project maintained on a best-effort basis.
+            There is no paid support tier and no obligation to respond to issues
+            or fix bugs on any timeline.
+          </p>
+
+          <h2>Changes to these terms</h2>
+          <p>
+            These terms may be updated at any time. Changes are tracked in the
+            repository's commit history. Continued use of FreeLLM after a change
+            constitutes acceptance of the updated terms.
+          </p>
+
+          <h2>Contact</h2>
+          <p>
+            Questions? Open an issue at
+            <a href="https://github.com/Devansh-365/freellm/issues" target="_blank" rel="noopener">github.com/Devansh-365/freellm/issues</a>.
+          </p>
+        </article>
+      </div>
+    </main>
+    <LandingFooter />
+  </body>
+</html>
+
+<style>
+  .legal-main {
+    padding: 5rem 0 8rem;
+  }
+
+  .legal-article {
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  .back-link {
+    display: inline-block;
+    font-family: "Geist Mono", monospace;
+    font-size: 0.8125rem;
+    color: hsl(0 0% 50%);
+    text-decoration: none;
+    margin-bottom: 3rem;
+    transition: color 280ms cubic-bezier(0.32, 0.72, 0, 1);
+    letter-spacing: -0.005em;
+  }
+
+  .back-link:hover {
+    color: hsl(158 50% 60%);
+  }
+
+  .legal-article h1 {
+    font-family: "Geist", sans-serif;
+    font-size: clamp(2rem, 5vw, 2.75rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1.05;
+    color: #ffffff;
+    margin: 0 0 0.75rem;
+  }
+
+  .legal-meta {
+    font-family: "Geist Mono", monospace;
+    font-size: 0.75rem;
+    color: hsl(0 0% 40%);
+    margin: 0 0 3rem;
+    letter-spacing: 0.01em;
+  }
+
+  .legal-article h2 {
+    font-family: "Geist", sans-serif;
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    color: #ffffff;
+    margin: 2.5rem 0 0.75rem;
+  }
+
+  .legal-article p {
+    font-size: 0.9375rem;
+    line-height: 1.7;
+    color: hsl(0 0% 65%);
+    margin: 0 0 1.25rem;
+    letter-spacing: -0.005em;
+  }
+
+  .legal-article a {
+    color: hsl(158 50% 55%);
+    text-decoration: none;
+    transition: color 280ms cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .legal-article a:hover {
+    color: hsl(158 50% 70%);
+  }
+</style>

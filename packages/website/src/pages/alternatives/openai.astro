@@ -1,0 +1,403 @@
+---
+import "../../styles/theme.css";
+import "../../styles/landing.css";
+import LandingHeader from "../../components/landing-header.astro";
+import LandingFooter from "../../components/landing-footer.astro";
+
+const canonicalURL = "https://freellms.vercel.app/alternatives/openai/";
+---
+
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="canonical" href={canonicalURL} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <title>FreeLLM vs OpenAI API: Get GPT-quality models at zero cost</title>
+    <meta
+      name="description"
+      content="FreeLLM is a free, self-hosted OpenAI-compatible gateway with 32+ models. Compare it to the OpenAI API and decide which fits your use case."
+    />
+    <meta property="og:title" content="FreeLLM vs OpenAI API: Get GPT-quality models at zero cost" />
+    <meta
+      property="og:description"
+      content="FreeLLM routes to free-tier providers including GitHub Models, Groq, and Gemini. Same OpenAI SDK. Zero cost."
+    />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+  </head>
+  <body>
+    <LandingHeader />
+    <main>
+      <article class="alt-page">
+        <span class="page-eyebrow">comparison</span>
+        <h1>FreeLLM vs OpenAI API</h1>
+        <p class="lead">
+          OpenAI's API is great, but every token costs money. FreeLLM routes to free-tier providers
+          including GitHub Models, which serves GPT-4o-mini, plus Groq, Gemini, Mistral, and five
+          others. You keep the exact same OpenAI SDK. You swap one URL.
+        </p>
+
+        <h2>Side-by-side comparison</h2>
+
+        <div class="table-shell">
+          <table class="alt-table">
+            <thead>
+              <tr>
+                <th>Feature</th>
+                <th class="freellm-col">FreeLLM</th>
+                <th>OpenAI API</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Cost</td>
+                <td class="freellm-col yes">$0 (free tiers only)</td>
+                <td>Pay per token</td>
+              </tr>
+              <tr>
+                <td>Models available</td>
+                <td class="freellm-col">32+ (Llama 3.3 70B, Gemini 2.5 Pro, GPT-4o-mini via GitHub Models, Mistral, Cerebras)</td>
+                <td>GPT-4o, GPT-4o-mini, o1, o3 and others</td>
+              </tr>
+              <tr>
+                <td>Setup time</td>
+                <td class="freellm-col">~2 minutes (one-click deploy)</td>
+                <td>Immediate (managed service)</td>
+              </tr>
+              <tr>
+                <td>Rate limits</td>
+                <td class="freellm-col">~450 req/min (3 keys x 8 providers, automatic failover)</td>
+                <td>Tier-based, increases with spend</td>
+              </tr>
+              <tr>
+                <td>Self-hosted</td>
+                <td class="freellm-col yes">Yes (MIT licensed)</td>
+                <td class="no">No (managed only)</td>
+              </tr>
+              <tr>
+                <td>OpenAI SDK compatible</td>
+                <td class="freellm-col yes">Yes</td>
+                <td class="yes">Yes</td>
+              </tr>
+              <tr>
+                <td>Automatic failover</td>
+                <td class="freellm-col yes">Yes (8 providers)</td>
+                <td class="no">No</td>
+              </tr>
+              <tr>
+                <td>Dashboard</td>
+                <td class="freellm-col yes">Real-time, included</td>
+                <td class="yes">Yes (usage.openai.com)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2>When to use OpenAI API instead</h2>
+        <p>
+          OpenAI's API makes more sense in these situations:
+        </p>
+        <ul>
+          <li>You need GPT-4o full, o1, or o3 specifically. FreeLLM's free tiers do not include those models.</li>
+          <li>You need a guaranteed uptime SLA. Free-tier providers do not offer one.</li>
+          <li>You are running production traffic where a 429 or cold-start is not acceptable.</li>
+          <li>You want a single vendor to call for support.</li>
+        </ul>
+        <p>
+          These are real tradeoffs. If any of them matter for your project, pay OpenAI.
+        </p>
+
+        <hr class="divider" />
+
+        <h2>When FreeLLM makes sense</h2>
+        <p>
+          FreeLLM fits well when you are in one of these situations:
+        </p>
+        <ul>
+          <li>Prototyping or exploring ideas. You do not want an API bill while figuring things out.</li>
+          <li>Testing prompts across multiple models. FreeLLM lets you compare Llama, Gemini, and Mistral responses without managing separate SDKs.</li>
+          <li>Side projects with low or bursty traffic. The automatic failover absorbs rate limit spikes so you do not have to.</li>
+          <li>You want dev costs at zero and are comfortable with best-effort reliability.</li>
+        </ul>
+
+        <hr class="divider" />
+
+        <h2>The code change is one line</h2>
+        <p>
+          If you already use the OpenAI SDK, switching to FreeLLM for development is a single
+          environment variable change. Your production code can keep pointing at OpenAI.
+        </p>
+
+        <div class="code-shell">
+          <div class="code-label">python — before (OpenAI)</div>
+          <pre><code><span class="token-keyword">from</span> <span class="token-var">openai</span> <span class="token-keyword">import</span> <span class="token-var">OpenAI</span>
+
+<span class="token-var">client</span> = <span class="token-var">OpenAI</span>(
+    <span class="token-var">api_key</span>=<span class="token-string">"sk-..."</span>
+)</code></pre>
+        </div>
+
+        <div class="code-shell">
+          <div class="code-label">python — after (FreeLLM)</div>
+          <pre><code><span class="token-keyword">from</span> <span class="token-var">openai</span> <span class="token-keyword">import</span> <span class="token-var">OpenAI</span>
+
+<span class="token-var">client</span> = <span class="token-var">OpenAI</span>(
+    <span class="token-var">base_url</span>=<span class="token-string">"https://your-freellm-instance/v1"</span>,  <span class="token-comment"># only change</span>
+    <span class="token-var">api_key</span>=<span class="token-string">"your-freellm-key"</span>
+)</code></pre>
+        </div>
+
+        <div class="code-shell">
+          <div class="code-label">node.js — after (FreeLLM)</div>
+          <pre><code><span class="token-keyword">import</span> <span class="token-var">OpenAI</span> <span class="token-keyword">from</span> <span class="token-string">"openai"</span>;
+
+<span class="token-keyword">const</span> <span class="token-var">client</span> = <span class="token-keyword">new</span> <span class="token-var">OpenAI</span>(&lbrace;
+  <span class="token-var">baseURL</span>: <span class="token-string">"https://your-freellm-instance/v1"</span>,  <span class="token-comment">// only change</span>
+  <span class="token-var">apiKey</span>: <span class="token-string">"your-freellm-key"</span>,
+&rbrace;);</code></pre>
+        </div>
+
+        <div class="cta-block">
+          <p>Deploy FreeLLM to Railway or Render in about 2 minutes. Bring your own free-tier API keys.</p>
+          <a href="/quickstart/" class="btn-primary">Deploy FreeLLM in 2 minutes</a>
+        </div>
+      </article>
+    </main>
+    <LandingFooter />
+  </body>
+</html>
+
+<style>
+  .alt-page {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 5rem 1.5rem 8rem;
+  }
+
+  .alt-page .page-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0.875rem;
+    border-radius: 999px;
+    background: hsla(158, 50%, 40%, 0.08);
+    border: 1px solid hsla(158, 50%, 40%, 0.18);
+    color: hsl(158, 50%, 65%);
+    font-family: "Geist Mono", monospace;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: 1.5rem;
+  }
+
+  .alt-page h1 {
+    font-family: "Geist", sans-serif;
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1.05;
+    color: #ffffff;
+    margin: 0 0 1.25rem;
+    text-wrap: balance;
+  }
+
+  .alt-page .lead {
+    font-size: 1.0625rem;
+    line-height: 1.65;
+    color: hsl(0, 0%, 65%);
+    margin: 0 0 3.5rem;
+    letter-spacing: -0.005em;
+  }
+
+  .alt-page h2 {
+    font-family: "Geist", sans-serif;
+    font-size: 1.375rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: #ffffff;
+    margin: 3rem 0 1rem;
+  }
+
+  .alt-page p {
+    font-size: 0.9375rem;
+    line-height: 1.65;
+    color: hsl(0, 0%, 65%);
+    margin: 0 0 1rem;
+  }
+
+  .alt-page ul {
+    margin: 0 0 1.5rem;
+    padding-left: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .alt-page ul li {
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: hsl(0, 0%, 65%);
+  }
+
+  .table-shell {
+    border-radius: 14px;
+    border: 1px solid hsl(224, 12%, 22%);
+    overflow: hidden;
+    margin: 2rem 0 3rem;
+  }
+
+  .alt-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: "Geist", sans-serif;
+    font-size: 0.9rem;
+    background: hsl(224, 14%, 15%);
+  }
+
+  .alt-table th {
+    padding: 0.875rem 1.25rem;
+    text-align: left;
+    background: hsl(224, 14%, 13%);
+    color: hsl(158, 50%, 65%);
+    font-family: "Geist Mono", monospace;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    border-bottom: 1px solid hsl(224, 12%, 22%);
+  }
+
+  .alt-table td {
+    padding: 0.875rem 1.25rem;
+    border-bottom: 1px solid hsla(158, 50%, 40%, 0.07);
+    color: hsl(0, 0%, 75%);
+    vertical-align: top;
+  }
+
+  .alt-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .alt-table tbody tr:hover {
+    background: hsla(158, 50%, 40%, 0.03);
+  }
+
+  .alt-table td:first-child {
+    color: hsl(0, 0%, 85%);
+    font-weight: 500;
+  }
+
+  .alt-table .freellm-col {
+    background: hsla(158, 50%, 40%, 0.05);
+  }
+
+  .yes {
+    color: hsl(158, 50%, 60%);
+    font-weight: 600;
+    font-family: "Geist Mono", monospace;
+  }
+
+  .no {
+    color: hsl(0, 50%, 55%);
+    font-family: "Geist Mono", monospace;
+  }
+
+  .partial {
+    color: hsl(38, 90%, 55%);
+    font-family: "Geist Mono", monospace;
+  }
+
+  .code-shell {
+    border-radius: 14px;
+    border: 1px solid hsl(224, 12%, 22%);
+    overflow: hidden;
+    margin: 1.5rem 0 2.5rem;
+  }
+
+  .code-label {
+    padding: 0.625rem 1.25rem;
+    background: hsl(224, 14%, 13%);
+    border-bottom: 1px solid hsl(224, 12%, 22%);
+    font-family: "Geist Mono", monospace;
+    font-size: 0.75rem;
+    color: hsl(0, 0%, 50%);
+    letter-spacing: 0.05em;
+  }
+
+  .code-shell pre {
+    margin: 0;
+    padding: 1.5rem 1.25rem;
+    background: hsl(224, 14%, 15%);
+    font-family: "Geist Mono", monospace;
+    font-size: 0.875rem;
+    line-height: 1.7;
+    color: hsl(0, 0%, 88%);
+    overflow-x: auto;
+  }
+
+  .code-shell code {
+    background: transparent;
+    border: none;
+    padding: 0;
+    color: inherit;
+    font-size: inherit;
+  }
+
+  .token-comment { color: hsl(0, 0%, 45%); }
+  .token-keyword { color: hsl(200, 80%, 65%); }
+  .token-string  { color: hsl(158, 50%, 60%); }
+  .token-var     { color: hsl(0, 0%, 85%); }
+
+  .cta-block {
+    margin-top: 4rem;
+    padding: 2.5rem;
+    border-radius: 16px;
+    border: 1px solid hsla(158, 50%, 40%, 0.2);
+    background: hsla(158, 50%, 40%, 0.04);
+    text-align: center;
+  }
+
+  .cta-block p {
+    color: hsl(0, 0%, 65%);
+    margin-bottom: 1.5rem;
+  }
+
+  .cta-block .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 999px;
+    background: hsl(158, 50%, 46%);
+    color: #04140a;
+    font-family: "Geist", sans-serif;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 280ms cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .cta-block .btn-primary:hover {
+    background: hsl(158, 50%, 50%);
+    transform: translateY(-1px);
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid hsl(224, 12%, 20%);
+    margin: 3rem 0;
+  }
+</style>

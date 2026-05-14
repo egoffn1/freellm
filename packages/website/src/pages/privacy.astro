@@ -1,0 +1,174 @@
+---
+import "../styles/theme.css";
+import "../styles/landing.css";
+import LandingHeader from "../components/landing-header.astro";
+import LandingFooter from "../components/landing-footer.astro";
+---
+
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <meta name="description" content="Privacy policy for FreeLLM, the open-source LLM gateway." />
+    <title>Privacy Policy · FreeLLM</title>
+  </head>
+  <body>
+    <LandingHeader />
+    <main class="legal-main">
+      <div class="container">
+        <article class="legal-article">
+          <a href="/" class="back-link">← Back to home</a>
+
+          <h1>Privacy Policy</h1>
+          <p class="legal-meta">Last updated: May 2025</p>
+
+          <p>
+            FreeLLM is open-source software. The project itself does not collect,
+            store, or process any personal data. This page explains what data
+            exists and where it lives.
+          </p>
+
+          <h2>The software</h2>
+          <p>
+            When you self-host FreeLLM, everything runs on your own
+            infrastructure. Your API keys, your request payloads, and your usage
+            logs never leave your machine or your server. FreeLLM has no
+            telemetry, no analytics, and no call-home mechanism of any kind.
+          </p>
+
+          <h2>The website</h2>
+          <p>
+            The freellms.vercel.app site is hosted on Vercel. Vercel may collect
+            standard server-side request logs (IP address, user agent, referrer,
+            response time) as part of normal web hosting operations. This data is
+            subject to <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener">Vercel's privacy policy</a>.
+          </p>
+          <p>
+            We do not run Google Analytics, tracking pixels, or any third-party
+            analytics scripts on this site. We do not collect email addresses.
+            There are no user accounts on this site.
+          </p>
+
+          <h2>Cookies</h2>
+          <p>
+            This site sets no cookies of its own. Vercel's infrastructure may set
+            cookies for routing or security purposes. No advertising cookies are
+            present.
+          </p>
+
+          <h2>Your API keys</h2>
+          <p>
+            If you self-host FreeLLM, your API keys are stored wherever you put
+            them. FreeLLM reads keys from environment variables you configure.
+            Nothing is sent to us. We have no access to your keys or your
+            provider accounts.
+          </p>
+
+          <h2>Third-party providers</h2>
+          <p>
+            FreeLLM routes requests to LLM providers (Groq, Gemini, Mistral,
+            Cerebras, NVIDIA NIM, Ollama, and others). When you make a request
+            through FreeLLM, your prompt is sent to the provider you configured.
+            Each provider has their own privacy policy and data handling
+            practices. FreeLLM does not mediate or modify what those providers do
+            with your data.
+          </p>
+
+          <h2>Open source</h2>
+          <p>
+            FreeLLM is released under the MIT license. You can read the full
+            source code and verify exactly what it does at
+            <a href="https://github.com/Devansh-365/freellm" target="_blank" rel="noopener">github.com/Devansh-365/freellm</a>.
+          </p>
+
+          <h2>Contact</h2>
+          <p>
+            Questions or concerns? Open an issue at
+            <a href="https://github.com/Devansh-365/freellm/issues" target="_blank" rel="noopener">github.com/Devansh-365/freellm/issues</a>.
+            That is the fastest way to reach the maintainers.
+          </p>
+        </article>
+      </div>
+    </main>
+    <LandingFooter />
+  </body>
+</html>
+
+<style>
+  .legal-main {
+    padding: 5rem 0 8rem;
+  }
+
+  .legal-article {
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  .back-link {
+    display: inline-block;
+    font-family: "Geist Mono", monospace;
+    font-size: 0.8125rem;
+    color: hsl(0 0% 50%);
+    text-decoration: none;
+    margin-bottom: 3rem;
+    transition: color 280ms cubic-bezier(0.32, 0.72, 0, 1);
+    letter-spacing: -0.005em;
+  }
+
+  .back-link:hover {
+    color: hsl(158 50% 60%);
+  }
+
+  .legal-article h1 {
+    font-family: "Geist", sans-serif;
+    font-size: clamp(2rem, 5vw, 2.75rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1.05;
+    color: #ffffff;
+    margin: 0 0 0.75rem;
+  }
+
+  .legal-meta {
+    font-family: "Geist Mono", monospace;
+    font-size: 0.75rem;
+    color: hsl(0 0% 40%);
+    margin: 0 0 3rem;
+    letter-spacing: 0.01em;
+  }
+
+  .legal-article h2 {
+    font-family: "Geist", sans-serif;
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    color: #ffffff;
+    margin: 2.5rem 0 0.75rem;
+  }
+
+  .legal-article p {
+    font-size: 0.9375rem;
+    line-height: 1.7;
+    color: hsl(0 0% 65%);
+    margin: 0 0 1.25rem;
+    letter-spacing: -0.005em;
+  }
+
+  .legal-article a {
+    color: hsl(158 50% 55%);
+    text-decoration: none;
+    transition: color 280ms cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .legal-article a:hover {
+    color: hsl(158 50% 70%);
+  }
+</style>
