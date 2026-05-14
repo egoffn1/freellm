@@ -3,6 +3,8 @@ import "../../styles/theme.css";
 import "../../styles/landing.css";
 import LandingHeader from "../../components/landing-header.astro";
 import LandingFooter from "../../components/landing-footer.astro";
+
+const canonicalURL = "https://freellms.vercel.app/for/startups/";
 ---
 
 <!doctype html>
@@ -11,6 +13,7 @@ import LandingFooter from "../../components/landing-footer.astro";
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="canonical" href={canonicalURL} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -27,8 +30,10 @@ import LandingFooter from "../../components/landing-footer.astro";
       content="Pre-PMF startups use FreeLLM to route dev and staging environments to free LLM providers. Keep OpenAI for production. Cut non-production API costs to zero."
     />
     <meta property="og:image" content="/og-image.png" />
+    <meta property="og:url" content={canonicalURL} />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="/og-image.png" />
     <title>FreeLLM for Startups: Cut LLM costs in dev and staging to zero</title>
   </head>
   <body>
