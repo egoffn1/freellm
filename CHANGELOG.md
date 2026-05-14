@@ -5,6 +5,121 @@ All notable changes to FreeLLM are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-05-14
+
+Fixes two production bugs (streaming token tracking and Cerebras crashing
+on tool-calling requests), adds a JSON schema validation warning header so
+callers know immediately when a structured-output response is malformed, and
+refactors the gateway's observability internals for better testability.
+
+### Fixed
+
+#### Streaming token usage now recorded against virtual key caps
+
+When a virtual key carried a `dailyTokenCap`, streaming responses always
+recorded 0 tokens against the cap, making it possible to exhaust real
+provider quota without ever hitting the soft limit. The gateway now injects
+`stream_options: { include_usage: true }` on the upstream request when a
+token-capped virtual key is active, captures the usage chunk emitted at
+the end of the SSE stream, and records the real token count. The dashboard
+`usageTracker` also receives the real counts, so the per-provider token
+totals are accurate for streaming workloads.
+
+Per-provider `supportsStreamUsage` flags gate whether the injected option
+is sent, so providers that reject the field are never affected.
+
+#### Cerebras no longer crashes tool-calling requests
+
+Cerebras does not support the `tools` / `tool_choice` fields and returns
+400 when they are present. Any `free-smart` or `free-fast` request that
+included tools could land on Cerebras, triggering a 3-retry cascade and
+ultimately a 502 to callers. The Vercel AI SDK reported this as
+`AI_RetryError: Failed after 3 attempts. Last error: Provider cerebras returned 400`.
+
+A new `supportsTools: boolean` capability on `ProviderAdapter` (default
+`true` in `BaseProvider`) lets providers opt out. `CerebrasProvider` sets
+it to `false`. The router's `pickProvider` now adds any provider with
+`supportsTools = false` to the effective exclusion set whenever the request
+carries one or more tools. The exclusion applies to both meta-model routing
+(`free`, `free-fast`, `free-smart`) and direct-model routing before the
+first attempt is ever made, so no retry or failover is needed.
+
+### Added
+
+#### JSON schema validation warning header
+
+When a request uses `response_format: { type: "json_schema" }` and the
+upstream response content fails structural validation against the requested
+schema, the response now carries:
+
+```
+X-FreeLLM-Warning: schema-validation-failed
+```
+
+The validation is lightweight and dependency-free:
+- Parses the response content as JSON; failure → warning
+- If `schema.type === "object"`, verifies the parsed value is a plain
+  object (not an array or scalar); failure → warning
+- If `schema.required` is an array, verifies every required key is present
+  at the top level; missing key → warning
+
+The header is additive. Both warnings can appear together:
+
+```
+X-FreeLLM-Warning: json-possibly-truncated, schema-validation-failed
+```
+
+`json_object` mode has no schema to validate against and is unaffected.
+`json_schema` responses are also never served from the response cache
+(cache now skips both storage and retrieval for this format) because
+schema-validation annotations depend on fresh upstream content.
+
+All JSON-mode logic — the NIM `nvext.guided_json` translation, the
+truncation warning, and the new schema validation — is consolidated in a
+new `src/gateway/json-mode.ts` module. Previously these concerns were split
+between `NimProvider.mapRequest`, an inline check in the chat route, and
+nothing (schema validation did not exist).
+
+#### `FlushResult` structured return from `StreamingPipeline.flush()`
+
+`StreamingPipeline.flush()` previously returned a plain `string` and
+exposed usage as a side-effect property (`lastUsage`). It now returns
+`{ output: string; usage?: StreamUsage }`, making the usage handoff
+explicit and removing the informal property access that coupled the chat
+route to internal pipeline state.
+
+### Changed
+
+#### ObservabilityStore extracted from GatewayRouter
+
+`RequestLog`, `UsageTracker`, and `ResponseCache` now live in a single
+`ObservabilityStore` class that `GatewayRouter` accepts as a constructor
+argument. `GatewayRouter` retains its existing public properties as
+delegates so all call sites are unchanged. The factory in `create.ts`
+creates the store and exposes it directly on the `Gateway` object,
+making it easy to inject fakes in tests without constructing a full
+router.
+
+### Tests
+
+295 passing across 26 files (up from 286 across 24 files):
+
+- `tests/streaming-virtual-keys.test.ts` (new): 3 integration tests
+  verifying that `stream_options.include_usage` is injected for token-capped
+  virtual keys, that the recorded token count matches real usage (15 = 10+5),
+  and that no injection occurs for keys without a token cap.
+- `tests/json-schema-validation.test.ts` (new): 6 integration tests
+  covering valid response (no warning), missing required field, invalid JSON,
+  wrong top-level type, `json_object` mode (no schema, no warning), and the
+  combined truncation + validation warning case.
+- `tests/json-truncation.test.ts`: updated the `json_schema + finish_reason=length`
+  assertion from `toBe` to `toContain`; schema validation now correctly also
+  fires when truncated content is unparseable, and both warnings are legitimate.
+
+[1.6.0]: https://github.com/Devansh-365/freellm/releases/tag/v1.6.0
+
+---
+
 ## [1.5.2] - 2026-04-13
 
 Adds two new providers: Cloudflare Workers AI and GitHub Models. Both
