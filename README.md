@@ -3,12 +3,12 @@
 # FreeLLM
 
 ![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
-![Version](https://img.shields.io/badge/version-v1.5.2-blue?style=flat-square)
+![Version](https://img.shields.io/badge/version-v1.7.0-blue?style=flat-square)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?style=flat-square&logo=typescript&logoColor=white)
 ![Docker](https://img.shields.io/badge/docker-ghcr.io-2496ED?style=flat-square&logo=docker&logoColor=white)
 ![Providers](https://img.shields.io/badge/Providers-8-blueviolet?style=flat-square)
 ![Models](https://img.shields.io/badge/Models-32+-orange?style=flat-square)
-![Tests](https://img.shields.io/badge/tests-286%20passing-success?style=flat-square)
+![Tests](https://img.shields.io/badge/tests-313%20passing-success?style=flat-square)
 
 ### You shouldn't need a credit card to call an LLM.
 
@@ -65,6 +65,7 @@ The request goes to the fastest available provider. If that one is rate-limited 
 - **Virtual sub-keys.** Issue scoped keys with per-key request and token caps.
 - **Per-user rate limits.** Safely expose the gateway to your app's end users.
 - **Browser-safe tokens.** Short-lived HMAC-signed tokens for static sites, no auth backend needed.
+- **Vision/multimodal routing.** Send image URLs with any meta-model and FreeLLM automatically routes to a vision-capable provider. Direct requests to non-vision models fail fast with a clear error.
 - **Streaming tool calls that work.** Gemini and Ollama streaming tool_call bugs normalized at the gateway.
 - **JSON mode across all providers.** `json_schema` works on NIM (translated to `guided_json` automatically), and truncated JSON responses carry a warning header so you don't discover the break at parse time.
 - **Gemini reasoning handled for you.** Gemini 2.5 models burn most of your output budget on internal thinking by default. FreeLLM sets the right `reasoning_effort` per model so your `max_tokens` actually buys you output.
@@ -181,7 +182,7 @@ CACHE_TTL_MS=3600000     # 1 hour
 CACHE_MAX_ENTRIES=1000
 ```
 
-Streaming and error responses are never cached. Cached responses are marked with `x_freellm_cached: true`.
+Streaming, error, and vision/image responses are never cached. Cached responses are marked with `x_freellm_cached: true`.
 
 ### Transparent routing and strict mode
 
@@ -334,11 +335,46 @@ curl https://your-gateway/v1/chat/completions \
 
 With `"high"` and a larger budget (4000+), the model gets room for both thinking and output. The point is: you choose the trade-off, not Google's default.
 
+### Vision and multimodal routing
+
+Send image URLs with any meta-model and FreeLLM automatically routes to a vision-capable provider. You don't need to know which provider supports images — the router handles it.
+
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://localhost:3000/v1", api_key="unused")
+response = client.chat.completions.create(
+    model="free",  # or free-fast, free-smart — any meta-model
+    messages=[{
+        "role": "user",
+        "content": [
+            {"type": "text", "text": "What is in this image?"},
+            {"type": "image_url", "image_url": {"url": "https://example.com/photo.jpg"}},
+        ],
+    }],
+)
+print(response.choices[0].message.content)
+```
+
+Vision-capable models across providers:
+
+| Provider | Vision models |
+|----------|--------------|
+| **Groq** | Llama 4 Scout 17B |
+| **Gemini** | Gemini 2.5 Flash, Gemini 2.5 Pro |
+| **GitHub Models** | GPT-4o-mini, GPT-4.1-mini, Llama 3.2 11B Vision |
+| **Cloudflare** | Mistral Small 3.1 |
+| **Ollama** | Auto-detected from model name (llava, moondream, bakllava, etc.) |
+
+If you request a specific model that doesn't support vision (e.g. `groq/llama-3.3-70b-versatile`) but include an image, FreeLLM returns a clear 400 error up front — no provider call, no wasted quota.
+
+Vision responses are never cached (image payloads are large, near-zero repeat rate, and the cache would grow unbounded).
+
 ### JSON mode across providers
 
 FreeLLM accepts `response_format: { type: "json_object" }` and `{ type: "json_schema", json_schema: { schema: {...} } }` and forwards them to the upstream provider. Most providers support this natively. For NVIDIA NIM, which uses a proprietary `guided_json` parameter instead, FreeLLM translates the standard format automatically so you don't have to special-case your code per provider.
 
-When a JSON-mode response hits `max_tokens` and the output is almost certainly broken (missing closing brackets, truncated strings), the response carries a `X-FreeLLM-Warning: json-possibly-truncated` header. You'll know the JSON is incomplete before you try to parse it.
+When a JSON-mode response hits `max_tokens` and the output is almost certainly broken (missing closing brackets, truncated strings), the response carries a `X-FreeLLM-Warning: json-possibly-truncated` header. When a `json_schema` response fails schema validation, the response carries `X-FreeLLM-Warning: schema-validation-failed`. You'll know before you try to parse it.
 
 ### Securing your gateway
 
