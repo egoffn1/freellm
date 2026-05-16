@@ -70,6 +70,7 @@ export class CloudflareProvider extends BaseProvider {
       created: 1700000000,
       owned_by: "mistral",
       provider: "cloudflare",
+      supportsVision: true,
     },
     {
       id: "cloudflare/@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",

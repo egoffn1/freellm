@@ -1,6 +1,13 @@
 import { BaseProvider } from "./base.js";
 import type { ModelObject, ChatCompletionRequest } from "../types.js";
 
+const VISION_NAME_PATTERNS = ["llava", "vision", "bakllava", "moondream", "cogvlm", "minicpm-v"];
+
+function isVisionModel(modelName: string): boolean {
+  const lower = modelName.toLowerCase();
+  return VISION_NAME_PATTERNS.some((p) => lower.includes(p));
+}
+
 export class OllamaProvider extends BaseProvider {
   readonly id = "ollama";
   readonly name = "Ollama";
@@ -22,6 +29,7 @@ export class OllamaProvider extends BaseProvider {
         created: 1700000000,
         owned_by: "ollama",
         provider: "ollama",
+        ...(isVisionModel(m) ? { supportsVision: true } : {}),
       }));
   }
 

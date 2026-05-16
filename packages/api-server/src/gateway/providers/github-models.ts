@@ -50,6 +50,7 @@ export class GitHubModelsProvider extends BaseProvider {
       created: 1700000000,
       owned_by: "openai",
       provider: "github",
+      supportsVision: true,
     },
     {
       id: "github/openai/gpt-4.1-mini",
@@ -57,6 +58,7 @@ export class GitHubModelsProvider extends BaseProvider {
       created: 1700000000,
       owned_by: "openai",
       provider: "github",
+      supportsVision: true,
     },
     {
       id: "github/meta/Meta-Llama-3.3-70B-Instruct",
@@ -71,6 +73,7 @@ export class GitHubModelsProvider extends BaseProvider {
       created: 1700000000,
       owned_by: "meta",
       provider: "github",
+      supportsVision: true,
     },
     {
       id: "github/microsoft/Phi-4",

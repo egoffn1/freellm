@@ -93,6 +93,7 @@ export interface ModelObject {
   created: number;
   owned_by: string;
   provider: string;
+  supportsVision?: boolean;
 }
 
 export interface ProviderStats {

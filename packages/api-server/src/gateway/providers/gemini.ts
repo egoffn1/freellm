@@ -51,8 +51,8 @@ export class GeminiProvider extends BaseProvider {
   }
 
   readonly models: ModelObject[] = [
-    { id: "gemini/gemini-2.5-flash", object: "model", created: 1700000000, owned_by: "google", provider: "gemini" },
-    { id: "gemini/gemini-2.5-pro", object: "model", created: 1700000000, owned_by: "google", provider: "gemini" },
+    { id: "gemini/gemini-2.5-flash", object: "model", created: 1700000000, owned_by: "google", provider: "gemini", supportsVision: true },
+    { id: "gemini/gemini-2.5-pro", object: "model", created: 1700000000, owned_by: "google", provider: "gemini", supportsVision: true },
   ];
 
   protected getApiKeys(): string[] {

@@ -5,6 +5,105 @@ All notable changes to FreeLLM are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-05-17
+
+Vision/multimodal routing. FreeLLM can now route requests that contain
+image content to the correct vision-capable model automatically. Meta-models
+(`free`, `free-smart`, `free-fast`) silently upgrade to a vision provider
+when images are present. Direct model requests with image content get a
+clear error instead of a cryptic upstream 400.
+
+### Added
+
+#### Vision routing for image inputs
+
+Any OpenAI-compatible image request (a `content` array containing an
+`image_url` part) is now handled correctly:
+
+**Meta-model requests** (`free`, `free-smart`, `free-fast`) — the router
+detects image content, filters the provider pool to those with at least one
+vision-capable model, then picks the first vision model from the winning
+provider (models array is ordered best-first, so this naturally selects the
+highest-capability vision model per provider).
+
+**Direct model requests** — if the named model does not carry
+`supportsVision: true`, the gateway fails fast with a 400 before making any
+upstream call:
+
+```json
+{
+  "error": {
+    "code": "model_not_supported",
+    "message": "Model \"groq/llama-3.3-70b-versatile\" does not support vision/image inputs. Use a vision-capable model or a meta-model (free, free-smart, free-fast)."
+  }
+}
+```
+
+#### `supportsVision` capability flag on `ModelObject`
+
+New optional field `supportsVision?: boolean` on the `ModelObject` type.
+Absent means false (text-only). Set to `true` on every model verified as
+vision-capable against live provider documentation:
+
+| Model | Provider |
+|---|---|
+| `groq/meta-llama/llama-4-scout-17b-16e-instruct` | Groq |
+| `gemini/gemini-2.5-flash` | Gemini |
+| `gemini/gemini-2.5-pro` | Gemini |
+| `github/meta/Llama-3.2-11B-Vision-Instruct` | GitHub Models |
+| `github/openai/gpt-4o-mini` | GitHub Models |
+| `github/openai/gpt-4.1-mini` | GitHub Models |
+| `cloudflare/@cf/mistral/mistral-small-3.1-24b-instruct` | Cloudflare |
+
+Groq Llama 4 Scout is the first Groq model to support vision.
+All Gemini 2.5 models are natively multimodal.
+GitHub Models ships three vision-capable models across two model families.
+Cloudflare's Mistral Small 3.1 gained vision in its March 2026 update.
+
+#### Ollama vision auto-detection
+
+Since Ollama models are user-configured via `OLLAMA_MODELS`, vision
+capability cannot be known at compile time. The Ollama provider now
+auto-detects vision models from the model name using well-known patterns:
+`llava`, `vision`, `bakllava`, `moondream`, `cogvlm`, `minicpm-v`.
+Models matching any pattern get `supportsVision: true` automatically.
+Covers LLaVA, BakLLaVA, Moondream, CogVLM, MiniCPM-V, and any
+community model with "vision" in its name.
+
+#### Vision bypass in the response cache
+
+Vision requests are never cached. Image payloads are large, repeat rate
+is near zero, and caching base64-encoded images would fill the LRU store
+in seconds. The cache self-guards in both `get()` and `set()` (matching
+the existing streaming bypass pattern), and the router also skips the
+cache lookup explicitly before the routing loop.
+
+### Changed
+
+- `pickProvider()` in `GatewayRouter` now accepts a `requiresVision`
+  parameter that excludes any provider with no vision-capable models
+  from the candidate set, parallel to the existing `requiresTools`
+  exclusion for Cerebras.
+- `resolveModelForProvider()` now accepts `requiresVision` and, for
+  meta-model requests, returns the first `supportsVision` model from
+  the winning provider instead of the default text model.
+
+### Tests
+
+313 passing across 27 files (up from 295 across 26 files):
+
+- `tests/vision.test.ts` (new): 18 tests covering `hasImageContent()`
+  detection (text-only false, image_url true, multi-turn, null content),
+  cache bypass (get/set both skip for vision, text still cached), router
+  fail-fast (non-vision model + image → 400, no provider call), meta-model
+  vision routing (cerebras excluded, gemini selected; first vision model
+  chosen from mixed-model provider), and Ollama heuristics (llava, vision,
+  moondream all detected; llama3/mistral not; mixed list correct).
+
+[1.7.0]: https://github.com/Devansh-365/freellm/releases/tag/v1.7.0
+
+---
+
 ## [1.6.0] - 2026-05-14
 
 Fixes two production bugs (streaming token tracking and Cerebras crashing

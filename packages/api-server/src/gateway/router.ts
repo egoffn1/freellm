@@ -3,7 +3,7 @@ import type { ProviderAdapter } from "./providers/types.js";
 import type { ChatCompletionRequest, ChatCompletionResponse, RoutingStrategy } from "./types.js";
 import type { RequestLog } from "./request-log.js";
 import type { UsageTracker } from "./usage-tracker.js";
-import type { ResponseCache } from "./cache.js";
+import { ResponseCache, hasImageContent } from "./cache.js";
 import { ObservabilityStore } from "./observability.js";
 import { META_MODELS, DEFAULT_MODELS, NON_RETRIABLE_STATUSES } from "./config.js";
 import { assertStrictModeAllowed } from "./strict.js";
@@ -52,6 +52,7 @@ export class GatewayRouter {
     excluded: Set<string>,
     privacy: PrivacyRequest = "any",
     requiresTools = false,
+    requiresVision = false,
   ): ProviderAdapter | undefined {
     // Merge privacy exclusions into the caller-supplied exclude set so the
     // registry never sees providers the privacy posture forbids.
@@ -70,6 +71,17 @@ export class GatewayRouter {
     if (requiresTools) {
       for (const p of this.registry.getAll()) {
         if (!p.supportsTools) effectiveExcluded.add(p.id);
+      }
+    }
+
+    // Exclude providers with no vision-capable models when the request
+    // contains image content. resolveModelForProvider() will then pick
+    // the first vision model from the winning provider.
+    if (requiresVision) {
+      for (const p of this.registry.getAll()) {
+        if (!p.models.some((m) => m.supportsVision)) {
+          effectiveExcluded.add(p.id);
+        }
       }
     }
 
@@ -112,8 +124,15 @@ export class GatewayRouter {
   private resolveModelForProvider(
     requestedModel: string,
     provider: ProviderAdapter,
+    requiresVision = false,
   ): string {
     if (META_MODELS.has(requestedModel)) {
+      if (requiresVision) {
+        // For vision requests pick the first vision-capable model from this
+        // provider. The models array is ordered best-first by convention.
+        const visionModel = provider.models.find((m) => m.supportsVision);
+        if (visionModel) return visionModel.id;
+      }
       const defaultModel = DEFAULT_MODELS[provider.id];
       if (defaultModel) {
         const prefixed = `${provider.id}/${defaultModel}`;
@@ -137,7 +156,25 @@ export class GatewayRouter {
   }> {
     const strict = options.strict === true;
     const privacy: PrivacyRequest = options.privacy ?? "any";
+    const requiresVision = hasImageContent(request);
     assertStrictModeAllowed(request.model, strict);
+
+    // Fail fast when a specific non-vision model is requested with image content.
+    // Meta-models (free, free-smart, free-fast) handle vision by routing to a
+    // vision-capable provider automatically — only direct model requests fail here.
+    if (requiresVision && !META_MODELS.has(request.model)) {
+      const modelObj = this.registry
+        .getAll()
+        .flatMap((p) => p.models)
+        .find((m) => m.id === request.model);
+      if (modelObj && !modelObj.supportsVision) {
+        throw freellmError({
+          code: "model_not_supported",
+          message: `Model "${request.model}" does not support vision/image inputs. Use a vision-capable model or a meta-model (free, free-smart, free-fast).`,
+          requested_model: request.model,
+        });
+      }
+    }
 
     // Fail fast when a privacy posture rules out every configured provider
     // for this model. The caller gets a distinct, actionable error instead
@@ -176,6 +213,7 @@ export class GatewayRouter {
         excluded,
         privacy,
         (request.tools?.length ?? 0) > 0,
+        requiresVision,
       );
 
       if (!provider) {
@@ -187,7 +225,7 @@ export class GatewayRouter {
 
       if (!attempted.includes(provider.id)) attempted.push(provider.id);
 
-      const resolvedModel = this.resolveModelForProvider(request.model, provider);
+      const resolvedModel = this.resolveModelForProvider(request.model, provider, requiresVision);
       const mappedRequest = { ...request, model: resolvedModel };
 
       try {
@@ -262,12 +300,14 @@ export class GatewayRouter {
   ): Promise<{ data: ChatCompletionResponse; meta: RouteMeta }> {
     const startTime = Date.now();
     const strict = options.strict === true;
+    const requiresVision = hasImageContent(request);
 
     // Cache check FIRST. Hits short-circuit the entire routing flow:
     // no provider call, no token quota burn, ~0ms latency.
-    // Strict mode disables the cache because a cached response may have
-    // come from a different provider than the caller expects.
-    const cached = strict ? null : this.cache.get(request);
+    // Strict mode and vision requests both bypass the cache: strict because
+    // a cached response may have come from a different provider; vision because
+    // image payloads are large, near-zero repeat rate, and the cache self-guards.
+    const cached = strict || requiresVision ? null : this.cache.get(request);
     if (cached) {
       const latencyMs = Date.now() - startTime;
       const data: ChatCompletionResponse = {

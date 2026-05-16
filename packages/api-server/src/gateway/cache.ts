@@ -1,6 +1,19 @@
 import { createHash } from "crypto";
 import type { ChatCompletionRequest, ChatCompletionResponse } from "./types.js";
 
+export function hasImageContent(request: ChatCompletionRequest): boolean {
+  return request.messages.some(
+    (msg) =>
+      Array.isArray(msg.content) &&
+      msg.content.some(
+        (part) =>
+          typeof part === "object" &&
+          part !== null &&
+          (part as Record<string, unknown>)["type"] === "image_url",
+      ),
+  );
+}
+
 /**
  * In-memory LRU cache for OpenAI-compatible chat completions.
  *
@@ -122,6 +135,7 @@ export class ResponseCache {
   } | undefined {
     if (!this.enabled) return undefined;
     if (request.stream) return undefined;
+    if (hasImageContent(request)) return undefined;
     // json_schema responses are never served from cache because the caller
     // may want to re-validate against a different schema or receive fresh
     // content for annotation (schema-validation warnings depend on content).
@@ -169,6 +183,7 @@ export class ResponseCache {
   ): void {
     if (!this.enabled) return;
     if (request.stream) return;
+    if (hasImageContent(request)) return;
     // json_schema responses are never cached — schema-validation annotations
     // depend on fresh content and the schema may differ across callers.
     if (request.response_format?.type === "json_schema") return;
