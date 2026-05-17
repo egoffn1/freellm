@@ -58,7 +58,7 @@ async function startFakeUpstream(): Promise<void> {
   upstreamUrl = `http://127.0.0.1:${(upstreamServer.address() as AddressInfo).port}`;
 }
 
-function collectStream(res: import("superagent").Response): string {
+function collectStream(res: import("supertest").Response): string {
   return res.body as unknown as string;
 }
 

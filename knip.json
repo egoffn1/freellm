@@ -1,13 +1,11 @@
 {
   "workspaces": {
     "packages/api-server": {
-      "entry": ["src/server.ts", "build.mjs"],
+      "entry": ["src/server.ts"],
       "project": ["src/**/*.ts"]
     },
     "packages/dashboard": {
-      "entry": ["src/main.tsx"],
       "project": ["src/**/*.{ts,tsx}"]
     }
-  },
-  "ignore": ["docs/**", "lib/**"]
+  }
 }

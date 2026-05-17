@@ -20,7 +20,7 @@ import {
  *      (we never silently accept a tainted value into logs)
  *
  * The limiter is a module-level singleton so every request hits the
- * same Map. Tests can reset it via `resetIdentifierLimiter()`.
+ * same Map.
  */
 
 const SAFE_PATTERN = /^[A-Za-z0-9_.:-]{1,128}$/;
@@ -33,12 +33,11 @@ const limiter = new IdentifierLimiter(
   ),
 );
 
-export function resetIdentifierLimiter(): void {
+function resetIdentifierLimiter(): void {
   limiter.reset();
 }
 
-/** Exposed for tests that want to inspect the singleton state. */
-export function identifierLimiterSize(): number {
+function identifierLimiterSize(): number {
   return limiter.size();
 }
 
