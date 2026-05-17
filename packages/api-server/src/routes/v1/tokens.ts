@@ -7,7 +7,7 @@ import {
   isBrowserTokenEnabled,
   BrowserTokenError,
   MAX_TTL_SECONDS,
-} from "../../gateway/browser-token.js";
+} from "../../features/browser-tokens.js";
 
 const tokensRouter: IRouter = Router();
 

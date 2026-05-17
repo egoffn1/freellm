@@ -7,7 +7,7 @@
  *  2. annotateResponse – inspect a completed non-streaming response and return
  *     an array of warning strings that the caller should surface via headers.
  */
-import type { ChatCompletionRequest, ChatCompletionResponse } from "./types.js";
+import type { ChatCompletionRequest, ChatCompletionResponse } from "../types.js";
 
 /**
  * Translate JSON-mode fields in `request` for the given provider.

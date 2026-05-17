@@ -4,7 +4,7 @@ import pinoHttp from "pino-http";
 import path from "path";
 import { fileURLToPath } from "url";
 import router from "./routes";
-import { logger } from "./lib/logger";
+import { logger } from "./logger";
 import { errorHandler } from "./middleware/error-handler.js";
 import { auth } from "./middleware/auth.js";
 import { clientRateLimit } from "./middleware/rate-limit.js";

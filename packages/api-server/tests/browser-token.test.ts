@@ -8,7 +8,7 @@ import {
   MIN_SECRET_BYTES,
   MAX_TTL_SECONDS,
   TOKEN_PREFIX,
-} from "../src/gateway/browser-token.js";
+} from "../src/features/browser-tokens.js";
 
 // 48-byte secret (well above MIN_SECRET_BYTES).
 const SECRET = "unit-test-secret-48-bytes-0123456789abcdef0123456";

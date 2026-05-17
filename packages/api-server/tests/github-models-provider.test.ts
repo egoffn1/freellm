@@ -6,8 +6,8 @@
  * handling, the base URL, model catalog shape, and mapRequest behavior.
  */
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { GitHubModelsProvider } from "../src/gateway/providers/github-models.js";
-import type { ChatCompletionRequest } from "../src/gateway/types.js";
+import { GitHubModelsProvider } from "../src/providers/github.js";
+import type { ChatCompletionRequest } from "../src/types.js";
 
 // Subclass that exposes protected methods for direct testing.
 class ExposedGitHubModelsProvider extends GitHubModelsProvider {

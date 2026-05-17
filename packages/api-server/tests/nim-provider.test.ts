@@ -8,8 +8,8 @@
  * rewrite it into nvext.guided_json and remove response_format.
  */
 import { describe, it, expect } from "vitest";
-import { NimProvider } from "../src/gateway/providers/nim.js";
-import type { ChatCompletionRequest } from "../src/gateway/types.js";
+import { NimProvider } from "../src/providers/nim.js";
+import type { ChatCompletionRequest } from "../src/types.js";
 
 // Subclass that lets the test call the protected mapRequest directly.
 class ExposedNimProvider extends NimProvider {

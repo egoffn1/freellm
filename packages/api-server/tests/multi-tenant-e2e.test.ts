@@ -103,7 +103,7 @@ beforeAll(async () => {
   process.env["FREELLM_VIRTUAL_KEYS_PATH"] = virtualKeysFile();
 
   // Init the virtual-key singleton BEFORE importing app so auth sees it.
-  const { initVirtualKeys } = await import("../src/gateway/virtual-keys-singleton.js");
+  const { initVirtualKeys } = await import("../src/features/virtual-keys.js");
   initVirtualKeys();
 
   const mod = await import("../src/app.js");

@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   IdentifierLimiter,
   parseIdentifierLimitEnv,
-} from "../src/gateway/identifier-limiter.js";
+} from "../src/features/identifier-limiter.js";
 
 const tightConfig = () => ({ max: 3, windowMs: 1_000, maxBuckets: 100 });
 

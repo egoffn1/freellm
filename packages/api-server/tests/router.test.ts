@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { GatewayRouter, AllProvidersExhaustedError, ProviderClientError } from "../src/gateway/router.js";
-import type { ProviderRegistry } from "../src/gateway/registry.js";
-import type { ProviderAdapter } from "../src/gateway/providers/types.js";
+import { GatewayRouter, AllProvidersExhaustedError, ProviderClientError } from "../src/routing/router.js";
+import type { ProviderRegistry } from "../src/routing/registry.js";
+import type { ProviderAdapter } from "../src/providers/types.js";
 import type {
   ChatCompletionRequest,
   CircuitBreakerState,
@@ -9,8 +9,8 @@ import type {
   ModelObject,
   ProviderStats,
   ProviderStatusInfo,
-} from "../src/gateway/types.js";
-import { StrictModeError } from "../src/gateway/strict.js";
+} from "../src/types.js";
+import { StrictModeError } from "../src/routing/strict.js";
 
 interface FakeOptions {
   id: string;

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseStrictHeader, assertStrictModeAllowed, StrictModeError } from "../src/gateway/strict.js";
+import { parseStrictHeader, assertStrictModeAllowed, StrictModeError } from "../src/routing/strict.js";
 
 describe("parseStrictHeader", () => {
   it("returns true for common truthy values", () => {

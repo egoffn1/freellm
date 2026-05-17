@@ -1,9 +1,8 @@
 import app from "./app.js";
-import { logger } from "./lib/logger.js";
-import { PROVIDER_PRIVACY, daysSinceVerified } from "./gateway/privacy.js";
-import { initVirtualKeys } from "./gateway/virtual-keys-singleton.js";
-import { VirtualKeysError } from "./gateway/virtual-keys.js";
-import { MIN_SECRET_BYTES } from "./gateway/browser-token.js";
+import { logger } from "./logger.js";
+import { PROVIDER_PRIVACY, daysSinceVerified } from "./routing/privacy.js";
+import { initVirtualKeys, VirtualKeysError } from "./features/virtual-keys.js";
+import { MIN_SECRET_BYTES } from "./features/browser-tokens.js";
 
 const PORT = parseInt(process.env["PORT"] ?? "3000", 10);
 

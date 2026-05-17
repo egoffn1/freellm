@@ -1,7 +1,7 @@
 import { KeyRound, AlertTriangle, Clock, Package } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useVirtualKeys } from "@/lib/virtual-keys";
+import { useVirtualKeys } from "@/hooks/virtual-keys";
 import { cn } from "@/lib/utils";
 import type { VirtualKeySummary } from "@workspace/api-client-react/schemas";
 

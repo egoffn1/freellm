@@ -1,6 +1,6 @@
 import { BaseProvider, parseApiKeys } from "./base.js";
 import type { ChatCompletionRequest, ModelObject } from "../types.js";
-import { translateRequestForProvider } from "../json-mode.js";
+import { translateRequestForProvider } from "../features/json-mode.js";
 
 /**
  * NVIDIA NIM OpenAI-compatibility adapter.

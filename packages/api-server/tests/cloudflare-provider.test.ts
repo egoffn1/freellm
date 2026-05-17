@@ -7,8 +7,8 @@
  * behavior.
  */
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { CloudflareProvider } from "../src/gateway/providers/cloudflare.js";
-import type { ChatCompletionRequest } from "../src/gateway/types.js";
+import { CloudflareProvider } from "../src/providers/cloudflare.js";
+import type { ChatCompletionRequest } from "../src/types.js";
 
 // Subclass that lets the test call protected methods directly.
 class ExposedCloudflareProvider extends CloudflareProvider {

@@ -12,8 +12,8 @@ import { describe, it, expect } from "vitest";
 import {
   GeminiProvider,
   defaultReasoningEffortFor,
-} from "../src/gateway/providers/gemini.js";
-import type { ChatCompletionRequest } from "../src/gateway/types.js";
+} from "../src/providers/gemini.js";
+import type { ChatCompletionRequest } from "../src/types.js";
 
 // Subclass that lets the test call the protected mapRequest directly.
 class ExposedGeminiProvider extends GeminiProvider {

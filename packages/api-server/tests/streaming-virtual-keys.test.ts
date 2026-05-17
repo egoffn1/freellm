@@ -19,8 +19,7 @@ import { createServer, type Server } from "http";
 import type { AddressInfo } from "net";
 import request from "supertest";
 import type { Express } from "express";
-import { VirtualKeyStore } from "../src/gateway/virtual-keys.js";
-import { setVirtualKeyStore, getVirtualKeyStore } from "../src/gateway/virtual-keys-singleton.js";
+import { VirtualKeyStore, setVirtualKeyStore, getVirtualKeyStore } from "../src/features/virtual-keys.js";
 
 const TEST_KEY_ID = "sk-freellm-streamtest1";
 

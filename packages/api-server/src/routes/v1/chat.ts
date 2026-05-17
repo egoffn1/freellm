@@ -1,19 +1,18 @@
 import { Router, type IRouter } from "express";
 import type { Request, Response, NextFunction } from "express";
-import { router as gatewayRouter, AllProvidersExhaustedError, ProviderClientError } from "../../gateway/index.js";
-import { logger } from "../../lib/logger.js";
-import type { ChatCompletionRequest } from "../../gateway/types.js";
-import type { RouteMeta } from "../../gateway/router.js";
+import { router as gatewayRouter, AllProvidersExhaustedError, ProviderClientError } from "../../routing/index.js";
+import { logger } from "../../logger.js";
+import type { ChatCompletionRequest } from "../../types.js";
+import type { RouteMeta } from "../../routing/router.js";
 import { validate } from "../../middleware/validate.js";
-import { chatCompletionRequestSchema } from "../../gateway/schemas.js";
-import { parseStrictHeader } from "../../gateway/strict.js";
-import { parsePrivacyHeader } from "../../gateway/privacy.js";
-import { getVirtualKeyStore } from "../../gateway/virtual-keys-singleton.js";
-import { VirtualKeyCheckError, type VirtualKey } from "../../gateway/virtual-keys.js";
+import { chatCompletionRequestSchema } from "../../schemas.js";
+import { parseStrictHeader } from "../../routing/strict.js";
+import { parsePrivacyHeader } from "../../routing/privacy.js";
+import { getVirtualKeyStore, VirtualKeyCheckError, type VirtualKey } from "../../features/virtual-keys.js";
 import { freellmError } from "../../errors/index.js";
-import { StreamingPipeline } from "../../gateway/streaming/pipeline.js";
-import { serializeHeartbeat } from "../../gateway/streaming/sse.js";
-import { annotateResponse } from "../../gateway/json-mode.js";
+import { StreamingPipeline } from "../../streaming/pipeline.js";
+import { serializeHeartbeat } from "../../streaming/sse.js";
+import { annotateResponse } from "../../features/json-mode.js";
 
 const STREAM_IDLE_TIMEOUT_MS = parseInt(
   process.env["STREAM_IDLE_TIMEOUT_MS"] ?? "30000",

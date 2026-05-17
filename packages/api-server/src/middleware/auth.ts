@@ -1,15 +1,14 @@
 import type { Request, Response, NextFunction } from "express";
 import { createHash, timingSafeEqual } from "crypto";
 import { freellmError } from "../errors/index.js";
-import { getVirtualKeyStore } from "../gateway/virtual-keys-singleton.js";
-import type { VirtualKey } from "../gateway/virtual-keys.js";
+import { getVirtualKeyStore, type VirtualKey } from "../features/virtual-keys.js";
 import {
   verifyBrowserToken,
   isBrowserTokenEnabled,
   BrowserTokenError,
   TOKEN_PREFIX,
   type BrowserTokenPayload,
-} from "../gateway/browser-token.js";
+} from "../features/browser-tokens.js";
 
 /** Hash a string to a fixed-length buffer for timing-safe comparison. */
 function hashKey(key: string): Buffer {

@@ -1,5 +1,5 @@
 import { createHash } from "crypto";
-import type { ChatCompletionRequest, ChatCompletionResponse } from "./types.js";
+import type { ChatCompletionRequest, ChatCompletionResponse } from "../types.js";
 
 export function hasImageContent(request: ChatCompletionRequest): boolean {
   return request.messages.some(

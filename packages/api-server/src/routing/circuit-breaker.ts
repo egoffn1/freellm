@@ -1,4 +1,4 @@
-import type { CircuitBreakerState } from "./types.js";
+import type { CircuitBreakerState } from "../types.js";
 
 interface CircuitBreakerConfig {
   failureThreshold: number;

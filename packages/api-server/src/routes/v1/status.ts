@@ -1,17 +1,17 @@
 import { Router, type IRouter, type NextFunction } from "express";
-import { registry, router as gatewayRouter } from "../../gateway/index.js";
-import type { RoutingStrategy } from "../../gateway/types.js";
+import { registry, router as gatewayRouter } from "../../routing/index.js";
+import type { RoutingStrategy } from "../../types.js";
 import { validate } from "../../middleware/validate.js";
-import { updateRoutingSchema } from "../../gateway/schemas.js";
+import { updateRoutingSchema } from "../../schemas.js";
 import { adminAuth } from "../../middleware/admin-auth.js";
 import { freellmError } from "../../errors/index.js";
-import { getVirtualKeyStore } from "../../gateway/virtual-keys-singleton.js";
+import { getVirtualKeyStore } from "../../features/virtual-keys.js";
 import {
   isBrowserTokenEnabled,
   MIN_SECRET_BYTES,
   MAX_TTL_SECONDS,
-} from "../../gateway/browser-token.js";
-import type { BrowserTokensInfo } from "../../gateway/types.js";
+} from "../../features/browser-tokens.js";
+import type { BrowserTokensInfo } from "../../types.js";
 
 function browserTokensInfo(): BrowserTokensInfo {
   return {

@@ -1,4 +1,4 @@
-import { META_MODELS } from "./config.js";
+import { META_MODELS } from "../config.js";
 
 /**
  * Strict mode: the caller demands no substitution and no failover.

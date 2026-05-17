@@ -16,7 +16,7 @@
 import { SSEParser, serializeEvent, type SSEEvent } from "./sse.js";
 import { createNormalizer } from "./normalizer.js";
 import type { ChatCompletionChunk, FlushResult, Normalizer, StreamUsage } from "./types.js";
-import { logger } from "../../lib/logger.js";
+import { logger } from "../logger.js";
 
 export class StreamingPipeline {
   private parser = new SSEParser();

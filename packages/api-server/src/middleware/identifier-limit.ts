@@ -3,7 +3,7 @@ import { freellmError } from "../errors/index.js";
 import {
   IdentifierLimiter,
   parseIdentifierLimitEnv,
-} from "../gateway/identifier-limiter.js";
+} from "../features/identifier-limiter.js";
 
 /**
  * Per-identifier rate-limit middleware.

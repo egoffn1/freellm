@@ -1,8 +1,8 @@
 import type { Request, Response, NextFunction } from "express";
-import { logger } from "../lib/logger.js";
-import { AllProvidersExhaustedError, ProviderClientError, registry } from "../gateway/index.js";
-import { StrictModeError } from "../gateway/strict.js";
-import { buildRetryAdvice, retryAfterSeconds } from "../gateway/retry-advice.js";
+import { logger } from "../logger.js";
+import { AllProvidersExhaustedError, ProviderClientError, registry } from "../routing/index.js";
+import { StrictModeError } from "../routing/strict.js";
+import { buildRetryAdvice, retryAfterSeconds } from "../routing/retry-advice.js";
 import {
   freellmError,
   httpStatusFor,

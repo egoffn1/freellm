@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { SSEParser, serializeEvent, serializeHeartbeat } from "../src/gateway/streaming/sse.js";
+import { SSEParser, serializeEvent, serializeHeartbeat } from "../src/streaming/sse.js";
 
 describe("SSEParser", () => {
   it("parses a single complete event", () => {

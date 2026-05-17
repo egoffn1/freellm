@@ -8,7 +8,7 @@ import {
   VirtualKeysError,
   VirtualKeyCheckError,
   loadVirtualKeysFromFile,
-} from "../src/gateway/virtual-keys.js";
+} from "../src/features/virtual-keys.js";
 
 function tempFile(contents: string): string {
   const dir = mkdtempSync(path.join(tmpdir(), "freellm-vk-test-"));

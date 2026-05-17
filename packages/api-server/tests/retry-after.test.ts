@@ -4,7 +4,7 @@ import {
   toRetryAfterSeconds,
   MIN_RETRY_MS,
   MAX_RETRY_MS,
-} from "../src/gateway/retry-after.js";
+} from "../src/routing/retry-after.js";
 
 describe("parseRetryAfter - integer seconds", () => {
   it("parses a normal integer value", () => {

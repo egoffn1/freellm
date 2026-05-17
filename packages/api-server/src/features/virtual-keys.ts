@@ -36,7 +36,7 @@
 
 import { readFileSync, statSync } from "node:fs";
 import { z } from "zod";
-import { logger } from "../lib/logger.js";
+import { logger } from "../logger.js";
 
 const KEY_ID_PATTERN = /^sk-freellm-[A-Za-z0-9_-]{4,128}$/;
 const MAX_FILE_BYTES = 1_048_576; // 1 MB
@@ -270,4 +270,31 @@ export function loadVirtualKeysFromEnv(): VirtualKeyStore {
     "virtual keys loaded (SOFT CAPS ONLY -- counters reset on restart)",
   );
   return store;
+}
+
+/**
+ * Process-wide virtual key store. Loaded once at boot from
+ * `FREELLM_VIRTUAL_KEYS_PATH` via `loadVirtualKeysFromEnv()`. Middleware
+ * and route handlers import the singleton through this module to avoid
+ * circular imports between `middleware/` and `gateway/`.
+ */
+
+let _store: VirtualKeyStore = emptyVirtualKeyStore();
+let _initialized = false;
+
+export function initVirtualKeys(): VirtualKeyStore {
+  if (_initialized) return _store;
+  _store = loadVirtualKeysFromEnv();
+  _initialized = true;
+  return _store;
+}
+
+/** Overwrite the store. Used by tests that need a custom config. */
+export function setVirtualKeyStore(next: VirtualKeyStore): void {
+  _store = next;
+  _initialized = true;
+}
+
+export function getVirtualKeyStore(): VirtualKeyStore {
+  return _store;
 }

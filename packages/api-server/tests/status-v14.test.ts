@@ -47,7 +47,7 @@ beforeAll(async () => {
   process.env["OLLAMA_BASE_URL"] = "http://127.0.0.1:9999";
   process.env["OLLAMA_MODELS"] = "llama3";
 
-  const { initVirtualKeys } = await import("../src/gateway/virtual-keys-singleton.js");
+  const { initVirtualKeys } = await import("../src/features/virtual-keys.js");
   initVirtualKeys();
 
   const mod = await import("../src/app.js");

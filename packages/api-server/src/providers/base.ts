@@ -1,5 +1,5 @@
-import { CircuitBreaker } from "../circuit-breaker.js";
-import { RateLimiter } from "../rate-limiter.js";
+import { CircuitBreaker } from "../routing/circuit-breaker.js";
+import { RateLimiter } from "../routing/rate-limiter.js";
 import type { ProviderAdapter } from "./types.js";
 import type {
   ChatCompletionRequest,

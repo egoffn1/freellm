@@ -15,11 +15,11 @@
  * the cache pinned the bad output.
  */
 import { describe, it, expect } from "vitest";
-import { ResponseCache } from "../src/gateway/cache.js";
+import { ResponseCache } from "../src/routing/cache.js";
 import type {
   ChatCompletionRequest,
   ChatCompletionResponse,
-} from "../src/gateway/types.js";
+} from "../src/types.js";
 
 function responseWith(finishReason: string | null, content = "ok"): ChatCompletionResponse {
   return {

@@ -9,11 +9,11 @@
  *   5. Ollama — supportsVision flag set from model name heuristics
  */
 import { describe, it, expect, afterEach } from "vitest";
-import { hasImageContent, ResponseCache } from "../src/gateway/cache.js";
-import { GatewayRouter } from "../src/gateway/router.js";
-import { OllamaProvider } from "../src/gateway/providers/ollama.js";
-import type { ProviderRegistry } from "../src/gateway/registry.js";
-import type { ProviderAdapter } from "../src/gateway/providers/types.js";
+import { hasImageContent, ResponseCache } from "../src/routing/cache.js";
+import { GatewayRouter } from "../src/routing/router.js";
+import { OllamaProvider } from "../src/providers/ollama.js";
+import type { ProviderRegistry } from "../src/routing/registry.js";
+import type { ProviderAdapter } from "../src/providers/types.js";
 import type {
   ChatCompletionRequest,
   CircuitBreakerState,
@@ -21,7 +21,7 @@ import type {
   ModelObject,
   ProviderStats,
   ProviderStatusInfo,
-} from "../src/gateway/types.js";
+} from "../src/types.js";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 

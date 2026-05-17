@@ -1,14 +1,14 @@
-import { GroqProvider } from "./providers/groq.js";
-import { GeminiProvider } from "./providers/gemini.js";
-import { MistralProvider } from "./providers/mistral.js";
-import { CerebrasProvider } from "./providers/cerebras.js";
-import { OllamaProvider } from "./providers/ollama.js";
-import { NimProvider } from "./providers/nim.js";
-import { CloudflareProvider } from "./providers/cloudflare.js";
-import { GitHubModelsProvider } from "./providers/github-models.js";
-import type { ProviderAdapter } from "./providers/types.js";
-import type { ModelObject, ProviderStatusInfo, RoutingStrategy, TokenUsageTotals } from "./types.js";
-import { FAST_PRIORITY, SMART_PRIORITY } from "./config.js";
+import { GroqProvider } from "../providers/groq.js";
+import { GeminiProvider } from "../providers/gemini.js";
+import { MistralProvider } from "../providers/mistral.js";
+import { CerebrasProvider } from "../providers/cerebras.js";
+import { OllamaProvider } from "../providers/ollama.js";
+import { NimProvider } from "../providers/nim.js";
+import { CloudflareProvider } from "../providers/cloudflare.js";
+import { GitHubModelsProvider } from "../providers/github.js";
+import type { ProviderAdapter } from "../providers/types.js";
+import type { ModelObject, ProviderStatusInfo, RoutingStrategy, TokenUsageTotals } from "../types.js";
+import { FAST_PRIORITY, SMART_PRIORITY } from "../config.js";
 import { PROVIDER_PRIVACY } from "./privacy.js";
 
 const EMPTY_USAGE: TokenUsageTotals = {

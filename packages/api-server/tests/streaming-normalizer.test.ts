@@ -16,8 +16,8 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { StreamingPipeline } from "../src/gateway/streaming/pipeline.js";
-import { SSEParser } from "../src/gateway/streaming/sse.js";
+import { StreamingPipeline } from "../src/streaming/pipeline.js";
+import { SSEParser } from "../src/streaming/sse.js";
 
 const FIX_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "fixtures/sse");
 

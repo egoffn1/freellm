@@ -12,7 +12,7 @@
  * `providers`, `suggestions`, `requested_model`) as discriminated extras.
  */
 
-import type { ProviderRetryHint, ModelSuggestion } from "../gateway/retry-advice.js";
+import type { ProviderRetryHint, ModelSuggestion } from "../routing/retry-advice.js";
 
 export type ErrorType =
   | "invalid_request_error" // 400

@@ -5,7 +5,7 @@ import {
   policiesAllowedBy,
   daysSinceVerified,
   PROVIDER_PRIVACY,
-} from "../src/gateway/privacy.js";
+} from "../src/routing/privacy.js";
 
 describe("parsePrivacyHeader", () => {
   it("returns 'any' when header is missing or empty", () => {

@@ -1,16 +1,16 @@
 import type { ProviderRegistry } from "./registry.js";
-import type { ProviderAdapter } from "./providers/types.js";
-import type { ChatCompletionRequest, ChatCompletionResponse, RoutingStrategy } from "./types.js";
-import type { RequestLog } from "./request-log.js";
-import type { UsageTracker } from "./usage-tracker.js";
+import type { ProviderAdapter } from "../providers/types.js";
+import type { ChatCompletionRequest, ChatCompletionResponse, RoutingStrategy } from "../types.js";
+import type { RequestLog } from "../observability/request-log.js";
+import type { UsageTracker } from "../observability/usage-tracker.js";
 import { ResponseCache, hasImageContent } from "./cache.js";
-import { ObservabilityStore } from "./observability.js";
-import { META_MODELS, DEFAULT_MODELS, NON_RETRIABLE_STATUSES } from "./config.js";
+import { ObservabilityStore } from "../observability/index.js";
+import { META_MODELS, DEFAULT_MODELS, NON_RETRIABLE_STATUSES } from "../config.js";
 import { assertStrictModeAllowed } from "./strict.js";
 import { parseRetryAfter } from "./retry-after.js";
 import { providerSatisfiesPrivacy, type PrivacyRequest } from "./privacy.js";
 import { freellmError } from "../errors/index.js";
-import { logger } from "../lib/logger.js";
+import { logger } from "../logger.js";
 
 export type RouteReason = "direct" | "meta" | "cache" | "failover";
 

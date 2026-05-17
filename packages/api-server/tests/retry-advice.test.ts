@@ -4,8 +4,8 @@ import {
   earliestRetryMs,
   buildRetryAdvice,
   retryAfterSeconds,
-} from "../src/gateway/retry-advice.js";
-import type { ProviderStatusInfo } from "../src/gateway/types.js";
+} from "../src/routing/retry-advice.js";
+import type { ProviderStatusInfo } from "../src/types.js";
 
 type KeySpec = { retryAfterMs: number | null; rateLimited?: boolean };
 type ProviderOverrides = Omit<Partial<ProviderStatusInfo>, "keys"> & { keys?: KeySpec[] };
