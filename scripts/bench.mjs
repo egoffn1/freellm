@@ -31,7 +31,7 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const API_SERVER = path.resolve(REPO_ROOT, "packages/api-server/dist/index.mjs");
+const API_SERVER = path.resolve(REPO_ROOT, "apps/gateway/dist/index.mjs");
 const OUT_PATH = path.resolve(REPO_ROOT, "docs/benchmarks.json");
 
 const WARMUP_REQUESTS = 20;

@@ -5,7 +5,7 @@
  * client for a single read-only route.
  */
 import { useQuery } from "@tanstack/react-query";
-import type { VirtualKeysResponse } from "@workspace/api-client-react/schemas";
+import type { VirtualKeysResponse } from "@/api/schemas";
 
 const VIRTUAL_KEYS_URL = "/api/v1/status/virtual-keys";
 

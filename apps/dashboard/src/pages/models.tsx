@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useListModels, getListModelsQueryKey } from "@workspace/api-client-react";
+import { useListModels, getListModelsQueryKey } from "@/api/hooks";
 import { Box, Copy, Check, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";

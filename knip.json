@@ -1,10 +1,10 @@
 {
   "workspaces": {
-    "packages/api-server": {
+    "apps/gateway": {
       "entry": ["src/server.ts"],
       "project": ["src/**/*.ts"]
     },
-    "packages/dashboard": {
+    "apps/dashboard": {
       "project": ["src/**/*.{ts,tsx}"]
     }
   }

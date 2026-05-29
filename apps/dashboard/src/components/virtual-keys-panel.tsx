@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { useVirtualKeys } from "@/hooks/virtual-keys";
 import { cn } from "@/lib/utils";
-import type { VirtualKeySummary } from "@workspace/api-client-react/schemas";
+import type { VirtualKeySummary } from "@/api/schemas";
 
 function formatCompact(n: number | null): string {
   if (n == null) return "—";

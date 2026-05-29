@@ -33,7 +33,7 @@ jobs:
         run: pnpm -r typecheck
 
       - name: Test
-        run: pnpm --filter @workspace/api-server test
+        run: pnpm --filter @freellm/gateway test
 
       - name: Audit production dependencies
         # Fails the job on any advisory at moderate severity or higher.

@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { Activity, Box, Terminal } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useHealthCheck, getHealthCheckQueryKey } from "@workspace/api-client-react";
+import { useHealthCheck, getHealthCheckQueryKey } from "@/api/hooks";
 import { FreeLLMLogo } from "./logo";
 
 const navItems = [

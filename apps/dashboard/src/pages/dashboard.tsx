@@ -1,4 +1,4 @@
-import { useGetGatewayStatus, useResetProviderCircuitBreaker, useUpdateRoutingStrategy, getGetGatewayStatusQueryKey } from "@workspace/api-client-react";
+import { useGetGatewayStatus, useResetProviderCircuitBreaker, useUpdateRoutingStrategy, getGetGatewayStatusQueryKey } from "@/api/hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { Server } from "lucide-react";
 import { toast } from "sonner";
