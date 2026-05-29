@@ -7,27 +7,24 @@ WORKDIR /app
 FROM base AS deps
 
 COPY package.json pnpm-workspace.yaml ./
-COPY packages/api-server/package.json packages/api-server/
-COPY packages/dashboard/package.json packages/dashboard/
-COPY lib/api-client-react/package.json lib/api-client-react/
+COPY apps/gateway/package.json apps/gateway/
+COPY apps/dashboard/package.json apps/dashboard/
 
 RUN pnpm install --no-frozen-lockfile
 
 # ── Build API server ──
 FROM deps AS build-api
 
-COPY packages/api-server/ packages/api-server/
-COPY lib/ lib/
+COPY apps/gateway/ apps/gateway/
 
-RUN cd packages/api-server && pnpm run build
+RUN cd apps/gateway && pnpm run build
 
 # ── Build dashboard ──
 FROM deps AS build-dashboard
 
-COPY packages/dashboard/ packages/dashboard/
-COPY lib/ lib/
+COPY apps/dashboard/ apps/dashboard/
 
-RUN cd packages/dashboard && pnpm run build
+RUN cd apps/dashboard && pnpm run build
 
 # ── Production ──
 FROM base AS production
@@ -38,12 +35,12 @@ ENV NODE_ENV=production
 ENV PORT=3000
 
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/packages/api-server/node_modules ./packages/api-server/node_modules
-COPY --from=build-api /app/packages/api-server/dist ./packages/api-server/dist
-COPY --from=build-api /app/packages/api-server/package.json ./packages/api-server/
-COPY --from=build-dashboard /app/packages/dashboard/dist/public ./packages/dashboard/dist/public
+COPY --from=deps /app/apps/gateway/node_modules ./apps/gateway/node_modules
+COPY --from=build-api /app/apps/gateway/dist ./apps/gateway/dist
+COPY --from=build-api /app/apps/gateway/package.json ./apps/gateway/
+COPY --from=build-dashboard /app/apps/dashboard/dist/public ./apps/dashboard/dist/public
 
-WORKDIR /app/packages/api-server
+WORKDIR /app/apps/gateway
 
 USER appuser
 
