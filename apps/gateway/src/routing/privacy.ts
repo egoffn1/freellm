@@ -17,7 +17,7 @@
  *
  * This file is the single source of truth. If you update an entry, bump
  * its `last_verified` date and update the matching website page at
- * packages/website/src/content/docs/privacy.mdx.
+ * apps/web/src/content/docs/privacy.mdx.
  */
 
 export type TrainingPolicy =

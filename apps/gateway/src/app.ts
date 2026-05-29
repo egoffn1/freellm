@@ -1,5 +1,7 @@
 import express, { type Express, type Request } from "express";
 import cors from "cors";
+import helmet from "helmet";
+import compression from "compression";
 import pinoHttp from "pino-http";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -15,6 +17,14 @@ const app: Express = express();
 
 // Trust reverse proxy (Railway, Render, etc.) so req.ip is the real client IP
 app.set("trust proxy", 1);
+
+// Security headers (CSP, HSTS, X-Frame-Options, etc.)
+app.use(helmet({
+  contentSecurityPolicy: false, // disabled: dashboard is a SPA served as static files
+}));
+
+// Response compression for JSON/SSE payloads
+app.use(compression());
 
 // Request ID FIRST — must run before body-parser so errors thrown by
 // express.json() (e.g. SyntaxError on malformed JSON) still carry an id.

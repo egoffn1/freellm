@@ -23,7 +23,7 @@ cp .env.example .env   # add at least one provider API key
 pnpm dev
 ```
 
-API server runs on `http://localhost:3000`. Dashboard on `http://localhost:5173`. Website on `http://localhost:4321` (run `cd packages/website && pnpm dev` separately).
+API server runs on `http://localhost:3000`. Dashboard on `http://localhost:5173`. Website on `http://localhost:4321` (run `cd apps/web && pnpm dev` separately).
 
 Smoke test the gateway:
 
@@ -92,7 +92,7 @@ scripts/
 
 How to add one:
 
-1. Create `packages/api-server/src/gateway/providers/your-provider.ts` extending `BaseProvider`
+1. Create `apps/gateway/src/providers/your-provider.ts` extending `BaseProvider`
 2. Set `id`, `name`, `baseUrl`, and a `models` array with the prefix `your-provider/`
 3. Implement `protected getApiKeys(): string[]` reading from `process.env`
 4. Override `complete()` if the provider needs a non-standard request shape (see `ollama.ts`)
@@ -107,7 +107,7 @@ How to add one:
 **Provider template:**
 
 ```typescript
-// packages/api-server/src/gateway/providers/your-provider.ts
+// apps/gateway/src/providers/your-provider.ts
 import { BaseProvider, parseApiKeys } from "./base.js";
 import type { ModelObject } from "../types.js";
 
@@ -171,11 +171,11 @@ export class YourProvider extends BaseProvider {
 
 ```bash
 # Type check (run in each package)
-cd packages/api-server && pnpm typecheck
+cd apps/gateway && pnpm typecheck
 cd packages/dashboard && pnpm typecheck
 
 # Build the API server
-cd packages/api-server && pnpm build
+cd apps/gateway && pnpm build
 
 # Smoke test the running gateway
 ./scripts/test-gateway.sh
