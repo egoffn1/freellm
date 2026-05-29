@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Copy, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Check, Copy } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 const BASE_URL = `${window.location.origin}/api/v1`;
@@ -18,13 +18,18 @@ function CodeBlock({ code }: { code: string }) {
   return (
     <div className="relative group">
       <button
+        type="button"
         onClick={copy}
         className="absolute top-3 right-3 flex items-center gap-1.5 text-xs font-mono text-muted-foreground hover:text-foreground transition-colors duration-150 cursor-pointer z-10"
       >
         {copied ? (
-          <><Check className="w-3 h-3 text-primary" /> Copied</>
+          <>
+            <Check className="w-3 h-3 text-primary" /> Copied
+          </>
         ) : (
-          <><Copy className="w-3 h-3" /> Copy</>
+          <>
+            <Copy className="w-3 h-3" /> Copy
+          </>
         )}
       </button>
       <pre className="overflow-x-auto p-4 pt-10 text-sm font-mono text-foreground/90 leading-relaxed">
@@ -34,7 +39,11 @@ function CodeBlock({ code }: { code: string }) {
   );
 }
 
-function Section({ step, title, children }: { step: number; title: string; children: React.ReactNode }) {
+function Section({
+  step,
+  title,
+  children,
+}: { step: number; title: string; children: React.ReactNode }) {
   return (
     <div className="relative pl-10 md:pl-12 min-w-0">
       <div className="absolute left-0 top-0 w-7 h-7 rounded-lg border border-primary/15 bg-primary/[0.06] flex items-center justify-center">
@@ -120,9 +129,7 @@ export default function Quickstart() {
   return (
     <div className="space-y-10 animate-in fade-in duration-500 min-w-0">
       <div>
-        <h1 className="text-2xl font-mono font-semibold tracking-tight">
-          Quickstart
-        </h1>
+        <h1 className="text-2xl font-mono font-semibold tracking-tight">Quickstart</h1>
         <p className="text-muted-foreground mt-1 text-sm">
           Point your existing OpenAI SDK at FreeLLM. No other changes needed.
         </p>
@@ -143,13 +150,22 @@ export default function Quickstart() {
 
         <Section step={2} title="Choose a model">
           <p className="text-sm text-muted-foreground mb-3">
-            Use a meta-model that auto-selects the best available free provider, or pick a specific one.
+            Use a meta-model that auto-selects the best available free provider, or pick a specific
+            one.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
             {[
               { id: "free", desc: "First available provider", note: "Best for reliability" },
-              { id: "free-fast", desc: "Groq → Cerebras → Gemini → Mistral", note: "Optimized for speed" },
-              { id: "free-smart", desc: "Gemini → Groq → Mistral → Cerebras", note: "Optimized for quality" },
+              {
+                id: "free-fast",
+                desc: "Groq → Cerebras → Gemini → Mistral",
+                note: "Optimized for speed",
+              },
+              {
+                id: "free-smart",
+                desc: "Gemini → Groq → Mistral → Cerebras",
+                note: "Optimized for quality",
+              },
             ].map((m) => (
               <div
                 key={m.id}
@@ -171,13 +187,14 @@ export default function Quickstart() {
             <div className="flex border-b border-white/[0.04]">
               {tabs.map((tab) => (
                 <button
+                  type="button"
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
                     "px-4 py-2.5 text-xs font-mono tracking-wide transition-colors duration-150 cursor-pointer relative",
                     activeTab === tab.id
                       ? "text-primary"
-                      : "text-muted-foreground hover:text-foreground"
+                      : "text-muted-foreground hover:text-foreground",
                   )}
                 >
                   {tab.label}
@@ -196,7 +213,8 @@ export default function Quickstart() {
 
       <div className="p-4 rounded-xl border border-white/[0.04] bg-white/[0.02] text-sm text-muted-foreground font-mono">
         <span className="text-foreground font-medium">Note: </span>
-        FreeLLM ignores the Authorization header. You can pass any string or leave it empty. Provider API keys are configured server-side via environment variables.
+        FreeLLM ignores the Authorization header. You can pass any string or leave it empty.
+        Provider API keys are configured server-side via environment variables.
       </div>
     </div>
   );

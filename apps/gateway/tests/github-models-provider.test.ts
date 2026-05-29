@@ -5,7 +5,7 @@
  * directly (via a small subclass that exposes them) and assert env-var
  * handling, the base URL, model catalog shape, and mapRequest behavior.
  */
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { GitHubModelsProvider } from "../src/providers/github.js";
 import type { ChatCompletionRequest } from "../src/types.js";
 
@@ -14,9 +14,7 @@ class ExposedGitHubModelsProvider extends GitHubModelsProvider {
   public exposeGetApiKeys(): string[] {
     return this.getApiKeys();
   }
-  public exposeMapRequest(
-    request: ChatCompletionRequest,
-  ): ChatCompletionRequest {
+  public exposeMapRequest(request: ChatCompletionRequest): ChatCompletionRequest {
     return this.mapRequest(request);
   }
 }
@@ -25,9 +23,7 @@ function provider() {
   return new ExposedGitHubModelsProvider();
 }
 
-function baseRequest(
-  overrides: Partial<ChatCompletionRequest> = {},
-): ChatCompletionRequest {
+function baseRequest(overrides: Partial<ChatCompletionRequest> = {}): ChatCompletionRequest {
   return {
     model: "github/openai/gpt-4o-mini",
     messages: [{ role: "user", content: "hi" }],
@@ -36,11 +32,7 @@ function baseRequest(
 }
 
 // Preserve and restore env vars across tests so they don't leak state.
-const ENV_KEYS = [
-  "GITHUB_MODELS_API_KEY",
-  "GITHUB_TOKEN",
-  "GITHUB_API_KEY",
-] as const;
+const ENV_KEYS = ["GITHUB_MODELS_API_KEY", "GITHUB_TOKEN", "GITHUB_API_KEY"] as const;
 
 describe("GitHubModelsProvider env var handling", () => {
   const saved: Record<string, string | undefined> = {};
@@ -67,25 +59,25 @@ describe("GitHubModelsProvider env var handling", () => {
   });
 
   it("returns a single key when GITHUB_MODELS_API_KEY is a single token", () => {
-    process.env["GITHUB_MODELS_API_KEY"] = "ghp_single_token";
+    process.env.GITHUB_MODELS_API_KEY = "ghp_single_token";
     expect(provider().exposeGetApiKeys()).toEqual(["ghp_single_token"]);
   });
 
   it("supports comma-separated multi-key rotation", () => {
-    process.env["GITHUB_MODELS_API_KEY"] = "tok1,tok2,tok3";
+    process.env.GITHUB_MODELS_API_KEY = "tok1,tok2,tok3";
     expect(provider().exposeGetApiKeys()).toEqual(["tok1", "tok2", "tok3"]);
   });
 
   it("trims whitespace and drops empty entries", () => {
-    process.env["GITHUB_MODELS_API_KEY"] = "  tok1 , ,tok2,   ,tok3  ";
+    process.env.GITHUB_MODELS_API_KEY = "  tok1 , ,tok2,   ,tok3  ";
     expect(provider().exposeGetApiKeys()).toEqual(["tok1", "tok2", "tok3"]);
   });
 
   it("does NOT read GITHUB_TOKEN or GITHUB_API_KEY", () => {
     // Regression guard: these env vars collide with standard dotfile/CI
     // conventions and must not be picked up by this provider.
-    process.env["GITHUB_TOKEN"] = "should_not_be_read";
-    process.env["GITHUB_API_KEY"] = "also_should_not_be_read";
+    process.env.GITHUB_TOKEN = "should_not_be_read";
+    process.env.GITHUB_API_KEY = "also_should_not_be_read";
     expect(provider().exposeGetApiKeys()).toEqual([]);
   });
 
@@ -94,7 +86,7 @@ describe("GitHubModelsProvider env var handling", () => {
   });
 
   it("isEnabled() returns true when env var is set to a non-empty value", () => {
-    process.env["GITHUB_MODELS_API_KEY"] = "ghp_any_value";
+    process.env.GITHUB_MODELS_API_KEY = "ghp_any_value";
     expect(provider().isEnabled()).toBe(true);
   });
 });
@@ -107,9 +99,7 @@ describe("GitHubModelsProvider baseUrl", () => {
 
 describe("GitHubModelsProvider.mapRequest", () => {
   it("strips the 'github/' prefix and leaves 'openai/gpt-4o-mini' intact", () => {
-    const mapped = provider().exposeMapRequest(
-      baseRequest({ model: "github/openai/gpt-4o-mini" }),
-    );
+    const mapped = provider().exposeMapRequest(baseRequest({ model: "github/openai/gpt-4o-mini" }));
     expect(mapped.model).toBe("openai/gpt-4o-mini");
   });
 

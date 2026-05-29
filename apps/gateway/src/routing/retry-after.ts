@@ -33,7 +33,7 @@ export function parseRetryAfter(
 
   // Case 1: numeric seconds (integer or fractional).
   if (/^-?\d+(\.\d+)?$/.test(raw)) {
-    const seconds = parseFloat(raw);
+    const seconds = Number.parseFloat(raw);
     if (!Number.isFinite(seconds)) return null;
     return clamp(seconds * 1_000);
   }

@@ -1,16 +1,16 @@
-import type { ProviderRegistry } from "./registry.js";
-import type { ProviderAdapter } from "../providers/types.js";
-import type { ChatCompletionRequest, ChatCompletionResponse, RoutingStrategy } from "../types.js";
-import type { RequestLog } from "../observability/request-log.js";
-import type { UsageTracker } from "../observability/usage-tracker.js";
-import { ResponseCache, hasImageContent } from "./cache.js";
-import { ObservabilityStore } from "../observability/index.js";
-import { META_MODELS, DEFAULT_MODELS, NON_RETRIABLE_STATUSES } from "../config.js";
-import { assertStrictModeAllowed } from "./strict.js";
-import { parseRetryAfter } from "./retry-after.js";
-import { providerSatisfiesPrivacy, type PrivacyRequest } from "./privacy.js";
+import { DEFAULT_MODELS, META_MODELS, NON_RETRIABLE_STATUSES } from "../config.js";
 import { freellmError } from "../errors/index.js";
 import { logger } from "../logger.js";
+import { ObservabilityStore } from "../observability/index.js";
+import type { RequestLog } from "../observability/request-log.js";
+import type { UsageTracker } from "../observability/usage-tracker.js";
+import type { ProviderAdapter } from "../providers/types.js";
+import type { ChatCompletionRequest, ChatCompletionResponse, RoutingStrategy } from "../types.js";
+import { type ResponseCache, hasImageContent } from "./cache.js";
+import { type PrivacyRequest, providerSatisfiesPrivacy } from "./privacy.js";
+import type { ProviderRegistry } from "./registry.js";
+import { parseRetryAfter } from "./retry-after.js";
+import { assertStrictModeAllowed } from "./strict.js";
 
 export type RouteReason = "direct" | "meta" | "cache" | "failover";
 
@@ -28,7 +28,7 @@ export interface RouteOptions {
   privacy?: PrivacyRequest;
 }
 
-const ROUTE_TIMEOUT_MS = parseInt(process.env["ROUTE_TIMEOUT_MS"] ?? "30000", 10);
+const ROUTE_TIMEOUT_MS = Number.parseInt(process.env.ROUTE_TIMEOUT_MS ?? "30000", 10);
 
 export class GatewayRouter {
   // Round-robin index for explicit (non-meta) model requests
@@ -41,7 +41,10 @@ export class GatewayRouter {
   public usageTracker: UsageTracker;
   public cache: ResponseCache;
 
-  constructor(private registry: ProviderRegistry, private obs: ObservabilityStore = new ObservabilityStore()) {
+  constructor(
+    private registry: ProviderRegistry,
+    private obs: ObservabilityStore = new ObservabilityStore(),
+  ) {
     this.requestLog = obs.requestLog;
     this.usageTracker = obs.usageTracker;
     this.cache = obs.cache;
@@ -97,9 +100,7 @@ export class GatewayRouter {
 
     const available = this.registry
       .getAvailable()
-      .filter(
-        (p) => !effectiveExcluded.has(p.id) && p.models.some((m) => m.id === modelId),
-      );
+      .filter((p) => !effectiveExcluded.has(p.id) && p.models.some((m) => m.id === modelId));
 
     if (available.length === 0) return undefined;
 
@@ -340,8 +341,10 @@ export class GatewayRouter {
     }
 
     try {
-      const { response, provider, resolvedModel, attempted, failoverCount } =
-        await this.route(request, options);
+      const { response, provider, resolvedModel, attempted, failoverCount } = await this.route(
+        request,
+        options,
+      );
       const latencyMs = Date.now() - startTime;
 
       const data = (await response.json()) as ChatCompletionResponse;
@@ -395,11 +398,7 @@ export class GatewayRouter {
         resolvedModel,
         requestedModel: request.model,
         cached: false,
-        reason: META_MODELS.has(request.model)
-          ? "meta"
-          : failoverCount > 0
-            ? "failover"
-            : "direct",
+        reason: META_MODELS.has(request.model) ? "meta" : failoverCount > 0 ? "failover" : "direct",
         attempted,
       };
       return { data, meta };

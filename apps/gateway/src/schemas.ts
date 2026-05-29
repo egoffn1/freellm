@@ -42,45 +42,50 @@ const assistantToolCallSchema = z.object({
 
 const chatMessageSchema = z.object({
   role: z.enum(["system", "user", "assistant", "tool", "developer"]),
-  content: z.union([z.string(), z.array(z.any())]).nullable().optional(),
+  content: z
+    .union([z.string(), z.array(z.any())])
+    .nullable()
+    .optional(),
   name: z.string().nullable().optional(),
   tool_call_id: z.string().nullable().optional(),
   tool_calls: z.array(assistantToolCallSchema).optional(),
 });
 
-export const chatCompletionRequestSchema = z.object({
-  model: z.string().min(1),
-  messages: z.array(chatMessageSchema).min(1).max(256),
-  stream: z.boolean().nullable().optional(),
-  stream_options: z
-    .object({ include_usage: z.boolean().optional() })
-    .nullable()
-    .optional(),
-  temperature: z.number().min(0).max(2).nullable().optional(),
-  max_tokens: z.number().int().min(1).max(32768).nullable().optional(),
-  max_completion_tokens: z.number().int().min(1).max(32768).nullable().optional(),
-  top_p: z.number().nullable().optional(),
-  stop: z.union([z.string(), z.array(z.string())]).nullable().optional(),
-  presence_penalty: z.number().min(-2).max(2).nullable().optional(),
-  frequency_penalty: z.number().min(-2).max(2).nullable().optional(),
-  seed: z.number().int().nullable().optional(),
-  tools: z.array(chatToolSchema).optional(),
-  tool_choice: chatToolChoiceSchema.optional(),
-  parallel_tool_calls: z.boolean().optional(),
-  response_format: z
-    .object({
-      type: z.enum(["text", "json_object", "json_schema"]),
-      json_schema: z.record(z.any()).optional(),
-    })
-    .optional(),
-  // Reasoning budget knob for Gemini 2.5 OpenAI-compat and OpenAI o-series.
-  // Gemini defaults this to "high" which silently eats ~95% of max_tokens on
-  // internal thinking, leaving the caller with almost no visible output. The
-  // gemini provider adapter defaults this to "low" when the client did not
-  // supply one; clients that explicitly set it keep their value.
-  reasoning_effort: z.enum(["none", "low", "medium", "high"]).optional(),
-  user: z.string().optional(),
-}).strict();
+export const chatCompletionRequestSchema = z
+  .object({
+    model: z.string().min(1),
+    messages: z.array(chatMessageSchema).min(1).max(256),
+    stream: z.boolean().nullable().optional(),
+    stream_options: z.object({ include_usage: z.boolean().optional() }).nullable().optional(),
+    temperature: z.number().min(0).max(2).nullable().optional(),
+    max_tokens: z.number().int().min(1).max(32768).nullable().optional(),
+    max_completion_tokens: z.number().int().min(1).max(32768).nullable().optional(),
+    top_p: z.number().nullable().optional(),
+    stop: z
+      .union([z.string(), z.array(z.string())])
+      .nullable()
+      .optional(),
+    presence_penalty: z.number().min(-2).max(2).nullable().optional(),
+    frequency_penalty: z.number().min(-2).max(2).nullable().optional(),
+    seed: z.number().int().nullable().optional(),
+    tools: z.array(chatToolSchema).optional(),
+    tool_choice: chatToolChoiceSchema.optional(),
+    parallel_tool_calls: z.boolean().optional(),
+    response_format: z
+      .object({
+        type: z.enum(["text", "json_object", "json_schema"]),
+        json_schema: z.record(z.any()).optional(),
+      })
+      .optional(),
+    // Reasoning budget knob for Gemini 2.5 OpenAI-compat and OpenAI o-series.
+    // Gemini defaults this to "high" which silently eats ~95% of max_tokens on
+    // internal thinking, leaving the caller with almost no visible output. The
+    // gemini provider adapter defaults this to "low" when the client did not
+    // supply one; clients that explicitly set it keep their value.
+    reasoning_effort: z.enum(["none", "low", "medium", "high"]).optional(),
+    user: z.string().optional(),
+  })
+  .strict();
 
 export const updateRoutingSchema = z.object({
   strategy: z.enum(["round_robin", "random"]),

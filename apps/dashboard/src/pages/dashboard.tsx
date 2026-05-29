@@ -1,13 +1,18 @@
-import { useGetGatewayStatus, useResetProviderCircuitBreaker, useUpdateRoutingStrategy, getGetGatewayStatusQueryKey } from "@/api/hooks";
-import { useQueryClient } from "@tanstack/react-query";
-import { Server } from "lucide-react";
-import { toast } from "sonner";
-import { RoutingToggle } from "@/components/routing-toggle";
+import {
+  getGetGatewayStatusQueryKey,
+  useGetGatewayStatus,
+  useResetProviderCircuitBreaker,
+  useUpdateRoutingStrategy,
+} from "@/api/hooks";
+import { BrowserTokensCard } from "@/components/browser-tokens-card";
 import { MetricsRow } from "@/components/metrics-row";
 import { ProviderCard } from "@/components/provider-card";
 import { RequestTable } from "@/components/request-table";
+import { RoutingToggle } from "@/components/routing-toggle";
 import { VirtualKeysPanel } from "@/components/virtual-keys-panel";
-import { BrowserTokensCard } from "@/components/browser-tokens-card";
+import { useQueryClient } from "@tanstack/react-query";
+import { Server } from "lucide-react";
+import { toast } from "sonner";
 
 export default function Dashboard() {
   const queryClient = useQueryClient();
@@ -51,11 +56,15 @@ export default function Dashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
         <div>
           <h1 className="text-2xl font-mono font-semibold tracking-tight">Gateway Status</h1>
-          <p className="text-muted-foreground mt-1 text-sm">Real-time metrics and routing control.</p>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Real-time metrics and routing control.
+          </p>
         </div>
         <RoutingToggle
           strategy={status?.routingStrategy}
-          onToggle={(checked) => updateRouting.mutate({ data: { strategy: checked ? "round_robin" : "random" } })}
+          onToggle={(checked) =>
+            updateRouting.mutate({ data: { strategy: checked ? "round_robin" : "random" } })
+          }
           disabled={updateRouting.isPending}
         />
       </div>
@@ -91,9 +100,7 @@ export default function Dashboard() {
           full width in that case via the grid's auto-fill behaviour. */}
       <div className="flex flex-col lg:flex-row gap-3 items-start">
         <VirtualKeysPanel />
-        {status?.browserTokens && (
-          <BrowserTokensCard info={status.browserTokens} />
-        )}
+        {status?.browserTokens && <BrowserTokensCard info={status.browserTokens} />}
       </div>
 
       <RequestTable requests={status?.recentRequests ?? []} />

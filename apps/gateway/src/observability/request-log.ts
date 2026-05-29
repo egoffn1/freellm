@@ -1,5 +1,5 @@
-import type { RequestLogEntry, RequestStatus } from "../types.js";
-import { randomUUID } from "crypto";
+import { randomUUID } from "node:crypto";
+import type { RequestLogEntry } from "../types.js";
 
 const MAX_LOG_ENTRIES = 500;
 

@@ -1,4 +1,4 @@
-import { createHash } from "crypto";
+import { createHash } from "node:crypto";
 import type { ChatCompletionRequest, ChatCompletionResponse } from "../types.js";
 
 export function hasImageContent(request: ChatCompletionRequest): boolean {
@@ -9,7 +9,7 @@ export function hasImageContent(request: ChatCompletionRequest): boolean {
         (part) =>
           typeof part === "object" &&
           part !== null &&
-          (part as Record<string, unknown>)["type"] === "image_url",
+          (part as Record<string, unknown>).type === "image_url",
       ),
   );
 }
@@ -83,11 +83,11 @@ export class ResponseCache {
 
   constructor() {
     // CACHE_ENABLED: defaults to "true". Set to "false" to disable.
-    this.enabled = (process.env["CACHE_ENABLED"] ?? "true").toLowerCase() !== "false";
+    this.enabled = (process.env.CACHE_ENABLED ?? "true").toLowerCase() !== "false";
     // CACHE_TTL_MS: defaults to 1 hour.
-    this.ttlMs = parseInt(process.env["CACHE_TTL_MS"] ?? "3600000", 10);
+    this.ttlMs = Number.parseInt(process.env.CACHE_TTL_MS ?? "3600000", 10);
     // CACHE_MAX_ENTRIES: defaults to 1000.
-    this.maxEntries = parseInt(process.env["CACHE_MAX_ENTRIES"] ?? "1000", 10);
+    this.maxEntries = Number.parseInt(process.env.CACHE_MAX_ENTRIES ?? "1000", 10);
   }
 
   isEnabled(): boolean {
@@ -127,12 +127,14 @@ export class ResponseCache {
    * Look up a cached response. Returns undefined on miss/expired/disabled/streaming.
    * Successful hits are re-inserted to bump them to the end of the LRU order.
    */
-  get(request: ChatCompletionRequest): {
-    response: ChatCompletionResponse;
-    provider: string;
-    promptTokens: number;
-    completionTokens: number;
-  } | undefined {
+  get(request: ChatCompletionRequest):
+    | {
+        response: ChatCompletionResponse;
+        provider: string;
+        promptTokens: number;
+        completionTokens: number;
+      }
+    | undefined {
     if (!this.enabled) return undefined;
     if (request.stream) return undefined;
     if (hasImageContent(request)) return undefined;

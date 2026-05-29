@@ -134,7 +134,11 @@ export class VirtualKeyStore {
       }
     }
 
-    const counter = this.counters.get(key.id)!;
+    let counter = this.counters.get(key.id);
+    if (!counter) {
+      counter = { requestTimes: [], tokenEvents: [] };
+      this.counters.set(key.id, counter);
+    }
     this.prune(counter, now);
 
     if (key.dailyRequestCap != null && counter.requestTimes.length >= key.dailyRequestCap) {
@@ -178,9 +182,10 @@ export class VirtualKeyStore {
       requestsInWindow: counter.requestTimes.length,
       tokensInWindow: tokens,
       requestCapRemaining:
-        key.dailyRequestCap != null ? Math.max(0, key.dailyRequestCap - counter.requestTimes.length) : null,
-      tokenCapRemaining:
-        key.dailyTokenCap != null ? Math.max(0, key.dailyTokenCap - tokens) : null,
+        key.dailyRequestCap != null
+          ? Math.max(0, key.dailyRequestCap - counter.requestTimes.length)
+          : null,
+      tokenCapRemaining: key.dailyTokenCap != null ? Math.max(0, key.dailyTokenCap - tokens) : null,
     };
   }
 
@@ -215,7 +220,7 @@ export class VirtualKeyCheckError extends Error {
  * failure with a clear message the boot log can surface.
  */
 export function loadVirtualKeysFromFile(path: string): VirtualKeyStore {
-  let stat;
+  let stat: ReturnType<typeof statSync>;
   try {
     stat = statSync(path);
   } catch (err) {
@@ -231,7 +236,7 @@ export function loadVirtualKeysFromFile(path: string): VirtualKeyStore {
   }
 
   const raw = readFileSync(path, "utf8");
-  let parsed;
+  let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
   } catch (err) {
@@ -262,7 +267,7 @@ export function emptyVirtualKeyStore(): VirtualKeyStore {
  * server refuses to boot with a broken config.
  */
 export function loadVirtualKeysFromEnv(): VirtualKeyStore {
-  const path = process.env["FREELLM_VIRTUAL_KEYS_PATH"];
+  const path = process.env.FREELLM_VIRTUAL_KEYS_PATH;
   if (!path) return emptyVirtualKeyStore();
   const store = loadVirtualKeysFromFile(path);
   logger.info(

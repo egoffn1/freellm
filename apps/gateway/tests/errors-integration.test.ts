@@ -1,3 +1,5 @@
+import type { Express } from "express";
+import request from "supertest";
 /**
  * Integration tests for Phase 0: error SDK + request-id propagation.
  *
@@ -6,21 +8,19 @@
  * exercise auth and validation error paths without clashing with the
  * provider-backed e2e test.
  */
-import { describe, it, expect, beforeAll } from "vitest";
-import request from "supertest";
-import type { Express } from "express";
+import { beforeAll, describe, expect, it } from "vitest";
 
 let app: Express;
 
 beforeAll(async () => {
   // Freeze env BEFORE importing the app — the gateway is a module singleton.
   // A fixed API key lets us exercise 401 paths.
-  process.env["FREELLM_API_KEY"] = "test-key-for-errors-integration";
-  process.env["DISABLE_CLIENT_RATELIMIT"] = "true";
-  process.env["RATE_LIMIT_RPM"] = "100000";
-  process.env["FREELLM_IDENTIFIER_LIMIT"] = "1000/60000";
-  delete process.env["OLLAMA_BASE_URL"];
-  delete process.env["OLLAMA_MODELS"];
+  process.env.FREELLM_API_KEY = "test-key-for-errors-integration";
+  process.env.DISABLE_CLIENT_RATELIMIT = "true";
+  process.env.RATE_LIMIT_RPM = "100000";
+  process.env.FREELLM_IDENTIFIER_LIMIT = "1000/60000";
+  delete process.env.OLLAMA_BASE_URL;
+  delete process.env.OLLAMA_MODELS;
   for (const k of [
     "GROQ_API_KEY",
     "GEMINI_API_KEY",
@@ -42,7 +42,7 @@ describe("Phase 0: request-id propagation", () => {
   it("assigns an X-Request-Id header on every response", async () => {
     const res = await request(app).get("/healthz");
     expect(res.headers["x-request-id"]).toBeTypeOf("string");
-    expect(res.headers["x-request-id"]!.length).toBeGreaterThan(0);
+    expect(res.headers["x-request-id"]?.length).toBeGreaterThan(0);
   });
 
   it("echoes a client-supplied X-Request-Id when it matches the safe pattern", async () => {
@@ -65,7 +65,7 @@ describe("Phase 0: request-id propagation", () => {
     const oversized = "a".repeat(200);
     const res = await request(app).get("/healthz").set("x-request-id", oversized);
     expect(res.headers["x-request-id"]).not.toBe(oversized);
-    expect(res.headers["x-request-id"]!.length).toBeLessThanOrEqual(128);
+    expect(res.headers["x-request-id"]?.length).toBeLessThanOrEqual(128);
   });
 
   it("response body request_id matches the X-Request-Id header for error paths", async () => {

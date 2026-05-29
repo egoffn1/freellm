@@ -1,3 +1,7 @@
+import { type Server, createServer } from "node:http";
+import type { AddressInfo } from "node:net";
+import type { Express } from "express";
+import request from "supertest";
 /**
  * End-to-end streaming test. Boots the real Express app with the
  * streaming normalizer pipeline wired in, runs an upstream that
@@ -9,11 +13,7 @@
  * normalizer selects the gemini module. This lets us exercise the
  * real chat.ts streaming path end-to-end without hitting Google.
  */
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
-import { createServer, type Server } from "http";
-import { AddressInfo } from "net";
-import request from "supertest";
-import type { Express } from "express";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 // We need the normalizer to treat the upstream as gemini. The easiest
 // path without monkey-patching is to exercise the streaming path
@@ -29,7 +29,7 @@ let app: Express;
 const BROKEN_TOOL_CALL_STREAM =
   'data: {"id":"x","object":"chat.completion.chunk","created":1,"model":"llama3","choices":[{"index":0,"delta":{"role":"assistant"}}]}\n\n' +
   'data: {"id":"x","object":"chat.completion.chunk","created":1,"model":"llama3","choices":[{"index":0,"delta":{"tool_calls":[{"function":{"name":"search","arguments":"{\\"q\\":\\"freellm\\"}"}}]}}]}\n\n' +
-  'data: [DONE]\n\n';
+  "data: [DONE]\n\n";
 
 async function startFakeUpstream(): Promise<void> {
   upstreamServer = createServer((req, res) => {
@@ -42,9 +42,7 @@ async function startFakeUpstream(): Promise<void> {
       res.end(BROKEN_TOOL_CALL_STREAM);
     });
   });
-  await new Promise<void>((resolve) =>
-    upstreamServer.listen(0, "127.0.0.1", () => resolve()),
-  );
+  await new Promise<void>((resolve) => upstreamServer.listen(0, "127.0.0.1", () => resolve()));
   const addr = upstreamServer.address() as AddressInfo;
   upstreamUrl = `http://127.0.0.1:${addr.port}`;
 }
@@ -52,11 +50,11 @@ async function startFakeUpstream(): Promise<void> {
 beforeAll(async () => {
   await startFakeUpstream();
 
-  process.env["OLLAMA_BASE_URL"] = upstreamUrl;
-  process.env["OLLAMA_MODELS"] = "llama3";
-  process.env["RATE_LIMIT_RPM"] = "100000";
-  process.env["FREELLM_IDENTIFIER_LIMIT"] = "1000/60000";
-  delete process.env["FREELLM_API_KEY"];
+  process.env.OLLAMA_BASE_URL = upstreamUrl;
+  process.env.OLLAMA_MODELS = "llama3";
+  process.env.RATE_LIMIT_RPM = "100000";
+  process.env.FREELLM_IDENTIFIER_LIMIT = "1000/60000";
+  delete process.env.FREELLM_API_KEY;
   for (const k of [
     "GROQ_API_KEY",
     "GEMINI_API_KEY",
@@ -99,7 +97,9 @@ describe("E2E: streaming normalizer fills missing tool_call fields", () => {
       .parse((r, cb) => {
         let data = "";
         r.setEncoding("utf8");
-        r.on("data", (chunk) => (data += chunk));
+        r.on("data", (chunk) => {
+          data += chunk;
+        });
         r.on("end", () => cb(null, data));
       });
 
@@ -145,7 +145,9 @@ describe("E2E: streaming normalizer fills missing tool_call fields", () => {
       .parse((r, cb) => {
         let data = "";
         r.setEncoding("utf8");
-        r.on("data", (chunk) => (data += chunk));
+        r.on("data", (chunk) => {
+          data += chunk;
+        });
         r.on("end", () => cb(null, data));
       });
 

@@ -1,5 +1,5 @@
-import { BaseProvider, parseApiKeys } from "./base.js";
 import type { ModelObject } from "../types.js";
+import { BaseProvider, parseApiKeys } from "./base.js";
 
 /**
  * GitHub Models provider.
@@ -40,7 +40,7 @@ export class GitHubModelsProvider extends BaseProvider {
   override readonly supportsStreamUsage = true;
 
   get baseUrl(): string {
-    return process.env["GITHUB_MODELS_BASE_URL"] ?? "https://models.github.ai/inference";
+    return process.env.GITHUB_MODELS_BASE_URL ?? "https://models.github.ai/inference";
   }
 
   readonly models: ModelObject[] = [
@@ -99,6 +99,6 @@ export class GitHubModelsProvider extends BaseProvider {
   ];
 
   protected getApiKeys(): string[] {
-    return parseApiKeys(process.env["GITHUB_MODELS_API_KEY"]);
+    return parseApiKeys(process.env.GITHUB_MODELS_API_KEY);
   }
 }

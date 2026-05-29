@@ -51,8 +51,8 @@
 /* Premium font stack: Geist for everything */
 :root {
   --sl-font: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --sl-font-mono: "Geist Mono", ui-monospace, "SF Mono", Monaco, "Cascadia Code",
-    "JetBrains Mono", monospace;
+  --sl-font-mono: "Geist Mono", ui-monospace, "SF Mono", Monaco, "Cascadia Code", "JetBrains Mono",
+    monospace;
   --sl-font-system: "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --sl-font-system-mono: "Geist Mono", ui-monospace, monospace;
 }
@@ -67,8 +67,7 @@ body {
 }
 
 body {
-  background-image:
-    linear-gradient(to right, hsl(225 15% 30% / 0.025) 1px, transparent 1px),
+  background-image: linear-gradient(to right, hsl(225 15% 30% / 0.025) 1px, transparent 1px),
     linear-gradient(to bottom, hsl(225 15% 30% / 0.025) 1px, transparent 1px);
   background-size: 32px 32px;
 }
@@ -111,7 +110,9 @@ samp,
   font-feature-settings: "ss01", "ss02", "cv11";
 }
 
-.content h1 { letter-spacing: -0.035em; }
+.content h1 {
+  letter-spacing: -0.035em;
+}
 
 /* Tabular numbers everywhere they appear */
 .content table,

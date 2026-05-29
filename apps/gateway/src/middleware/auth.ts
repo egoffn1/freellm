@@ -1,14 +1,14 @@
-import type { Request, Response, NextFunction } from "express";
-import { createHash, timingSafeEqual } from "crypto";
+import { createHash, timingSafeEqual } from "node:crypto";
+import type { NextFunction, Request, Response } from "express";
 import { freellmError } from "../errors/index.js";
-import { getVirtualKeyStore, type VirtualKey } from "../features/virtual-keys.js";
 import {
-  verifyBrowserToken,
-  isBrowserTokenEnabled,
   BrowserTokenError,
-  TOKEN_PREFIX,
   type BrowserTokenPayload,
+  TOKEN_PREFIX,
+  isBrowserTokenEnabled,
+  verifyBrowserToken,
 } from "../features/browser-tokens.js";
+import { type VirtualKey, getVirtualKeyStore } from "../features/virtual-keys.js";
 
 /** Hash a string to a fixed-length buffer for timing-safe comparison. */
 function hashKey(key: string): Buffer {
@@ -47,8 +47,8 @@ declare global {
  * dev mode). The server logs a warning at boot for this case.
  */
 export function auth(req: Request, _res: Response, next: NextFunction): void {
-  const requiredKey = process.env["FREELLM_API_KEY"];
-  const adminKey = process.env["FREELLM_ADMIN_KEY"];
+  const requiredKey = process.env.FREELLM_API_KEY;
+  const adminKey = process.env.FREELLM_ADMIN_KEY;
   const virtualKeyStore = getVirtualKeyStore();
   const hasVirtualKeys = virtualKeyStore.size() > 0;
 
@@ -125,10 +125,20 @@ export function auth(req: Request, _res: Response, next: NextFunction): void {
   //    behave like a scoped bearer credential.
   if (token.startsWith(TOKEN_PREFIX) && isBrowserTokenEnabled()) {
     try {
+      const secret = process.env.FREELLM_TOKEN_SECRET;
+      if (!secret) {
+        next(
+          freellmError({
+            code: "internal_server_error",
+            message: "Browser token secret is not configured.",
+          }),
+        );
+        return;
+      }
       const payload = verifyBrowserToken({
         token,
-        secret: process.env["FREELLM_TOKEN_SECRET"]!,
-        expectedOrigin: req.headers["origin"] ?? null,
+        secret,
+        expectedOrigin: req.headers.origin ?? null,
       });
       req.browserToken = payload;
       // If the token was minted by a virtual-key holder, hydrate

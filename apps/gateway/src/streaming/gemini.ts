@@ -73,29 +73,27 @@ export function createGeminiNormalizer(): Normalizer {
     transform(chunk: ChatCompletionChunk): ChatCompletionChunk[] {
       if (!chunk.choices || chunk.choices.length === 0) return [chunk];
 
-      const patchedChoices: ChatCompletionChunkChoice[] = chunk.choices.map(
-        (choice) => {
-          const toolCalls = choice.delta?.tool_calls;
-          if (!toolCalls || toolCalls.length === 0) return choice;
+      const patchedChoices: ChatCompletionChunkChoice[] = chunk.choices.map((choice) => {
+        const toolCalls = choice.delta?.tool_calls;
+        if (!toolCalls || toolCalls.length === 0) return choice;
 
-          const patchedToolCalls = toolCalls.map((tc, positional) => ({
-            ...tc,
-            index: indexForToolCall(tc, positional),
-            // Some Gemini builds also omit `type`. The OpenAI spec
-            // requires "function" on the first fragment only, but it's
-            // cheap and harmless to stamp it on every fragment.
-            type: tc.type ?? "function",
-          }));
+        const patchedToolCalls = toolCalls.map((tc, positional) => ({
+          ...tc,
+          index: indexForToolCall(tc, positional),
+          // Some Gemini builds also omit `type`. The OpenAI spec
+          // requires "function" on the first fragment only, but it's
+          // cheap and harmless to stamp it on every fragment.
+          type: tc.type ?? "function",
+        }));
 
-          return {
-            ...choice,
-            delta: {
-              ...choice.delta,
-              tool_calls: patchedToolCalls,
-            },
-          };
-        },
-      );
+        return {
+          ...choice,
+          delta: {
+            ...choice.delta,
+            tool_calls: patchedToolCalls,
+          },
+        };
+      });
 
       return [{ ...chunk, choices: patchedChoices }];
     },

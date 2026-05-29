@@ -1,3 +1,10 @@
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { type Server, createServer } from "node:http";
+import type { AddressInfo } from "node:net";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import type { Express } from "express";
+import request from "supertest";
 /**
  * End-to-end test of the multi-tenant surface:
  *   - per-identifier rate limiting
@@ -7,14 +14,7 @@
  * Boots the real Express app against a fake upstream, with a temp
  * virtual-keys.json pointed at via FREELLM_VIRTUAL_KEYS_PATH.
  */
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { createServer, type Server } from "http";
-import { AddressInfo } from "net";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import path from "node:path";
-import { tmpdir } from "node:os";
-import request from "supertest";
-import type { Express } from "express";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 let upstreamServer: Server;
 let upstreamUrl: string;
@@ -71,9 +71,7 @@ async function startFakeUpstream(): Promise<void> {
       res.end(canned);
     });
   });
-  await new Promise<void>((resolve) =>
-    upstreamServer.listen(0, "127.0.0.1", () => resolve()),
-  );
+  await new Promise<void>((resolve) => upstreamServer.listen(0, "127.0.0.1", () => resolve()));
   const addr = upstreamServer.address() as AddressInfo;
   upstreamUrl = `http://127.0.0.1:${addr.port}`;
 }
@@ -81,10 +79,10 @@ async function startFakeUpstream(): Promise<void> {
 beforeAll(async () => {
   await startFakeUpstream();
 
-  process.env["OLLAMA_BASE_URL"] = upstreamUrl;
-  process.env["OLLAMA_MODELS"] = "llama3";
+  process.env.OLLAMA_BASE_URL = upstreamUrl;
+  process.env.OLLAMA_MODELS = "llama3";
   // Master key stays unset so the virtual keys are the only auth source.
-  delete process.env["FREELLM_API_KEY"];
+  delete process.env.FREELLM_API_KEY;
   for (const k of [
     "GROQ_API_KEY",
     "GEMINI_API_KEY",
@@ -98,9 +96,9 @@ beforeAll(async () => {
     delete process.env[k];
   }
   // Generous identifier limit so these tests do not trip on their own IP bucket.
-  process.env["FREELLM_IDENTIFIER_LIMIT"] = "1000/60000";
-  process.env["RATE_LIMIT_RPM"] = "100000";
-  process.env["FREELLM_VIRTUAL_KEYS_PATH"] = virtualKeysFile();
+  process.env.FREELLM_IDENTIFIER_LIMIT = "1000/60000";
+  process.env.RATE_LIMIT_RPM = "100000";
+  process.env.FREELLM_VIRTUAL_KEYS_PATH = virtualKeysFile();
 
   // Init the virtual-key singleton BEFORE importing app so auth sees it.
   const { initVirtualKeys } = await import("../src/features/virtual-keys.js");
@@ -178,13 +176,22 @@ describe("E2E: virtual key caps", () => {
     };
     const tightKey = "Bearer sk-freellm-tight-cap-0001";
 
-    const r1 = await request(app).post("/v1/chat/completions").set("authorization", tightKey).send(body);
+    const r1 = await request(app)
+      .post("/v1/chat/completions")
+      .set("authorization", tightKey)
+      .send(body);
     expect(r1.status).toBe(200);
 
-    const r2 = await request(app).post("/v1/chat/completions").set("authorization", tightKey).send(body);
+    const r2 = await request(app)
+      .post("/v1/chat/completions")
+      .set("authorization", tightKey)
+      .send(body);
     expect(r2.status).toBe(200);
 
-    const r3 = await request(app).post("/v1/chat/completions").set("authorization", tightKey).send(body);
+    const r3 = await request(app)
+      .post("/v1/chat/completions")
+      .set("authorization", tightKey)
+      .send(body);
     expect(r3.status).toBe(429);
     expect(r3.body.error.code).toBe("virtual_key_cap_reached");
   });

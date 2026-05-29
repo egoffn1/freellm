@@ -1,17 +1,17 @@
-import express, { type Express, type Request } from "express";
-import cors from "cors";
-import helmet from "helmet";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import compression from "compression";
+import cors from "cors";
+import express, { type Express, type Request } from "express";
+import helmet from "helmet";
 import pinoHttp from "pino-http";
-import path from "path";
-import { fileURLToPath } from "url";
-import router from "./routes";
 import { logger } from "./logger";
-import { errorHandler } from "./middleware/error-handler.js";
 import { auth } from "./middleware/auth.js";
+import { errorHandler } from "./middleware/error-handler.js";
+import { identifierLimit } from "./middleware/identifier-limit.js";
 import { clientRateLimit } from "./middleware/rate-limit.js";
 import { requestId } from "./middleware/request-id.js";
-import { identifierLimit } from "./middleware/identifier-limit.js";
+import router from "./routes";
 
 const app: Express = express();
 
@@ -19,9 +19,11 @@ const app: Express = express();
 app.set("trust proxy", 1);
 
 // Security headers (CSP, HSTS, X-Frame-Options, etc.)
-app.use(helmet({
-  contentSecurityPolicy: false, // disabled: dashboard is a SPA served as static files
-}));
+app.use(
+  helmet({
+    contentSecurityPolicy: false, // disabled: dashboard is a SPA served as static files
+  }),
+);
 
 // Response compression for JSON/SSE payloads
 app.use(compression());
@@ -31,7 +33,7 @@ app.use(compression());
 app.use(requestId);
 
 // CORS: restrict origins in production via ALLOWED_ORIGINS env var
-const allowedOrigins = process.env["ALLOWED_ORIGINS"];
+const allowedOrigins = process.env.ALLOWED_ORIGINS;
 app.use(
   cors(
     allowedOrigins

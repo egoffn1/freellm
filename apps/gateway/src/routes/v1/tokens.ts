@@ -1,13 +1,13 @@
-import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
+import { type IRouter, type NextFunction, type Request, type Response, Router } from "express";
 import { z } from "zod";
-import { validate } from "../../middleware/validate.js";
 import { freellmError } from "../../errors/index.js";
 import {
-  signBrowserToken,
-  isBrowserTokenEnabled,
   BrowserTokenError,
   MAX_TTL_SECONDS,
+  isBrowserTokenEnabled,
+  signBrowserToken,
 } from "../../features/browser-tokens.js";
+import { validate } from "../../middleware/validate.js";
 
 const tokensRouter: IRouter = Router();
 
@@ -74,7 +74,16 @@ tokensRouter.post(
     }
 
     const body = req.body as IssueTokenBody;
-    const secret = process.env["FREELLM_TOKEN_SECRET"]!;
+    const secret = process.env.FREELLM_TOKEN_SECRET;
+    if (!secret) {
+      next(
+        freellmError({
+          code: "internal_server_error",
+          message: "Browser token secret is not configured.",
+        }),
+      );
+      return;
+    }
 
     // If the issuer authenticated via a virtual key, bind the token to
     // that virtual key id so Phase 2's cap enforcement flows through.

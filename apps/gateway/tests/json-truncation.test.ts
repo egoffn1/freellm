@@ -1,14 +1,14 @@
+import { type Server, createServer } from "node:http";
+import type { AddressInfo } from "node:net";
+import type { Express } from "express";
+import request from "supertest";
 /**
  * Tests for the X-FreeLLM-Warning: json-possibly-truncated header.
  *
  * Uses a fake upstream whose finish_reason is configurable per-request
  * so each test can independently verify the header logic.
  */
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { createServer, type Server } from "http";
-import { AddressInfo } from "net";
-import request from "supertest";
-import type { Express } from "express";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 type FinishReason = "stop" | "length";
 
@@ -70,11 +70,11 @@ let app: Express;
 beforeAll(async () => {
   upstream = await startFakeUpstream();
 
-  process.env["OLLAMA_BASE_URL"] = upstream.url;
-  process.env["OLLAMA_MODELS"] = "llama3";
-  process.env["DISABLE_CLIENT_RATELIMIT"] = "true";
-  process.env["RATE_LIMIT_RPM"] = "100000";
-  process.env["FREELLM_IDENTIFIER_LIMIT"] = "1000/60000";
+  process.env.OLLAMA_BASE_URL = upstream.url;
+  process.env.OLLAMA_MODELS = "llama3";
+  process.env.DISABLE_CLIENT_RATELIMIT = "true";
+  process.env.RATE_LIMIT_RPM = "100000";
+  process.env.FREELLM_IDENTIFIER_LIMIT = "1000/60000";
   for (const k of [
     "GROQ_API_KEY",
     "GEMINI_API_KEY",

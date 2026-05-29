@@ -1,23 +1,28 @@
-import { Router, type IRouter } from "express";
-import type { Request, Response, NextFunction } from "express";
-import { router as gatewayRouter, AllProvidersExhaustedError, ProviderClientError } from "../../routing/index.js";
-import { logger } from "../../logger.js";
-import type { ChatCompletionRequest } from "../../types.js";
-import type { RouteMeta } from "../../routing/router.js";
-import { validate } from "../../middleware/validate.js";
-import { chatCompletionRequestSchema } from "../../schemas.js";
-import { parseStrictHeader } from "../../routing/strict.js";
-import { parsePrivacyHeader } from "../../routing/privacy.js";
-import { getVirtualKeyStore, VirtualKeyCheckError, type VirtualKey } from "../../features/virtual-keys.js";
+import { type IRouter, Router } from "express";
+import type { NextFunction, Request, Response } from "express";
 import { freellmError } from "../../errors/index.js";
+import { annotateResponse } from "../../features/json-mode.js";
+import {
+  type VirtualKey,
+  VirtualKeyCheckError,
+  getVirtualKeyStore,
+} from "../../features/virtual-keys.js";
+import { logger } from "../../logger.js";
+import { validate } from "../../middleware/validate.js";
+import {
+  AllProvidersExhaustedError,
+  ProviderClientError,
+  router as gatewayRouter,
+} from "../../routing/index.js";
+import { parsePrivacyHeader } from "../../routing/privacy.js";
+import type { RouteMeta } from "../../routing/router.js";
+import { parseStrictHeader } from "../../routing/strict.js";
+import { chatCompletionRequestSchema } from "../../schemas.js";
 import { StreamingPipeline } from "../../streaming/pipeline.js";
 import { serializeHeartbeat } from "../../streaming/sse.js";
-import { annotateResponse } from "../../features/json-mode.js";
+import type { ChatCompletionRequest } from "../../types.js";
 
-const STREAM_IDLE_TIMEOUT_MS = parseInt(
-  process.env["STREAM_IDLE_TIMEOUT_MS"] ?? "30000",
-  10,
-);
+const STREAM_IDLE_TIMEOUT_MS = Number.parseInt(process.env.STREAM_IDLE_TIMEOUT_MS ?? "30000", 10);
 
 const chatRouter: IRouter = Router();
 
@@ -75,32 +80,36 @@ function guardVirtualKey(req: Request, model: string): VirtualKey | undefined {
   return key;
 }
 
-chatRouter.post("/completions", validate(chatCompletionRequestSchema), async (req: Request, res: Response, next: NextFunction) => {
-  const body = req.body as ChatCompletionRequest;
-  const strict = parseStrictHeader(req.header("x-freellm-strict"));
-  const privacy = parsePrivacyHeader(req.header("x-freellm-privacy"));
+chatRouter.post(
+  "/completions",
+  validate(chatCompletionRequestSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    const body = req.body as ChatCompletionRequest;
+    const strict = parseStrictHeader(req.header("x-freellm-strict"));
+    const privacy = parsePrivacyHeader(req.header("x-freellm-privacy"));
 
-  // Virtual key guard runs before routing. Errors here never touch upstream.
-  let virtualKey: VirtualKey | undefined;
-  try {
-    virtualKey = guardVirtualKey(req, body.model);
-  } catch (err) {
-    return next(err);
-  }
+    // Virtual key guard runs before routing. Errors here never touch upstream.
+    let virtualKey: VirtualKey | undefined;
+    try {
+      virtualKey = guardVirtualKey(req, body.model);
+    } catch (err) {
+      return next(err);
+    }
 
-  if (body.stream) {
-    // Inject stream_options.include_usage when a token-capped virtual key is
-    // active so the upstream returns usage in SSE chunks. Only sent to
-    // providers that declare supportsStreamUsage; others ignore or reject it.
-    const streamBody =
-      virtualKey?.dailyTokenCap !== undefined
-        ? { ...body, stream_options: { ...body.stream_options, include_usage: true } }
-        : body;
-    await handleStreamingRequest(req, res, streamBody, strict, privacy, virtualKey, next);
-  } else {
-    await handleNonStreamingRequest(req, res, body, strict, privacy, virtualKey, next);
-  }
-});
+    if (body.stream) {
+      // Inject stream_options.include_usage when a token-capped virtual key is
+      // active so the upstream returns usage in SSE chunks. Only sent to
+      // providers that declare supportsStreamUsage; others ignore or reject it.
+      const streamBody =
+        virtualKey?.dailyTokenCap !== undefined
+          ? { ...body, stream_options: { ...body.stream_options, include_usage: true } }
+          : body;
+      await handleStreamingRequest(req, res, streamBody, strict, privacy, virtualKey, next);
+    } else {
+      await handleNonStreamingRequest(req, res, body, strict, privacy, virtualKey, next);
+    }
+  },
+);
 
 async function handleNonStreamingRequest(
   _req: Request,
@@ -118,8 +127,7 @@ async function handleNonStreamingRequest(
     // Record usage against the virtual key AFTER a successful upstream
     // response so failed routes never eat quota.
     if (virtualKey) {
-      const tokens =
-        (data.usage?.prompt_tokens ?? 0) + (data.usage?.completion_tokens ?? 0);
+      const tokens = (data.usage?.prompt_tokens ?? 0) + (data.usage?.completion_tokens ?? 0);
       getVirtualKeyStore().recordRequest(virtualKey, tokens);
     }
 

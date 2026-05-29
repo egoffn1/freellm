@@ -1,8 +1,8 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  providerRetryAfterMs,
-  earliestRetryMs,
   buildRetryAdvice,
+  earliestRetryMs,
+  providerRetryAfterMs,
   retryAfterSeconds,
 } from "../src/routing/retry-advice.js";
 import type { ProviderStatusInfo } from "../src/types.js";

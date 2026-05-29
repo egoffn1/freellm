@@ -1,14 +1,14 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  freellmError,
-  FreeLLMError,
-  httpStatusFor,
-  typeFor,
-  isFreeLLMError,
-  toBody,
-  redactSecrets,
   type ErrorCode,
   type ErrorType,
+  FreeLLMError,
+  freellmError,
+  httpStatusFor,
+  isFreeLLMError,
+  redactSecrets,
+  toBody,
+  typeFor,
 } from "../src/errors/index.js";
 
 // Enumerate every ErrorCode so the tests serve as an exhaustiveness check.

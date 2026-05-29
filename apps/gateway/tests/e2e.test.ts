@@ -1,3 +1,7 @@
+import { type Server, createServer } from "node:http";
+import type { AddressInfo } from "node:net";
+import type { Express } from "express";
+import request from "supertest";
 /**
  * End-to-end test: real Express app + real gateway router + fake upstream.
  *
@@ -11,11 +15,7 @@
  * The Ollama provider is convenient because it has no API key requirement
  * and is enabled purely by OLLAMA_BASE_URL + OLLAMA_MODELS being set.
  */
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { createServer, type Server } from "http";
-import { AddressInfo } from "net";
-import request from "supertest";
-import type { Express } from "express";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 type UpstreamMode = "ok" | "rate_limit" | "server_error";
 
@@ -94,12 +94,12 @@ beforeAll(async () => {
 
   // Configure env BEFORE importing the app — the gateway is a module-level
   // singleton that reads env at construction time.
-  process.env["OLLAMA_BASE_URL"] = upstream.url;
-  process.env["OLLAMA_MODELS"] = "llama3";
+  process.env.OLLAMA_BASE_URL = upstream.url;
+  process.env.OLLAMA_MODELS = "llama3";
   // Disable the per-IP client rate-limit so test bursts aren't blocked.
-  process.env["DISABLE_CLIENT_RATELIMIT"] = "true";
-  process.env["RATE_LIMIT_RPM"] = "100000";
-  process.env["FREELLM_IDENTIFIER_LIMIT"] = "1000/60000";
+  process.env.DISABLE_CLIENT_RATELIMIT = "true";
+  process.env.RATE_LIMIT_RPM = "100000";
+  process.env.FREELLM_IDENTIFIER_LIMIT = "1000/60000";
   // Make sure no real provider keys are present (vitest inherits parent env).
   for (const k of [
     "GROQ_API_KEY",

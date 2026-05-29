@@ -68,7 +68,7 @@ export function createOllamaNormalizer(): Normalizer {
     };
     // If we hoisted `arguments`, strip the top-level copy.
     if (typeof topLevelArgs === "string") {
-      delete (result as Record<string, unknown>)["arguments"];
+      (result as Record<string, unknown>).arguments = undefined;
     }
     return result;
   }
@@ -77,22 +77,20 @@ export function createOllamaNormalizer(): Normalizer {
     transform(chunk: ChatCompletionChunk): ChatCompletionChunk[] {
       if (!chunk.choices || chunk.choices.length === 0) return [chunk];
 
-      const patchedChoices: ChatCompletionChunkChoice[] = chunk.choices.map(
-        (choice) => {
-          const toolCalls = choice.delta?.tool_calls;
-          if (!toolCalls || toolCalls.length === 0) return choice;
+      const patchedChoices: ChatCompletionChunkChoice[] = chunk.choices.map((choice) => {
+        const toolCalls = choice.delta?.tool_calls;
+        if (!toolCalls || toolCalls.length === 0) return choice;
 
-          const patched = toolCalls.map((tc, i) => fixToolCall(tc, i));
+        const patched = toolCalls.map((tc, i) => fixToolCall(tc, i));
 
-          return {
-            ...choice,
-            delta: {
-              ...choice.delta,
-              tool_calls: patched,
-            },
-          };
-        },
-      );
+        return {
+          ...choice,
+          delta: {
+            ...choice.delta,
+            tool_calls: patched,
+          },
+        };
+      });
 
       return [{ ...chunk, choices: patchedChoices }];
     },

@@ -5,7 +5,10 @@
   "scripts": {
     "dev": "pnpm -r --parallel run dev",
     "build": "pnpm -r run build",
-    "typecheck": "pnpm -r run typecheck"
+    "typecheck": "pnpm -r run typecheck",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write ."
   },
   "engines": {
     "node": ">=20"
@@ -16,5 +19,8 @@
       "yaml@<2.8.3": "^2.8.3",
       "qs@<6.15.2": "^6.15.2"
     }
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4"
   }
 }

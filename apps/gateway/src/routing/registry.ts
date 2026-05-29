@@ -1,14 +1,19 @@
-import { GroqProvider } from "../providers/groq.js";
-import { GeminiProvider } from "../providers/gemini.js";
-import { MistralProvider } from "../providers/mistral.js";
-import { CerebrasProvider } from "../providers/cerebras.js";
-import { OllamaProvider } from "../providers/ollama.js";
-import { NimProvider } from "../providers/nim.js";
-import { CloudflareProvider } from "../providers/cloudflare.js";
-import { GitHubModelsProvider } from "../providers/github.js";
-import type { ProviderAdapter } from "../providers/types.js";
-import type { ModelObject, ProviderStatusInfo, RoutingStrategy, TokenUsageTotals } from "../types.js";
 import { FAST_PRIORITY, SMART_PRIORITY } from "../config.js";
+import { CerebrasProvider } from "../providers/cerebras.js";
+import { CloudflareProvider } from "../providers/cloudflare.js";
+import { GeminiProvider } from "../providers/gemini.js";
+import { GitHubModelsProvider } from "../providers/github.js";
+import { GroqProvider } from "../providers/groq.js";
+import { MistralProvider } from "../providers/mistral.js";
+import { NimProvider } from "../providers/nim.js";
+import { OllamaProvider } from "../providers/ollama.js";
+import type { ProviderAdapter } from "../providers/types.js";
+import type {
+  ModelObject,
+  ProviderStatusInfo,
+  RoutingStrategy,
+  TokenUsageTotals,
+} from "../types.js";
 import { PROVIDER_PRIVACY } from "./privacy.js";
 
 const EMPTY_USAGE: TokenUsageTotals = {
@@ -51,16 +56,14 @@ export class ProviderRegistry {
   }
 
   getAllModels(): ModelObject[] {
-    return this.providers
-      .filter((p) => p.isEnabled())
-      .flatMap((p) => p.models);
+    return this.providers.filter((p) => p.isEnabled()).flatMap((p) => p.models);
   }
 
   getProviderForMetaModel(
     metaModel: string,
     excluded: Set<string>,
     strategy: RoutingStrategy = "round_robin",
-    rrIndex: number = 0,
+    rrIndex = 0,
     advanceRrIndex?: (next: number) => void,
   ): ProviderAdapter | undefined {
     const available = this.getAvailable().filter((p) => !excluded.has(p.id));
@@ -93,9 +96,7 @@ export class ProviderRegistry {
     return candidates[idx];
   }
 
-  getStatusAll(
-    usageByProvider: Record<string, TokenUsageTotals> = {},
-  ): ProviderStatusInfo[] {
+  getStatusAll(usageByProvider: Record<string, TokenUsageTotals> = {}): ProviderStatusInfo[] {
     return this.providers.map((p) => {
       const stats = p.getStats();
       const keys = p.getKeysStatus();

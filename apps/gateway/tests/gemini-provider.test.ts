@@ -8,18 +8,13 @@
  * for the empirical proof that the per-model reasoning_effort default
  * actually fixes the truncation.
  */
-import { describe, it, expect } from "vitest";
-import {
-  GeminiProvider,
-  defaultReasoningEffortFor,
-} from "../src/providers/gemini.js";
+import { describe, expect, it } from "vitest";
+import { GeminiProvider, defaultReasoningEffortFor } from "../src/providers/gemini.js";
 import type { ChatCompletionRequest } from "../src/types.js";
 
 // Subclass that lets the test call the protected mapRequest directly.
 class ExposedGeminiProvider extends GeminiProvider {
-  public exposeMapRequest(
-    request: ChatCompletionRequest,
-  ): ChatCompletionRequest {
+  public exposeMapRequest(request: ChatCompletionRequest): ChatCompletionRequest {
     return this.mapRequest(request);
   }
 }
@@ -28,9 +23,7 @@ function gemini() {
   return new ExposedGeminiProvider();
 }
 
-function baseRequest(
-  overrides: Partial<ChatCompletionRequest> = {},
-): ChatCompletionRequest {
+function baseRequest(overrides: Partial<ChatCompletionRequest> = {}): ChatCompletionRequest {
   return {
     model: "gemini/gemini-2.5-flash",
     messages: [{ role: "user", content: "hi" }],
@@ -114,9 +107,7 @@ describe("GeminiProvider.mapRequest max_completion_tokens normalization", () => 
   });
 
   it("keeps max_completion_tokens untouched when only that field is set", () => {
-    const mapped = gemini().exposeMapRequest(
-      baseRequest({ max_completion_tokens: 800 }),
-    );
+    const mapped = gemini().exposeMapRequest(baseRequest({ max_completion_tokens: 800 }));
     expect(mapped.max_completion_tokens).toBe(800);
     expect(mapped.max_tokens).toBeUndefined();
   });
@@ -138,9 +129,7 @@ describe("GeminiProvider.mapRequest max_completion_tokens normalization", () => 
 
 describe("GeminiProvider.mapRequest base behavior preserved", () => {
   it("still strips the 'gemini/' prefix from the model name", () => {
-    const mapped = gemini().exposeMapRequest(
-      baseRequest({ model: "gemini/gemini-2.5-flash" }),
-    );
+    const mapped = gemini().exposeMapRequest(baseRequest({ model: "gemini/gemini-2.5-flash" }));
     expect(mapped.model).toBe("gemini-2.5-flash");
   });
 

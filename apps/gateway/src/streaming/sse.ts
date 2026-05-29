@@ -98,7 +98,6 @@ function parseEventBlock(block: string): SSEEvent | null {
     }
     if (line.startsWith("data:")) {
       dataLines.push(line.slice(5).trimStart());
-      continue;
     }
     // event:, id:, retry: — not used by any of our providers. Ignore.
   }

@@ -1,5 +1,5 @@
-import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
+import { defineConfig } from "astro/config";
 
 export default defineConfig({
   site: "https://freellm.dev",
@@ -48,9 +48,7 @@ export default defineConfig({
         },
         {
           label: "Integration",
-          items: [
-            { label: "Browser integration", slug: "browser-integration" },
-          ],
+          items: [{ label: "Browser integration", slug: "browser-integration" }],
         },
         {
           label: "Features",

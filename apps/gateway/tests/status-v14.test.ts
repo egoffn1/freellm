@@ -1,15 +1,15 @@
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import type { Express } from "express";
+import request from "supertest";
 /**
  * Integration tests for the v1.4 additions to /v1/status and
  * /v1/status/virtual-keys:
  *   - ProviderStatusInfo now carries a privacy block
  *   - A new admin-authed endpoint lists loaded virtual keys with masked ids
  */
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import path from "node:path";
-import { tmpdir } from "node:os";
-import request from "supertest";
-import type { Express } from "express";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 let tmpDir: string;
 let app: Express;
@@ -36,16 +36,15 @@ beforeAll(async () => {
   // Matches the realistic production pattern: one master key that gets
   // you through the regular auth middleware, plus a separate admin key
   // that the adminAuth middleware checks for mutation and inventory routes.
-  process.env["FREELLM_API_KEY"] = "master-key-for-status-v14-test";
-  process.env["FREELLM_ADMIN_KEY"] = "admin-key-for-status-v14-test";
-  process.env["FREELLM_TOKEN_SECRET"] =
-    "status-v14-browser-token-secret-32bytes!!";
-  process.env["FREELLM_VIRTUAL_KEYS_PATH"] = virtualKeysPath;
-  process.env["RATE_LIMIT_RPM"] = "100000";
-  process.env["FREELLM_IDENTIFIER_LIMIT"] = "1000/60000";
+  process.env.FREELLM_API_KEY = "master-key-for-status-v14-test";
+  process.env.FREELLM_ADMIN_KEY = "admin-key-for-status-v14-test";
+  process.env.FREELLM_TOKEN_SECRET = "status-v14-browser-token-secret-32bytes!!";
+  process.env.FREELLM_VIRTUAL_KEYS_PATH = virtualKeysPath;
+  process.env.RATE_LIMIT_RPM = "100000";
+  process.env.FREELLM_IDENTIFIER_LIMIT = "1000/60000";
   // Enable Ollama so the provider list isn't empty.
-  process.env["OLLAMA_BASE_URL"] = "http://127.0.0.1:9999";
-  process.env["OLLAMA_MODELS"] = "llama3";
+  process.env.OLLAMA_BASE_URL = "http://127.0.0.1:9999";
+  process.env.OLLAMA_MODELS = "llama3";
 
   const { initVirtualKeys } = await import("../src/features/virtual-keys.js");
   initVirtualKeys();
@@ -81,9 +80,10 @@ describe("GET /v1/status privacy field", () => {
   it("marks groq as no-training and gemini as free-tier-trains", async () => {
     const res = await request(app).get("/v1/status").set("authorization", MASTER_BEARER);
     const byId = new Map(
-      res.body.providers.map(
-        (p: { id: string; privacy: { policy: string } }) => [p.id, p.privacy.policy],
-      ),
+      res.body.providers.map((p: { id: string; privacy: { policy: string } }) => [
+        p.id,
+        p.privacy.policy,
+      ]),
     );
     expect(byId.get("groq")).toBe("no-training");
     expect(byId.get("gemini")).toBe("free-tier-trains");

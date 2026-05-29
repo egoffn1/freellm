@@ -1,6 +1,6 @@
+import { ObservabilityStore } from "../observability/index.js";
 import { ProviderRegistry } from "./registry.js";
 import { GatewayRouter } from "./router.js";
-import { ObservabilityStore } from "../observability/index.js";
 
 export { AllProvidersExhaustedError, ProviderClientError } from "./router.js";
 export { ObservabilityStore } from "../observability/index.js";

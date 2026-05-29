@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { useListModels, getListModelsQueryKey } from "@/api/hooks";
-import { Box, Copy, Check, Search } from "lucide-react";
+import { getListModelsQueryKey, useListModels } from "@/api/hooks";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { Check, Copy, Search } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 function CopyButton({ value }: { value: string }) {
@@ -16,6 +16,7 @@ function CopyButton({ value }: { value: string }) {
   };
   return (
     <button
+      type="button"
       onClick={copy}
       className="p-1.5 rounded-lg hover:bg-white/[0.06] text-muted-foreground hover:text-foreground transition-colors duration-150 cursor-pointer"
       title="Copy model ID"
@@ -49,7 +50,7 @@ export default function Models() {
     ? allModels.filter(
         (m) =>
           m.id.toLowerCase().includes(search.toLowerCase()) ||
-          m.provider.toLowerCase().includes(search.toLowerCase())
+          m.provider.toLowerCase().includes(search.toLowerCase()),
       )
     : allModels;
 
@@ -81,7 +82,10 @@ export default function Models() {
             All models available through the gateway, grouped by provider.
           </p>
         </div>
-        <Badge variant="outline" className="mt-1 font-mono text-xs border-primary/15 text-primary bg-primary/5 rounded-lg">
+        <Badge
+          variant="outline"
+          className="mt-1 font-mono text-xs border-primary/15 text-primary bg-primary/5 rounded-lg"
+        >
           {allModels.length} total
         </Badge>
       </div>
@@ -102,7 +106,9 @@ export default function Models() {
             <div key={i} className="animate-pulse space-y-2">
               <div className="h-4 w-24 bg-muted rounded-lg" />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {[1, 2, 3].map((j) => <div key={j} className="h-14 bg-card rounded-xl" />)}
+                {[1, 2, 3].map((j) => (
+                  <div key={j} className="h-14 bg-card rounded-xl" />
+                ))}
               </div>
             </div>
           ))}
@@ -120,7 +126,9 @@ export default function Models() {
                   {PROVIDER_LABELS[provider] ?? provider}
                 </h2>
                 <div className="flex-1 h-px bg-white/[0.04]" />
-                <span className="text-xs font-mono text-muted-foreground/60">{providerModels.length}</span>
+                <span className="text-xs font-mono text-muted-foreground/60">
+                  {providerModels.length}
+                </span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
                 {providerModels.map((model) => (
@@ -128,7 +136,8 @@ export default function Models() {
                     key={model.id}
                     className={cn(
                       "group rounded-xl border border-white/[0.04] bg-card hover:border-white/[0.08] transition-colors duration-150 cursor-pointer",
-                      provider === "freellm" && "border-primary/10 bg-primary/[0.03] hover:border-primary/20"
+                      provider === "freellm" &&
+                        "border-primary/10 bg-primary/[0.03] hover:border-primary/20",
                     )}
                   >
                     <div className="p-3.5 flex items-center justify-between gap-2">
@@ -136,7 +145,9 @@ export default function Models() {
                         <p
                           className={cn(
                             "font-mono text-sm truncate",
-                            provider === "freellm" ? "text-primary font-semibold" : "text-foreground"
+                            provider === "freellm"
+                              ? "text-primary font-semibold"
+                              : "text-foreground",
                           )}
                           title={model.id}
                         >

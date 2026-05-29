@@ -1,5 +1,5 @@
-import type { ProviderStatusInfo } from "../types.js";
 import { FAST_PRIORITY, SMART_PRIORITY } from "../config.js";
+import type { ProviderStatusInfo } from "../types.js";
 
 export interface ProviderRetryHint {
   id: string;

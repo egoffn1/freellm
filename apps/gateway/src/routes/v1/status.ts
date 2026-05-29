@@ -1,16 +1,16 @@
-import { Router, type IRouter, type NextFunction } from "express";
-import { registry, router as gatewayRouter } from "../../routing/index.js";
-import type { RoutingStrategy } from "../../types.js";
-import { validate } from "../../middleware/validate.js";
-import { updateRoutingSchema } from "../../schemas.js";
-import { adminAuth } from "../../middleware/admin-auth.js";
+import { type IRouter, type NextFunction, Router } from "express";
 import { freellmError } from "../../errors/index.js";
-import { getVirtualKeyStore } from "../../features/virtual-keys.js";
 import {
-  isBrowserTokenEnabled,
-  MIN_SECRET_BYTES,
   MAX_TTL_SECONDS,
+  MIN_SECRET_BYTES,
+  isBrowserTokenEnabled,
 } from "../../features/browser-tokens.js";
+import { getVirtualKeyStore } from "../../features/virtual-keys.js";
+import { adminAuth } from "../../middleware/admin-auth.js";
+import { validate } from "../../middleware/validate.js";
+import { router as gatewayRouter, registry } from "../../routing/index.js";
+import { updateRoutingSchema } from "../../schemas.js";
+import type { RoutingStrategy } from "../../types.js";
 import type { BrowserTokensInfo } from "../../types.js";
 
 function browserTokensInfo(): BrowserTokensInfo {
@@ -96,10 +96,7 @@ statusRouter.get("/virtual-keys", (_req, res) => {
   const now = Date.now();
   const keys = store.list().map((key) => {
     const usage = store.usage(key.id, now);
-    const maskedId =
-      key.id.length <= 12
-        ? key.id
-        : `${key.id.slice(0, 12)}...${key.id.slice(-4)}`;
+    const maskedId = key.id.length <= 12 ? key.id : `${key.id.slice(0, 12)}...${key.id.slice(-4)}`;
     const expiresAtMs = key.expiresAt ? Date.parse(key.expiresAt) : null;
     const expired = expiresAtMs != null && Number.isFinite(expiresAtMs) && now > expiresAtMs;
     return {

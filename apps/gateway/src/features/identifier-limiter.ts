@@ -101,7 +101,7 @@ export class IdentifierLimiter {
 
     if (bucket.timestamps.length >= this.config.max) {
       // Reject. Report how long until the oldest in-window slot expires.
-      const oldest = bucket.timestamps[0]!;
+      const oldest = bucket.timestamps[0] ?? now;
       const resetAfterMs = Math.max(0, oldest + this.config.windowMs - now);
       return {
         allowed: false,
@@ -163,8 +163,8 @@ export function parseIdentifierLimitEnv(
   if (!value) return { max: DEFAULT_MAX, windowMs: DEFAULT_WINDOW_MS, maxBuckets };
   const match = /^\s*(\d+)\s*\/\s*(\d+)\s*$/.exec(value);
   if (!match) return { max: DEFAULT_MAX, windowMs: DEFAULT_WINDOW_MS, maxBuckets };
-  const max = parseInt(match[1]!, 10);
-  const windowMs = parseInt(match[2]!, 10);
+  const max = Number.parseInt(match[1] as string, 10);
+  const windowMs = Number.parseInt(match[2] as string, 10);
   if (max < 1 || windowMs < 1) {
     return { max: DEFAULT_MAX, windowMs: DEFAULT_WINDOW_MS, maxBuckets };
   }

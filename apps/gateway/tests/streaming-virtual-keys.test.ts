@@ -1,3 +1,7 @@
+import { type Server, createServer } from "node:http";
+import type { AddressInfo } from "node:net";
+import type { Express } from "express";
+import request from "supertest";
 /**
  * Integration test: streaming token tracking with virtual key caps.
  *
@@ -14,12 +18,12 @@
  * GROQ_BASE_URL at that fake server so the real Groq provider
  * (supportsStreamUsage = true) routes through without hitting the network.
  */
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { createServer, type Server } from "http";
-import type { AddressInfo } from "net";
-import request from "supertest";
-import type { Express } from "express";
-import { VirtualKeyStore, setVirtualKeyStore, getVirtualKeyStore } from "../src/features/virtual-keys.js";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import {
+  VirtualKeyStore,
+  getVirtualKeyStore,
+  setVirtualKeyStore,
+} from "../src/features/virtual-keys.js";
 
 const TEST_KEY_ID = "sk-freellm-streamtest1";
 
@@ -37,7 +41,9 @@ let lastCapturedBody: Record<string, unknown> = {};
 async function startFakeUpstream(): Promise<void> {
   upstreamServer = createServer((req, res) => {
     let raw = "";
-    req.on("data", (chunk) => (raw += chunk));
+    req.on("data", (chunk) => {
+      raw += chunk;
+    });
     req.on("end", () => {
       try {
         lastCapturedBody = JSON.parse(raw) as Record<string, unknown>;
@@ -51,26 +57,20 @@ async function startFakeUpstream(): Promise<void> {
       res.end(STREAM_WITH_USAGE);
     });
   });
-  await new Promise<void>((resolve) =>
-    upstreamServer.listen(0, "127.0.0.1", () => resolve()),
-  );
+  await new Promise<void>((resolve) => upstreamServer.listen(0, "127.0.0.1", () => resolve()));
   upstreamUrl = `http://127.0.0.1:${(upstreamServer.address() as AddressInfo).port}`;
-}
-
-function collectStream(res: import("supertest").Response): string {
-  return res.body as unknown as string;
 }
 
 beforeAll(async () => {
   await startFakeUpstream();
 
   // Point the Groq provider (supportsStreamUsage = true) at our fake server.
-  process.env["GROQ_BASE_URL"] = upstreamUrl;
-  process.env["GROQ_API_KEY"] = "sk-test-fake";
-  process.env["RATE_LIMIT_RPM"] = "100000";
-  process.env["FREELLM_IDENTIFIER_LIMIT"] = "1000/60000";
+  process.env.GROQ_BASE_URL = upstreamUrl;
+  process.env.GROQ_API_KEY = "sk-test-fake";
+  process.env.RATE_LIMIT_RPM = "100000";
+  process.env.FREELLM_IDENTIFIER_LIMIT = "1000/60000";
   // Open auth so the virtual key bearer is the only auth layer.
-  delete process.env["FREELLM_API_KEY"];
+  delete process.env.FREELLM_API_KEY;
   for (const k of [
     "GEMINI_API_KEY",
     "MISTRAL_API_KEY",
@@ -98,8 +98,8 @@ afterAll(async () => {
   await new Promise<void>((resolve, reject) =>
     upstreamServer.close((err) => (err ? reject(err) : resolve())),
   );
-  delete process.env["GROQ_BASE_URL"];
-  delete process.env["GROQ_API_KEY"];
+  delete process.env.GROQ_BASE_URL;
+  delete process.env.GROQ_API_KEY;
 });
 
 async function streamRequest(authHeader?: string): Promise<void> {
@@ -116,7 +116,9 @@ async function streamRequest(authHeader?: string): Promise<void> {
     .parse((r, cb) => {
       let data = "";
       r.setEncoding("utf8");
-      r.on("data", (chunk: string) => (data += chunk));
+      r.on("data", (chunk: string) => {
+        data += chunk;
+      });
       r.on("end", () => cb(null, data));
     });
 }

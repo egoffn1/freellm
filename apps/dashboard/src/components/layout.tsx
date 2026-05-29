@@ -1,7 +1,7 @@
-import { Link, useLocation } from "wouter";
-import { Activity, Box, Terminal } from "lucide-react";
+import { getHealthCheckQueryKey, useHealthCheck } from "@/api/hooks";
 import { cn } from "@/lib/utils";
-import { useHealthCheck, getHealthCheckQueryKey } from "@/api/hooks";
+import { Activity, Box, Terminal } from "lucide-react";
+import { Link, useLocation } from "wouter";
 import { FreeLLMLogo } from "./logo";
 
 const navItems = [
@@ -19,19 +19,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const gatewayDot = isLoading
     ? "bg-muted"
     : health?.status === "ok"
-    ? "bg-primary shadow-[0_0_6px_hsl(158_50%_46%/0.6)]"
-    : "bg-destructive shadow-[0_0_6px_hsl(0_65%_55%/0.6)]";
+      ? "bg-primary shadow-[0_0_6px_hsl(158_50%_46%/0.6)]"
+      : "bg-destructive shadow-[0_0_6px_hsl(0_65%_55%/0.6)]";
 
   return (
     <div className="flex flex-col min-h-[100dvh] w-full bg-background text-foreground font-sans selection:bg-primary/30 dark overflow-x-hidden">
-
       {/* ── Desktop top navigation bar ── */}
       <header className="hidden md:block border-b border-white/[0.06] bg-sidebar/80 backdrop-blur-md relative z-20 shrink-0">
         <div className="max-w-7xl mx-auto px-8 h-14 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <div className="flex items-center gap-2.5">
               <FreeLLMLogo size={26} />
-              <span className="font-mono font-bold tracking-tight text-sm leading-none">FreeLLM</span>
+              <span className="font-mono font-bold tracking-tight text-sm leading-none">
+                FreeLLM
+              </span>
             </div>
 
             <nav className="flex items-center gap-1">
@@ -39,13 +40,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 const isActive = location === item.href;
                 return (
                   <Link key={item.href} href={item.href}>
-                    <div className={cn(
-                      "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer",
-                      isActive
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
-                    )}>
-                      <item.icon className={cn("w-3.5 h-3.5", isActive ? "text-primary" : "text-muted-foreground")} />
+                    <div
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer",
+                        isActive
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground",
+                      )}
+                    >
+                      <item.icon
+                        className={cn(
+                          "w-3.5 h-3.5",
+                          isActive ? "text-primary" : "text-muted-foreground",
+                        )}
+                      />
                       {item.label}
                     </div>
                   </Link>
@@ -86,9 +94,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
         {/* Page content */}
         <main className="relative z-10 p-4 md:px-8 md:py-8 pb-24 md:pb-8">
-          <div className="max-w-7xl mx-auto">
-            {children}
-          </div>
+          <div className="max-w-7xl mx-auto">{children}</div>
         </main>
       </div>
 
@@ -99,13 +105,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
             const isActive = location === item.href;
             return (
               <Link key={item.href} href={item.href} className="flex-1">
-                <div className={cn(
-                  "flex flex-col items-center justify-center gap-1 py-2.5 transition-colors relative",
-                  isActive ? "text-primary" : "text-muted-foreground"
-                )}>
+                <div
+                  className={cn(
+                    "flex flex-col items-center justify-center gap-1 py-2.5 transition-colors relative",
+                    isActive ? "text-primary" : "text-muted-foreground",
+                  )}
+                >
                   <item.icon className="w-5 h-5" />
                   <span className="text-[10px] font-mono tracking-wide">{item.label}</span>
-                  {isActive && <div className="absolute bottom-0 w-10 h-0.5 bg-primary rounded-t" />}
+                  {isActive && (
+                    <div className="absolute bottom-0 w-10 h-0.5 bg-primary rounded-t" />
+                  )}
                 </div>
               </Link>
             );

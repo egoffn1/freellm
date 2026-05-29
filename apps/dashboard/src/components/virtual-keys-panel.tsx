@@ -1,9 +1,9 @@
-import { KeyRound, AlertTriangle, Clock, Package } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import type { VirtualKeySummary } from "@/api/schemas";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useVirtualKeys } from "@/hooks/virtual-keys";
 import { cn } from "@/lib/utils";
-import type { VirtualKeySummary } from "@/api/schemas";
+import { AlertTriangle, Clock, KeyRound, Package } from "lucide-react";
 
 function formatCompact(n: number | null): string {
   if (n == null) return "—";
@@ -29,22 +29,18 @@ function ProgressBar({ used, cap, tint }: ProgressBarProps) {
   }
   const pct = Math.min(100, Math.round((used / cap) * 100));
   const trackColor = tint === "emerald" ? "bg-emerald-500/15" : "bg-amber-500/15";
-  const fillColor = pct >= 90 ? "bg-rose-500" : tint === "emerald" ? "bg-emerald-500" : "bg-amber-500";
+  const fillColor =
+    pct >= 90 ? "bg-rose-500" : tint === "emerald" ? "bg-emerald-500" : "bg-amber-500";
   return (
     <div className="space-y-1">
       <div className="flex justify-between font-mono text-xs">
         <span className="text-muted-foreground">
           {formatCompact(used)} / {formatCompact(cap)}
         </span>
-        <span className={cn(pct >= 90 ? "text-rose-500" : "text-muted-foreground")}>
-          {pct}%
-        </span>
+        <span className={cn(pct >= 90 ? "text-rose-500" : "text-muted-foreground")}>{pct}%</span>
       </div>
       <div className={cn("h-1.5 rounded-full overflow-hidden", trackColor)}>
-        <div
-          className={cn("h-full transition-all", fillColor)}
-          style={{ width: `${pct}%` }}
-        />
+        <div className={cn("h-full transition-all", fillColor)} style={{ width: `${pct}%` }} />
       </div>
     </div>
   );

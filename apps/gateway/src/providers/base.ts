@@ -1,13 +1,13 @@
 import { CircuitBreaker } from "../routing/circuit-breaker.js";
 import { RateLimiter } from "../routing/rate-limiter.js";
-import type { ProviderAdapter } from "./types.js";
 import type {
   ChatCompletionRequest,
+  CircuitBreakerState,
   KeyStatus,
   ModelObject,
   ProviderStats,
-  CircuitBreakerState,
 } from "../types.js";
+import type { ProviderAdapter } from "./types.js";
 
 /** Parse a comma-separated env var into a trimmed, filtered key array. */
 export function parseApiKeys(envValue: string | undefined): string[] {
@@ -118,7 +118,9 @@ export abstract class BaseProvider implements ProviderAdapter {
       const trackingId = this.trackingId(idx);
       if (!this.rateLimiter.isRateLimited(trackingId)) {
         this.keyRotationIndex = (idx + 1) % keys.length;
-        return { key: keys[idx]!, trackingId, keyIndex: idx };
+        const key = keys[idx];
+        if (!key) continue;
+        return { key, trackingId, keyIndex: idx };
       }
     }
     return undefined;

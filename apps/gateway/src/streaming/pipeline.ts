@@ -1,3 +1,5 @@
+import { logger } from "../logger.js";
+import { createNormalizer } from "./normalizer.js";
 /**
  * End-to-end streaming pipeline: raw upstream bytes in → corrected
  * OpenAI-spec SSE bytes out.
@@ -13,10 +15,8 @@
  * whole response path. Failure mode is "pass the chunk through
  * untouched and log a warning".
  */
-import { SSEParser, serializeEvent, type SSEEvent } from "./sse.js";
-import { createNormalizer } from "./normalizer.js";
+import { type SSEEvent, SSEParser, serializeEvent } from "./sse.js";
 import type { ChatCompletionChunk, FlushResult, Normalizer, StreamUsage } from "./types.js";
-import { logger } from "../logger.js";
 
 export class StreamingPipeline {
   private parser = new SSEParser();
@@ -47,7 +47,10 @@ export class StreamingPipeline {
       // The parser itself should never throw (it's pure string ops)
       // but if it does, fall back to passing the raw text through so
       // the client still sees whatever the upstream meant to send.
-      logger.warn({ err, provider: this.providerId }, "SSE parser threw, passing raw bytes through");
+      logger.warn(
+        { err, provider: this.providerId },
+        "SSE parser threw, passing raw bytes through",
+      );
       return text;
     }
 

@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { type IRouter, Router } from "express";
 import chatRouter from "./chat.js";
 import modelsRouter from "./models.js";
 import statusRouter from "./status.js";

@@ -1,9 +1,9 @@
 import type {
   ChatCompletionRequest,
+  CircuitBreakerState,
   KeyStatus,
   ModelObject,
   ProviderStats,
-  CircuitBreakerState,
 } from "../types.js";
 
 export interface ProviderAdapter {

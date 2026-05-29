@@ -7,13 +7,13 @@ interface CircuitBreakerConfig {
 }
 
 function loadConfig(): CircuitBreakerConfig {
-  const failureThreshold = parseInt(process.env["CB_FAILURE_THRESHOLD"] ?? "3", 10);
-  const successThreshold = parseInt(process.env["CB_SUCCESS_THRESHOLD"] ?? "2", 10);
-  const timeout = parseInt(process.env["CB_TIMEOUT_MS"] ?? "30000", 10);
+  const failureThreshold = Number.parseInt(process.env.CB_FAILURE_THRESHOLD ?? "3", 10);
+  const successThreshold = Number.parseInt(process.env.CB_SUCCESS_THRESHOLD ?? "2", 10);
+  const timeout = Number.parseInt(process.env.CB_TIMEOUT_MS ?? "30000", 10);
   return {
-    failureThreshold: isNaN(failureThreshold) ? 3 : failureThreshold,
-    successThreshold: isNaN(successThreshold) ? 2 : successThreshold,
-    timeout: isNaN(timeout) ? 30_000 : timeout,
+    failureThreshold: Number.isNaN(failureThreshold) ? 3 : failureThreshold,
+    successThreshold: Number.isNaN(successThreshold) ? 2 : successThreshold,
+    timeout: Number.isNaN(timeout) ? 30_000 : timeout,
   };
 }
 

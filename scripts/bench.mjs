@@ -24,11 +24,11 @@
  * numbers. The website benchmarks page links to this file.
  */
 
-import { createServer } from "node:http";
 import { spawn } from "node:child_process";
-import { writeFile, mkdir } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
+import { mkdir, writeFile } from "node:fs/promises";
+import { createServer } from "node:http";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const API_SERVER = path.resolve(REPO_ROOT, "apps/gateway/dist/index.mjs");

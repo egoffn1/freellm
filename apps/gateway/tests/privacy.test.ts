@@ -1,10 +1,10 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  parsePrivacyHeader,
-  providerSatisfiesPrivacy,
-  policiesAllowedBy,
-  daysSinceVerified,
   PROVIDER_PRIVACY,
+  daysSinceVerified,
+  parsePrivacyHeader,
+  policiesAllowedBy,
+  providerSatisfiesPrivacy,
 } from "../src/routing/privacy.js";
 
 describe("parsePrivacyHeader", () => {

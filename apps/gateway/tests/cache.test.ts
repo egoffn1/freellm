@@ -14,12 +14,9 @@
  * when Gemini 2.5's reasoning budget started truncating responses and
  * the cache pinned the bad output.
  */
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { ResponseCache } from "../src/routing/cache.js";
-import type {
-  ChatCompletionRequest,
-  ChatCompletionResponse,
-} from "../src/types.js";
+import type { ChatCompletionRequest, ChatCompletionResponse } from "../src/types.js";
 
 function responseWith(finishReason: string | null, content = "ok"): ChatCompletionResponse {
   return {
@@ -123,23 +120,17 @@ describe("ResponseCache key discrimination", () => {
 
   it("different tools arrays produce different keys", () => {
     const a = requestWith({
-      tools: [
-        { type: "function", function: { name: "get_weather" } },
-      ],
+      tools: [{ type: "function", function: { name: "get_weather" } }],
     });
     const b = requestWith({
-      tools: [
-        { type: "function", function: { name: "get_time" } },
-      ],
+      tools: [{ type: "function", function: { name: "get_time" } }],
     });
     expect(keysCollide(a, b)).toBe(false);
   });
 
   it("a request with tools does not collide with one without", () => {
     const a = requestWith({
-      tools: [
-        { type: "function", function: { name: "get_weather" } },
-      ],
+      tools: [{ type: "function", function: { name: "get_weather" } }],
     });
     const b = requestWith();
     expect(keysCollide(a, b)).toBe(false);

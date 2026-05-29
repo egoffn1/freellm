@@ -1,4 +1,4 @@
-import { Activity, CheckCircle2, XCircle, Coins, Database } from "lucide-react";
+import { Activity, CheckCircle2, Coins, Database, XCircle } from "lucide-react";
 
 interface MetricsRowProps {
   total: number;
@@ -17,7 +17,14 @@ function formatCompact(n: number): string {
   return `${(n / 1_000_000_000).toFixed(2)}B`;
 }
 
-export function MetricsRow({ total, success, failed, tokens, cacheHits, cacheHitRate }: MetricsRowProps) {
+export function MetricsRow({
+  total,
+  success,
+  failed,
+  tokens,
+  cacheHits,
+  cacheHitRate,
+}: MetricsRowProps) {
   const items = [
     {
       label: "Total",
@@ -78,9 +85,7 @@ export function MetricsRow({ total, success, failed, tokens, cacheHits, cacheHit
             {item.value}
           </p>
           {item.sub && (
-            <p className="text-[11px] font-mono text-muted-foreground mt-1.5">
-              {item.sub}
-            </p>
+            <p className="text-[11px] font-mono text-muted-foreground mt-1.5">{item.sub}</p>
           )}
         </div>
       ))}

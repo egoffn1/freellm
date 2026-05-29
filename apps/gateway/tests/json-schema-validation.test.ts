@@ -1,3 +1,7 @@
+import { type Server, createServer } from "node:http";
+import type { AddressInfo } from "node:net";
+import type { Express } from "express";
+import request from "supertest";
 /**
  * Tests for the X-FreeLLM-Warning: schema-validation-failed header.
  *
@@ -7,11 +11,7 @@
  * The schema used across tests requires an object with `name: string`
  * and `age: number` as required fields.
  */
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { createServer, type Server } from "http";
-import type { AddressInfo } from "net";
-import request from "supertest";
-import type { Express } from "express";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 interface FakeUpstream {
   server: Server;
@@ -94,10 +94,10 @@ let app: Express;
 beforeAll(async () => {
   upstream = await startFakeUpstream();
 
-  process.env["GROQ_BASE_URL"] = upstream.url;
-  process.env["GROQ_API_KEY"] = "sk-test-fake";
-  process.env["RATE_LIMIT_RPM"] = "100000";
-  process.env["FREELLM_IDENTIFIER_LIMIT"] = "1000/60000";
+  process.env.GROQ_BASE_URL = upstream.url;
+  process.env.GROQ_API_KEY = "sk-test-fake";
+  process.env.RATE_LIMIT_RPM = "100000";
+  process.env.FREELLM_IDENTIFIER_LIMIT = "1000/60000";
   for (const k of [
     "GEMINI_API_KEY",
     "MISTRAL_API_KEY",
@@ -119,8 +119,8 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await upstream.close();
-  delete process.env["GROQ_BASE_URL"];
-  delete process.env["GROQ_API_KEY"];
+  delete process.env.GROQ_BASE_URL;
+  delete process.env.GROQ_API_KEY;
 });
 
 describe("JSON schema response validation header", () => {

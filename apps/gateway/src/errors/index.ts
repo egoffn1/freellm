@@ -15,12 +15,7 @@
  * write error JSON bodies themselves — always delegate via `next(err)`.
  */
 
-import type {
-  ErrorCode,
-  ErrorType,
-  FreeLLMErrorBody,
-  FreeLLMErrorBodyContext,
-} from "./types.js";
+import type { ErrorCode, ErrorType, FreeLLMErrorBody, FreeLLMErrorBodyContext } from "./types.js";
 
 export type { ErrorCode, ErrorType, FreeLLMErrorBody, FreeLLMErrorBodyContext } from "./types.js";
 

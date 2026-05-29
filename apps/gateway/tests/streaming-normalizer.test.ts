@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 /**
  * Fixture-based tests for the streaming normalizer pipeline.
  *
@@ -12,10 +15,7 @@
  *      separate fixture if the expected shape is long)
  *   3. Add a case below
  */
-import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { describe, expect, it } from "vitest";
 import { StreamingPipeline } from "../src/streaming/pipeline.js";
 import { SSEParser } from "../src/streaming/sse.js";
 
@@ -31,10 +31,7 @@ function loadFixture(name: string): string {
  * [DONE] sentinels are captured as string markers so tests can
  * assert their presence and position.
  */
-function runPipeline(
-  input: string,
-  providerId: string,
-): Array<Record<string, unknown> | string> {
+function runPipeline(input: string, providerId: string): Array<Record<string, unknown> | string> {
   const pipeline = new StreamingPipeline(providerId);
   const outputText = pipeline.push(input) + pipeline.flush();
 

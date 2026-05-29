@@ -12,16 +12,19 @@ export default async function handler(req, res) {
 
   const cookie = req.headers.cookie || "";
   const match = cookie.match(/(?:^|;\s*)flsid=([^;]+)/);
-  const identifier = match ? decodeURIComponent(match[1]) : "anon-" + Math.random().toString(36).slice(2, 12);
+  const identifier = match
+    ? decodeURIComponent(match[1])
+    : "anon-" + Math.random().toString(36).slice(2, 12);
 
-  const host = process.env.FREELLM_ALLOWED_ORIGIN || (req.headers["x-forwarded-host"] || req.headers.host || "");
+  const host =
+    process.env.FREELLM_ALLOWED_ORIGIN || req.headers["x-forwarded-host"] || req.headers.host || "";
   const proto = (req.headers["x-forwarded-proto"] || "https").split(",")[0];
   const origin = process.env.FREELLM_ALLOWED_ORIGIN || (host ? proto + "://" + host : "");
 
   try {
     const r = await fetch(baseURL.replace(/\/$/, "") + "/v1/tokens/issue", {
       method: "POST",
-      headers: { "Authorization": "Bearer " + apiKey, "Content-Type": "application/json" },
+      headers: { Authorization: "Bearer " + apiKey, "Content-Type": "application/json" },
       body: JSON.stringify({ origin, identifier, ttlSeconds: 900 }),
     });
     const body = await r.json();

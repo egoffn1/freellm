@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { SSEParser, serializeEvent, serializeHeartbeat } from "../src/streaming/sse.js";
 
 describe("SSEParser", () => {
@@ -19,7 +19,7 @@ describe("SSEParser", () => {
   it("buffers a partial event across two pushes", () => {
     const p = new SSEParser();
     expect(p.push('data: {"a":')).toEqual([]);
-    const events = p.push('1}\n\n');
+    const events = p.push("1}\n\n");
     expect(events).toEqual([{ type: "data", data: '{"a":1}' }]);
   });
 

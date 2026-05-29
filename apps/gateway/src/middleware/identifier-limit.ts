@@ -1,9 +1,6 @@
-import type { Request, Response, NextFunction } from "express";
+import type { NextFunction, Request, Response } from "express";
 import { freellmError } from "../errors/index.js";
-import {
-  IdentifierLimiter,
-  parseIdentifierLimitEnv,
-} from "../features/identifier-limiter.js";
+import { IdentifierLimiter, parseIdentifierLimitEnv } from "../features/identifier-limiter.js";
 
 /**
  * Per-identifier rate-limit middleware.
@@ -28,16 +25,16 @@ const EXPLICITLY_NULL = new Set(["undefined", "null", ""]);
 
 const limiter = new IdentifierLimiter(
   parseIdentifierLimitEnv(
-    process.env["FREELLM_IDENTIFIER_LIMIT"],
-    parseInt(process.env["FREELLM_IDENTIFIER_MAX_BUCKETS"] ?? "10000", 10),
+    process.env.FREELLM_IDENTIFIER_LIMIT,
+    Number.parseInt(process.env.FREELLM_IDENTIFIER_MAX_BUCKETS ?? "10000", 10),
   ),
 );
 
-function resetIdentifierLimiter(): void {
+export function resetIdentifierLimiter(): void {
   limiter.reset();
 }
 
-function identifierLimiterSize(): number {
+export function identifierLimiterSize(): number {
   return limiter.size();
 }
 
@@ -62,8 +59,7 @@ export function identifierLimit(req: Request, res: Response, next: NextFunction)
     next(
       freellmError({
         code: "invalid_request",
-        message:
-          "X-FreeLLM-Identifier must match ^[A-Za-z0-9_.:-]{1,128}$ or be omitted.",
+        message: "X-FreeLLM-Identifier must match ^[A-Za-z0-9_.:-]{1,128}$ or be omitted.",
       }),
     );
     return;

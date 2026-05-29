@@ -1,7 +1,7 @@
-import { ShieldCheck, ShieldOff, BookOpen, ExternalLink } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { BookOpen, ExternalLink, ShieldCheck, ShieldOff } from "lucide-react";
 
 /**
  * Dashboard card surfacing the FREELLM_TOKEN_SECRET boot state.
@@ -62,9 +62,7 @@ export function BrowserTokensCard({ info }: BrowserTokensCardProps) {
             <span
               className={cn(
                 "w-1.5 h-1.5 rounded-full",
-                info.enabled
-                  ? "bg-emerald-500 animate-pulse"
-                  : "bg-muted-foreground",
+                info.enabled ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground",
               )}
               aria-hidden="true"
             />
@@ -86,9 +84,7 @@ export function BrowserTokensCard({ info }: BrowserTokensCardProps) {
             <span className="text-muted-foreground text-[10px] uppercase tracking-wider">
               Min secret
             </span>
-            <span className="text-foreground tabular-nums">
-              {info.minSecretBytes} bytes
-            </span>
+            <span className="text-foreground tabular-nums">{info.minSecretBytes} bytes</span>
           </div>
         </div>
 
@@ -97,8 +93,8 @@ export function BrowserTokensCard({ info }: BrowserTokensCardProps) {
             <ShieldOff className="w-3 h-3 mt-0.5 shrink-0" strokeWidth={1.75} />
             <span>
               Set <span className="font-mono">FREELLM_TOKEN_SECRET</span> to at least{" "}
-              <span className="font-mono">{info.minSecretBytes}</span> bytes and restart to
-              enable issuing browser-safe tokens.
+              <span className="font-mono">{info.minSecretBytes}</span> bytes and restart to enable
+              issuing browser-safe tokens.
             </span>
           </div>
         )}

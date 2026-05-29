@@ -1,3 +1,5 @@
+import { createGeminiNormalizer } from "./gemini.js";
+import { createOllamaNormalizer } from "./ollama.js";
 /**
  * Per-provider streaming normalizer factory.
  *
@@ -7,8 +9,6 @@
  * normalizer still works (it just doesn't get any bug fixes).
  */
 import { createPassthroughNormalizer } from "./passthrough.js";
-import { createGeminiNormalizer } from "./gemini.js";
-import { createOllamaNormalizer } from "./ollama.js";
 import type { Normalizer } from "./types.js";
 
 export function createNormalizer(providerId: string): Normalizer {

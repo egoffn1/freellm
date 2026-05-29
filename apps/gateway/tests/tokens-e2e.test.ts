@@ -1,3 +1,7 @@
+import { type Server, createServer } from "node:http";
+import type { AddressInfo } from "node:net";
+import type { Express } from "express";
+import request from "supertest";
 /**
  * End-to-end integration test for the browser token flow:
  *
@@ -8,11 +12,7 @@
  *   3. The Origin header is verified on the follow-up call.
  *   4. Expired, tampered, and wrong-origin tokens are rejected.
  */
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { createServer, type Server } from "http";
-import { AddressInfo } from "net";
-import request from "supertest";
-import type { Express } from "express";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 let upstreamServer: Server;
 let upstreamUrl: string;
@@ -40,9 +40,7 @@ async function startFakeUpstream(): Promise<void> {
       res.end(canned);
     });
   });
-  await new Promise<void>((resolve) =>
-    upstreamServer.listen(0, "127.0.0.1", () => resolve()),
-  );
+  await new Promise<void>((resolve) => upstreamServer.listen(0, "127.0.0.1", () => resolve()));
   const addr = upstreamServer.address() as AddressInfo;
   upstreamUrl = `http://127.0.0.1:${addr.port}`;
 }
@@ -50,15 +48,14 @@ async function startFakeUpstream(): Promise<void> {
 beforeAll(async () => {
   await startFakeUpstream();
 
-  process.env["FREELLM_API_KEY"] = "master-key-for-tokens-e2e-test";
-  process.env["FREELLM_TOKEN_SECRET"] =
-    "tokens-e2e-test-secret-48-bytes-0123456789abcdef01234";
-  process.env["OLLAMA_BASE_URL"] = upstreamUrl;
-  process.env["OLLAMA_MODELS"] = "llama3";
-  process.env["RATE_LIMIT_RPM"] = "100000";
-  process.env["FREELLM_IDENTIFIER_LIMIT"] = "1000/60000";
-  delete process.env["FREELLM_ADMIN_KEY"];
-  delete process.env["FREELLM_VIRTUAL_KEYS_PATH"];
+  process.env.FREELLM_API_KEY = "master-key-for-tokens-e2e-test";
+  process.env.FREELLM_TOKEN_SECRET = "tokens-e2e-test-secret-48-bytes-0123456789abcdef01234";
+  process.env.OLLAMA_BASE_URL = upstreamUrl;
+  process.env.OLLAMA_MODELS = "llama3";
+  process.env.RATE_LIMIT_RPM = "100000";
+  process.env.FREELLM_IDENTIFIER_LIMIT = "1000/60000";
+  delete process.env.FREELLM_ADMIN_KEY;
+  delete process.env.FREELLM_VIRTUAL_KEYS_PATH;
   for (const k of [
     "GROQ_API_KEY",
     "GEMINI_API_KEY",

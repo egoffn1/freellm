@@ -1,5 +1,5 @@
-import { BaseProvider, parseApiKeys } from "./base.js";
 import type { ChatCompletionRequest, ModelObject } from "../types.js";
+import { BaseProvider, parseApiKeys } from "./base.js";
 
 /**
  * Gemini OpenAI-compatibility adapter.
@@ -47,21 +47,33 @@ export class GeminiProvider extends BaseProvider {
   override readonly supportsStreamUsage = true;
 
   get baseUrl(): string {
-    return process.env["GEMINI_BASE_URL"] ?? "https://generativelanguage.googleapis.com/v1beta/openai";
+    return process.env.GEMINI_BASE_URL ?? "https://generativelanguage.googleapis.com/v1beta/openai";
   }
 
   readonly models: ModelObject[] = [
-    { id: "gemini/gemini-2.5-flash", object: "model", created: 1700000000, owned_by: "google", provider: "gemini", supportsVision: true },
-    { id: "gemini/gemini-2.5-pro", object: "model", created: 1700000000, owned_by: "google", provider: "gemini", supportsVision: true },
+    {
+      id: "gemini/gemini-2.5-flash",
+      object: "model",
+      created: 1700000000,
+      owned_by: "google",
+      provider: "gemini",
+      supportsVision: true,
+    },
+    {
+      id: "gemini/gemini-2.5-pro",
+      object: "model",
+      created: 1700000000,
+      owned_by: "google",
+      provider: "gemini",
+      supportsVision: true,
+    },
   ];
 
   protected getApiKeys(): string[] {
-    return parseApiKeys(process.env["GEMINI_API_KEY"]);
+    return parseApiKeys(process.env.GEMINI_API_KEY);
   }
 
-  protected override mapRequest(
-    request: ChatCompletionRequest,
-  ): ChatCompletionRequest {
+  protected override mapRequest(request: ChatCompletionRequest): ChatCompletionRequest {
     const mapped = super.mapRequest(request);
 
     // Per-model reasoning_effort default. The base mapRequest already
@@ -81,7 +93,7 @@ export class GeminiProvider extends BaseProvider {
       mapped.max_completion_tokens = mapped.max_tokens;
     }
     if (mapped.max_tokens != null) {
-      delete (mapped as { max_tokens?: number | null }).max_tokens;
+      (mapped as { max_tokens?: number | null }).max_tokens = undefined;
     }
 
     return mapped;
@@ -94,9 +106,7 @@ export class GeminiProvider extends BaseProvider {
  * for unknown model ids as a conservative default that is accepted by
  * every current Gemini model.
  */
-export function defaultReasoningEffortFor(
-  modelId: string,
-): "none" | "low" | "medium" | "high" {
+export function defaultReasoningEffortFor(modelId: string): "none" | "low" | "medium" | "high" {
   // 2.5 Pro requires a non-zero thinking budget, so the smallest value
   // it will accept is "low". Falling below that returns 400.
   if (modelId.includes("2.5-pro")) return "low";

@@ -7,15 +7,13 @@
  * support response_format.type === "json_schema", so the adapter must
  * rewrite it into nvext.guided_json and remove response_format.
  */
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { NimProvider } from "../src/providers/nim.js";
 import type { ChatCompletionRequest } from "../src/types.js";
 
 // Subclass that lets the test call the protected mapRequest directly.
 class ExposedNimProvider extends NimProvider {
-  public exposeMapRequest(
-    request: ChatCompletionRequest,
-  ): ChatCompletionRequest {
+  public exposeMapRequest(request: ChatCompletionRequest): ChatCompletionRequest {
     return this.mapRequest(request);
   }
 }
@@ -24,9 +22,7 @@ function nim() {
   return new ExposedNimProvider();
 }
 
-function baseRequest(
-  overrides: Partial<ChatCompletionRequest> = {},
-): ChatCompletionRequest {
+function baseRequest(overrides: Partial<ChatCompletionRequest> = {}): ChatCompletionRequest {
   return {
     model: "nim/meta/llama-3.3-70b-instruct",
     messages: [{ role: "user", content: "hi" }],

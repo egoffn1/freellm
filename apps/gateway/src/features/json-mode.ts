@@ -25,12 +25,12 @@ export function translateRequestForProvider(
   if (
     providerId === "nim" &&
     request.response_format?.type === "json_schema" &&
-    request.response_format.json_schema?.["schema"]
+    request.response_format.json_schema?.schema
   ) {
-    const schema = request.response_format.json_schema["schema"];
+    const schema = request.response_format.json_schema.schema;
     const translated = { ...request } as unknown as Record<string, unknown>;
-    translated["nvext"] = { guided_json: schema };
-    delete (translated as Partial<ChatCompletionRequest>).response_format;
+    translated.nvext = { guided_json: schema };
+    (translated as Partial<ChatCompletionRequest>).response_format = undefined;
     return translated as unknown as ChatCompletionRequest;
   }
 
@@ -71,8 +71,8 @@ export function annotateResponse(
   }
 
   // Schema validation (json_schema only)
-  if (fmt === "json_schema" && request.response_format?.json_schema?.["schema"]) {
-    const schema = request.response_format.json_schema["schema"] as Record<string, unknown>;
+  if (fmt === "json_schema" && request.response_format?.json_schema?.schema) {
+    const schema = request.response_format.json_schema.schema as Record<string, unknown>;
     const raw = response.choices?.[0]?.message?.content;
     const content = typeof raw === "string" ? raw : null;
 
@@ -90,7 +90,7 @@ export function annotateResponse(
     }
 
     // Type check
-    if (schema["type"] === "object") {
+    if (schema.type === "object") {
       if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
         warnings.push("schema-validation-failed");
         return warnings;
@@ -98,8 +98,13 @@ export function annotateResponse(
     }
 
     // Required fields check
-    const required = schema["required"];
-    if (Array.isArray(required) && parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)) {
+    const required = schema.required;
+    if (
+      Array.isArray(required) &&
+      parsed !== null &&
+      typeof parsed === "object" &&
+      !Array.isArray(parsed)
+    ) {
       const obj = parsed as Record<string, unknown>;
       for (const key of required) {
         if (typeof key === "string" && !(key in obj)) {

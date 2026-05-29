@@ -1,5 +1,5 @@
-import type { Request, Response, NextFunction } from "express";
-import { randomUUID } from "crypto";
+import { randomUUID } from "node:crypto";
+import type { NextFunction, Request, Response } from "express";
 
 /**
  * Assigns every incoming request a UUID (honoring an inbound `X-Request-Id`
@@ -21,9 +21,7 @@ export function requestId(req: Request, res: Response, next: NextFunction): void
   const inbound = req.headers["x-request-id"];
   const candidate = Array.isArray(inbound) ? inbound[0] : inbound;
   req.id =
-    typeof candidate === "string" && INBOUND_ID_PATTERN.test(candidate)
-      ? candidate
-      : randomUUID();
+    typeof candidate === "string" && INBOUND_ID_PATTERN.test(candidate) ? candidate : randomUUID();
   res.setHeader("X-Request-Id", req.id);
   next();
 }

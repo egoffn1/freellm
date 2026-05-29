@@ -1,18 +1,67 @@
 ---
-const rows = [
-  { feature: "Truly $0 (no markup, no subscription)", freellm: true, litellm: "Self-host", openrouter: false, portkey: false },
-  { feature: "Multi-key rotation per provider", freellm: true, litellm: false, openrouter: false, portkey: false },
+const _rows = [
+  {
+    feature: "Truly $0 (no markup, no subscription)",
+    freellm: true,
+    litellm: "Self-host",
+    openrouter: false,
+    portkey: false,
+  },
+  {
+    feature: "Multi-key rotation per provider",
+    freellm: true,
+    litellm: false,
+    openrouter: false,
+    portkey: false,
+  },
   { feature: "OpenAI-compatible", freellm: true, litellm: true, openrouter: true, portkey: true },
   { feature: "Automatic failover", freellm: true, litellm: true, openrouter: true, portkey: true },
-  { feature: "Built-in real-time dashboard", freellm: true, litellm: false, openrouter: true, portkey: true },
-  { feature: "Response caching (zero quota burn)", freellm: true, litellm: "Plugin", openrouter: false, portkey: true },
-  { feature: "Per-provider token tracking", freellm: true, litellm: true, openrouter: true, portkey: true },
-  { feature: "Circuit breakers", freellm: true, litellm: "Partial", openrouter: true, portkey: true },
+  {
+    feature: "Built-in real-time dashboard",
+    freellm: true,
+    litellm: false,
+    openrouter: true,
+    portkey: true,
+  },
+  {
+    feature: "Response caching (zero quota burn)",
+    freellm: true,
+    litellm: "Plugin",
+    openrouter: false,
+    portkey: true,
+  },
+  {
+    feature: "Per-provider token tracking",
+    freellm: true,
+    litellm: true,
+    openrouter: true,
+    portkey: true,
+  },
+  {
+    feature: "Circuit breakers",
+    freellm: true,
+    litellm: "Partial",
+    openrouter: true,
+    portkey: true,
+  },
   { feature: "Self-hosted", freellm: true, litellm: true, openrouter: false, portkey: "Both" },
-  { feature: "TypeScript codebase (auditable)", freellm: true, litellm: false, openrouter: "?", portkey: false },
-  { feature: "One-click cloud deploy", freellm: true, litellm: false, openrouter: "n/a", portkey: false },
+  {
+    feature: "TypeScript codebase (auditable)",
+    freellm: true,
+    litellm: false,
+    openrouter: "?",
+    portkey: false,
+  },
+  {
+    feature: "One-click cloud deploy",
+    freellm: true,
+    litellm: false,
+    openrouter: "n/a",
+    portkey: false,
+  },
 ];
 
+// biome-ignore lint/correctness/noUnusedVariables: used in the Astro template below
 function cell(value: boolean | string) {
   if (value === true) return { text: "✓", className: "yes" };
   if (value === false) return { text: "—", className: "no" };

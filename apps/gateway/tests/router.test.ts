@@ -1,7 +1,12 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { GatewayRouter, AllProvidersExhaustedError, ProviderClientError } from "../src/routing/router.js";
-import type { ProviderRegistry } from "../src/routing/registry.js";
+import { beforeEach, describe, expect, it } from "vitest";
 import type { ProviderAdapter } from "../src/providers/types.js";
+import type { ProviderRegistry } from "../src/routing/registry.js";
+import {
+  AllProvidersExhaustedError,
+  GatewayRouter,
+  ProviderClientError,
+} from "../src/routing/router.js";
+import { StrictModeError } from "../src/routing/strict.js";
 import type {
   ChatCompletionRequest,
   CircuitBreakerState,
@@ -10,7 +15,6 @@ import type {
   ProviderStats,
   ProviderStatusInfo,
 } from "../src/types.js";
-import { StrictModeError } from "../src/routing/strict.js";
 
 interface FakeOptions {
   id: string;
@@ -58,30 +62,38 @@ class FakeProvider implements ProviderAdapter {
       object: "chat.completion",
       created: 0,
       model: opts.models[0],
-      choices: [
-        { index: 0, message: { role: "assistant", content: "ok" }, finish_reason: "stop" },
-      ],
+      choices: [{ index: 0, message: { role: "assistant", content: "ok" }, finish_reason: "stop" }],
       usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
     };
   }
 
-  isEnabled(): boolean { return true; }
-  isAvailable(): boolean { return !this.rateLimited; }
-  getStats(): ProviderStats { return { ...this.statsObj }; }
-  getCircuitBreakerState(): CircuitBreakerState { return this.cbState; }
+  isEnabled(): boolean {
+    return true;
+  }
+  isAvailable(): boolean {
+    return !this.rateLimited;
+  }
+  getStats(): ProviderStats {
+    return { ...this.statsObj };
+  }
+  getCircuitBreakerState(): CircuitBreakerState {
+    return this.cbState;
+  }
   getKeysStatus(): KeyStatus[] {
-    return [{
-      index: 0,
-      rateLimited: this.rateLimited,
-      requestsInWindow: 0,
-      maxRequests: 30,
-      retryAfterMs: this.rateLimited ? 5_000 : null,
-    }];
+    return [
+      {
+        index: 0,
+        rateLimited: this.rateLimited,
+        requestsInWindow: 0,
+        maxRequests: 30,
+        retryAfterMs: this.rateLimited ? 5_000 : null,
+      },
+    ];
   }
 
   async complete(_request: ChatCompletionRequest): Promise<Response> {
     const idx = Math.min(this.callCount, this.statuses.length - 1);
-    const status = this.statuses[idx]!;
+    const status = this.statuses[idx] ?? 500;
     this.callCount++;
     this.statsObj.totalRequests++;
     if (status === 200) {
@@ -96,7 +108,9 @@ class FakeProvider implements ProviderAdapter {
     });
   }
 
-  onSuccess(): void { this.statsObj.successRequests++; }
+  onSuccess(): void {
+    this.statsObj.successRequests++;
+  }
   onRateLimit(_response: Response, retryAfterSeconds?: number): void {
     this.statsObj.rateLimitedRequests++;
     this.rateLimited = true;
@@ -125,23 +139,24 @@ function fakeRegistry(providers: FakeProvider[]): ProviderRegistry {
     ): ProviderAdapter | undefined => {
       return providers.find((p) => p.isAvailable() && !excluded.has(p.id));
     },
-    getStatusAll: (): ProviderStatusInfo[] => providers.map((p) => ({
-      id: p.id,
-      name: p.name,
-      enabled: p.isEnabled(),
-      circuitBreakerState: p.getCircuitBreakerState(),
-      totalRequests: p.getStats().totalRequests,
-      successRequests: p.getStats().successRequests,
-      failedRequests: p.getStats().failedRequests,
-      rateLimitedRequests: p.getStats().rateLimitedRequests,
-      lastError: null,
-      lastUsedAt: null,
-      models: p.models.map((m) => m.id),
-      keyCount: 1,
-      keysAvailable: p.isAvailable() ? 1 : 0,
-      keys: p.getKeysStatus(),
-      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, requestCount: 0 },
-    })),
+    getStatusAll: (): ProviderStatusInfo[] =>
+      providers.map((p) => ({
+        id: p.id,
+        name: p.name,
+        enabled: p.isEnabled(),
+        circuitBreakerState: p.getCircuitBreakerState(),
+        totalRequests: p.getStats().totalRequests,
+        successRequests: p.getStats().successRequests,
+        failedRequests: p.getStats().failedRequests,
+        rateLimitedRequests: p.getStats().rateLimitedRequests,
+        lastError: null,
+        lastUsedAt: null,
+        models: p.models.map((m) => m.id),
+        keyCount: 1,
+        keysAvailable: p.isAvailable() ? 1 : 0,
+        keys: p.getKeysStatus(),
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, requestCount: 0 },
+      })),
   } as unknown as ProviderRegistry;
 }
 

@@ -1,5 +1,5 @@
+import type { ChatCompletionRequest, ModelObject } from "../types.js";
 import { BaseProvider } from "./base.js";
-import type { ModelObject, ChatCompletionRequest } from "../types.js";
 
 const VISION_NAME_PATTERNS = ["llava", "vision", "bakllava", "moondream", "cogvlm", "minicpm-v"];
 
@@ -13,11 +13,11 @@ export class OllamaProvider extends BaseProvider {
   readonly name = "Ollama";
 
   get baseUrl(): string {
-    return (process.env["OLLAMA_BASE_URL"] ?? "http://localhost:11434") + "/v1";
+    return (process.env.OLLAMA_BASE_URL ?? "http://localhost:11434") + "/v1";
   }
 
   get models(): ModelObject[] {
-    const raw = process.env["OLLAMA_MODELS"] ?? "";
+    const raw = process.env.OLLAMA_MODELS ?? "";
     if (!raw.trim()) return [];
     return raw
       .split(",")
@@ -39,7 +39,7 @@ export class OllamaProvider extends BaseProvider {
    * rate limiter) works uniformly across all providers.
    */
   protected getApiKeys(): string[] {
-    return process.env["OLLAMA_BASE_URL"] ? ["ollama"] : [];
+    return process.env.OLLAMA_BASE_URL ? ["ollama"] : [];
   }
 
   /** Ollama overrides complete() to skip the Authorization header. */

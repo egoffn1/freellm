@@ -8,7 +8,7 @@
  * the validate middleware before the request ever reaches the
  * router, so these tests are the backstop that catches it.
  */
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { chatCompletionRequestSchema } from "../src/schemas.js";
 
 function ok(body: unknown) {

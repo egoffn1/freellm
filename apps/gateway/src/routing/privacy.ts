@@ -72,7 +72,8 @@ export const PROVIDER_PRIVACY: Record<string, ProviderPrivacy> = {
   },
   nim: {
     policy: "no-training",
-    source_url: "https://www.nvidia.com/en-us/agreements/cloud-services/service-specific-terms-for-nvidia-nim/",
+    source_url:
+      "https://www.nvidia.com/en-us/agreements/cloud-services/service-specific-terms-for-nvidia-nim/",
     last_verified: "2026-04-09",
     note: "NVIDIA NIM service terms exclude training on customer inference data.",
   },
@@ -117,16 +118,11 @@ const ACCEPTED = new Set<PrivacyRequest>(["any", "no-training"]);
 export function parsePrivacyHeader(value: unknown): PrivacyRequest {
   if (typeof value !== "string") return "any";
   const normalized = value.trim().toLowerCase();
-  return ACCEPTED.has(normalized as PrivacyRequest)
-    ? (normalized as PrivacyRequest)
-    : "any";
+  return ACCEPTED.has(normalized as PrivacyRequest) ? (normalized as PrivacyRequest) : "any";
 }
 
 /** True if the provider's declared policy satisfies the request. */
-export function providerSatisfiesPrivacy(
-  providerId: string,
-  requested: PrivacyRequest,
-): boolean {
+export function providerSatisfiesPrivacy(providerId: string, requested: PrivacyRequest): boolean {
   if (requested === "any") return true;
   const entry = PROVIDER_PRIVACY[providerId];
   if (!entry) return false; // Unknown provider: fail closed.
@@ -137,10 +133,7 @@ export function providerSatisfiesPrivacy(
  * How many days since the catalog entry was last verified? Used by a
  * boot-time warning when any entry is older than 90 days.
  */
-export function daysSinceVerified(
-  entry: ProviderPrivacy,
-  now: number = Date.now(),
-): number {
+export function daysSinceVerified(entry: ProviderPrivacy, now: number = Date.now()): number {
   const verified = Date.parse(entry.last_verified);
   if (!Number.isFinite(verified)) return Number.POSITIVE_INFINITY;
   const diffMs = now - verified;

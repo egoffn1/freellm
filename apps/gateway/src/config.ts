@@ -42,7 +42,25 @@ export const NON_RETRIABLE_STATUSES = new Set([400, 401, 403, 404]);
 
 /** Meta-model entries returned by GET /v1/models. */
 export const META_MODEL_ENTRIES = [
-  { id: "free",      object: "model" as const, created: 1700000000, owned_by: "freellm", provider: "freellm" },
-  { id: "free-fast",  object: "model" as const, created: 1700000000, owned_by: "freellm", provider: "freellm" },
-  { id: "free-smart", object: "model" as const, created: 1700000000, owned_by: "freellm", provider: "freellm" },
+  {
+    id: "free",
+    object: "model" as const,
+    created: 1700000000,
+    owned_by: "freellm",
+    provider: "freellm",
+  },
+  {
+    id: "free-fast",
+    object: "model" as const,
+    created: 1700000000,
+    owned_by: "freellm",
+    provider: "freellm",
+  },
+  {
+    id: "free-smart",
+    object: "model" as const,
+    created: 1700000000,
+    owned_by: "freellm",
+    provider: "freellm",
+  },
 ];

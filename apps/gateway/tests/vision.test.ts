@@ -8,12 +8,12 @@
  *   4. GatewayRouter — meta-model routes to a vision-capable provider/model
  *   5. Ollama — supportsVision flag set from model name heuristics
  */
-import { describe, it, expect, afterEach } from "vitest";
-import { hasImageContent, ResponseCache } from "../src/routing/cache.js";
-import { GatewayRouter } from "../src/routing/router.js";
+import { afterEach, describe, expect, it } from "vitest";
 import { OllamaProvider } from "../src/providers/ollama.js";
-import type { ProviderRegistry } from "../src/routing/registry.js";
 import type { ProviderAdapter } from "../src/providers/types.js";
+import { ResponseCache, hasImageContent } from "../src/routing/cache.js";
+import type { ProviderRegistry } from "../src/routing/registry.js";
+import { GatewayRouter } from "../src/routing/router.js";
 import type {
   ChatCompletionRequest,
   CircuitBreakerState,
@@ -68,15 +68,25 @@ class StubProvider implements ProviderAdapter {
     private status = 200,
   ) {}
 
-  get name() { return this.id; }
-  isEnabled() { return true; }
-  isAvailable() { return true; }
+  get name() {
+    return this.id;
+  }
+  isEnabled() {
+    return true;
+  }
+  isAvailable() {
+    return true;
+  }
   getStats(): ProviderStats {
     return { totalRequests: 0, successRequests: 0, failedRequests: 0, rateLimitedRequests: 0 };
   }
-  getCircuitBreakerState(): CircuitBreakerState { return this.cbState; }
+  getCircuitBreakerState(): CircuitBreakerState {
+    return this.cbState;
+  }
   getKeysStatus(): KeyStatus[] {
-    return [{ index: 0, rateLimited: false, requestsInWindow: 0, maxRequests: 30, retryAfterMs: null }];
+    return [
+      { index: 0, rateLimited: false, requestsInWindow: 0, maxRequests: 30, retryAfterMs: null },
+    ];
   }
   async complete(req: ChatCompletionRequest): Promise<Response> {
     this.callCount++;
@@ -85,10 +95,16 @@ class StubProvider implements ProviderAdapter {
       headers: { "content-type": "application/json" },
     });
   }
-  onSuccess() { this.cbState = "closed"; }
+  onSuccess() {
+    this.cbState = "closed";
+  }
   onRateLimit() {}
-  onError() { this.cbState = "open"; }
-  resetCircuitBreaker() { this.cbState = "closed"; }
+  onError() {
+    this.cbState = "open";
+  }
+  resetCircuitBreaker() {
+    this.cbState = "closed";
+  }
 }
 
 function makeRegistry(providers: StubProvider[]): ProviderRegistry {
@@ -98,19 +114,26 @@ function makeRegistry(providers: StubProvider[]): ProviderRegistry {
     getAvailable: () => providers.filter((p) => p.isAvailable()),
     getById: (id: string) => providers.find((p) => p.id === id),
     getAllModels: () => providers.flatMap((p) => p.models),
-    getProviderForMetaModel: (
-      _meta: string,
-      excluded: Set<string>,
-    ): ProviderAdapter | undefined =>
+    getProviderForMetaModel: (_meta: string, excluded: Set<string>): ProviderAdapter | undefined =>
       providers.find((p) => p.isAvailable() && !excluded.has(p.id)),
-    getStatusAll: (): ProviderStatusInfo[] => providers.map((p) => ({
-      id: p.id, name: p.name, enabled: true,
-      circuitBreakerState: p.getCircuitBreakerState(),
-      totalRequests: 0, successRequests: 0, failedRequests: 0, rateLimitedRequests: 0,
-      lastError: null, lastUsedAt: null, models: p.models.map((m) => m.id),
-      keyCount: 1, keysAvailable: 1, keys: p.getKeysStatus(),
-      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, requestCount: 0 },
-    })),
+    getStatusAll: (): ProviderStatusInfo[] =>
+      providers.map((p) => ({
+        id: p.id,
+        name: p.name,
+        enabled: true,
+        circuitBreakerState: p.getCircuitBreakerState(),
+        totalRequests: 0,
+        successRequests: 0,
+        failedRequests: 0,
+        rateLimitedRequests: 0,
+        lastError: null,
+        lastUsedAt: null,
+        models: p.models.map((m) => m.id),
+        keyCount: 1,
+        keysAvailable: 1,
+        keys: p.getKeysStatus(),
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, requestCount: 0 },
+      })),
   } as unknown as ProviderRegistry;
 }
 
@@ -122,7 +145,9 @@ describe("hasImageContent", () => {
   });
 
   it("returns false when content is a string", () => {
-    expect(hasImageContent({ model: "free", messages: [{ role: "user", content: "hello" }] })).toBe(false);
+    expect(hasImageContent({ model: "free", messages: [{ role: "user", content: "hello" }] })).toBe(
+      false,
+    );
   });
 
   it("returns false when content array has only text parts", () => {
@@ -239,11 +264,17 @@ describe("GatewayRouter — meta-model vision routing", () => {
   it("routes a vision meta-model request to a vision-capable provider", async () => {
     const textOnlyModel: ModelObject = {
       id: "cerebras/llama-3.3-70b",
-      object: "model", created: 0, owned_by: "meta", provider: "cerebras",
+      object: "model",
+      created: 0,
+      owned_by: "meta",
+      provider: "cerebras",
     };
     const visionModel: ModelObject = {
       id: "gemini/gemini-2.5-flash",
-      object: "model", created: 0, owned_by: "google", provider: "gemini",
+      object: "model",
+      created: 0,
+      owned_by: "google",
+      provider: "gemini",
       supportsVision: true,
     };
     const cerebras = new StubProvider("cerebras", [textOnlyModel]);
@@ -278,11 +309,17 @@ describe("GatewayRouter — meta-model vision routing", () => {
     // Provider has both text and vision models; the vision model must be chosen
     const textModel: ModelObject = {
       id: "github/meta/Meta-Llama-3.3-70B-Instruct",
-      object: "model", created: 0, owned_by: "meta", provider: "github",
+      object: "model",
+      created: 0,
+      owned_by: "meta",
+      provider: "github",
     };
     const visionModel: ModelObject = {
       id: "github/openai/gpt-4o-mini",
-      object: "model", created: 0, owned_by: "openai", provider: "github",
+      object: "model",
+      created: 0,
+      owned_by: "openai",
+      provider: "github",
       supportsVision: true,
     };
     const github = new StubProvider("github", [textModel, visionModel]);
@@ -301,15 +338,15 @@ describe("GatewayRouter — meta-model vision routing", () => {
 
 describe("OllamaProvider — supportsVision from model name", () => {
   function ollamaModels(names: string): ModelObject[] {
-    process.env["OLLAMA_BASE_URL"] = "http://localhost:11434";
-    process.env["OLLAMA_MODELS"] = names;
+    process.env.OLLAMA_BASE_URL = "http://localhost:11434";
+    process.env.OLLAMA_MODELS = names;
     const p = new OllamaProvider();
     return p.models;
   }
 
   afterEach(() => {
-    delete process.env["OLLAMA_MODELS"];
-    delete process.env["OLLAMA_BASE_URL"];
+    delete process.env.OLLAMA_MODELS;
+    delete process.env.OLLAMA_BASE_URL;
   });
 
   it("marks llava models as vision-capable", () => {

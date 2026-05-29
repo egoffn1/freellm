@@ -1,6 +1,6 @@
-import { Router, type IRouter } from "express";
-import { registry } from "../../routing/index.js";
+import { type IRouter, Router } from "express";
 import { META_MODEL_ENTRIES } from "../../config.js";
+import { registry } from "../../routing/index.js";
 
 const modelsRouter: IRouter = Router();
 

@@ -1,9 +1,9 @@
+import type { NextFunction, Request, Response } from "express";
 import rateLimit from "express-rate-limit";
-import type { Request, Response, NextFunction } from "express";
 import { freellmError } from "../errors/index.js";
 
-const windowMs = parseInt(process.env["RATE_LIMIT_WINDOW_MS"] ?? "60000", 10);
-const max = parseInt(process.env["RATE_LIMIT_RPM"] ?? "60", 10);
+const windowMs = Number.parseInt(process.env.RATE_LIMIT_WINDOW_MS ?? "60000", 10);
+const max = Number.parseInt(process.env.RATE_LIMIT_RPM ?? "60", 10);
 
 /**
  * Per-client rate limiter (by IP).

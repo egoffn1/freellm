@@ -1,5 +1,5 @@
-import type { Request, Response, NextFunction } from "express";
-import { createHash, timingSafeEqual } from "crypto";
+import { createHash, timingSafeEqual } from "node:crypto";
+import type { NextFunction, Request, Response } from "express";
 import { freellmError } from "../errors/index.js";
 
 function hashKey(key: string): Buffer {
@@ -12,7 +12,7 @@ function hashKey(key: string): Buffer {
  * If not set, falls through to the regular auth middleware (same key for everything).
  */
 export function adminAuth(req: Request, _res: Response, next: NextFunction): void {
-  const adminKey = process.env["FREELLM_ADMIN_KEY"];
+  const adminKey = process.env.FREELLM_ADMIN_KEY;
 
   if (!adminKey) {
     // No separate admin key -- regular auth (if any) already handled it

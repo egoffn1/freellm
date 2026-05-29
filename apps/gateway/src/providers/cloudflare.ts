@@ -1,5 +1,5 @@
-import { BaseProvider, parseApiKeys } from "./base.js";
 import type { ModelObject } from "../types.js";
+import { BaseProvider, parseApiKeys } from "./base.js";
 
 /**
  * Cloudflare Workers AI (OpenAI-compatible) adapter.
@@ -37,8 +37,8 @@ export class CloudflareProvider extends BaseProvider {
   readonly name = "Cloudflare Workers AI";
 
   get baseUrl(): string {
-    if (process.env["CLOUDFLARE_BASE_URL"]) return process.env["CLOUDFLARE_BASE_URL"];
-    const accountId = process.env["CLOUDFLARE_ACCOUNT_ID"] ?? "";
+    if (process.env.CLOUDFLARE_BASE_URL) return process.env.CLOUDFLARE_BASE_URL;
+    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID ?? "";
     return `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/v1`;
   }
 
@@ -94,8 +94,8 @@ export class CloudflareProvider extends BaseProvider {
    * why both are required together.
    */
   protected getApiKeys(): string[] {
-    const accountId = process.env["CLOUDFLARE_ACCOUNT_ID"];
+    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
     if (!accountId) return [];
-    return parseApiKeys(process.env["CLOUDFLARE_API_KEY"]);
+    return parseApiKeys(process.env.CLOUDFLARE_API_KEY);
   }
 }

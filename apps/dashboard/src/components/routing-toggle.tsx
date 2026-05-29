@@ -1,5 +1,5 @@
-import { ArrowRightLeft } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { ArrowRightLeft } from "lucide-react";
 
 interface RoutingToggleProps {
   strategy: string | undefined;

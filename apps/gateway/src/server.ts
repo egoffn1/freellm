@@ -1,13 +1,15 @@
 import app from "./app.js";
+import { MIN_SECRET_BYTES } from "./features/browser-tokens.js";
+import { VirtualKeysError, initVirtualKeys } from "./features/virtual-keys.js";
 import { logger } from "./logger.js";
 import { PROVIDER_PRIVACY, daysSinceVerified } from "./routing/privacy.js";
-import { initVirtualKeys, VirtualKeysError } from "./features/virtual-keys.js";
-import { MIN_SECRET_BYTES } from "./features/browser-tokens.js";
 
-const PORT = parseInt(process.env["PORT"] ?? "3000", 10);
+const PORT = Number.parseInt(process.env.PORT ?? "3000", 10);
 
-if (process.env["NODE_ENV"] === "production" && !process.env["FREELLM_API_KEY"]) {
-  logger.warn("FREELLM_API_KEY is not set -- gateway is open to the internet without authentication");
+if (process.env.NODE_ENV === "production" && !process.env.FREELLM_API_KEY) {
+  logger.warn(
+    "FREELLM_API_KEY is not set -- gateway is open to the internet without authentication",
+  );
 }
 
 // Browser token secret check. If the operator set FREELLM_TOKEN_SECRET,
@@ -15,7 +17,7 @@ if (process.env["NODE_ENV"] === "production" && !process.env["FREELLM_API_KEY"])
 // so we never sign tokens with weak material. If the secret is unset,
 // the issue endpoint and the flt.* auth branch are both disabled and
 // everything else still works.
-const browserTokenSecret = process.env["FREELLM_TOKEN_SECRET"];
+const browserTokenSecret = process.env.FREELLM_TOKEN_SECRET;
 if (browserTokenSecret) {
   const bytes = Buffer.byteLength(browserTokenSecret, "utf8");
   if (bytes < MIN_SECRET_BYTES) {

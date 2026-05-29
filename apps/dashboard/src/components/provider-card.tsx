@@ -1,7 +1,7 @@
-import { AlertTriangle, RefreshCw, Clock, Key, Coins, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { AlertTriangle, Clock, Coins, Key, RefreshCw, ShieldCheck } from "lucide-react";
 
 interface ProviderCardProps {
   provider: {
@@ -48,31 +48,44 @@ function getPrivacyStyle(policy: string) {
 
 function getPrivacyLabel(policy: string) {
   switch (policy) {
-    case "no-training": return "NO-TRAIN";
-    case "local": return "LOCAL";
-    case "configurable": return "CONFIG";
-    case "free-tier-trains": return "TRAINS";
-    default: return policy.toUpperCase();
+    case "no-training":
+      return "NO-TRAIN";
+    case "local":
+      return "LOCAL";
+    case "configurable":
+      return "CONFIG";
+    case "free-tier-trains":
+      return "TRAINS";
+    default:
+      return policy.toUpperCase();
   }
 }
 
 function getStatusColor(state: string, enabled: boolean) {
   if (!enabled) return "bg-muted text-muted-foreground border-muted";
   switch (state) {
-    case "closed": return "bg-primary/10 text-primary border-primary/15";
-    case "open": return "bg-destructive/10 text-destructive border-destructive/15";
-    case "half_open": return "bg-amber-500/10 text-amber-400 border-amber-500/15";
-    default: return "bg-muted text-muted-foreground border-muted";
+    case "closed":
+      return "bg-primary/10 text-primary border-primary/15";
+    case "open":
+      return "bg-destructive/10 text-destructive border-destructive/15";
+    case "half_open":
+      return "bg-amber-500/10 text-amber-400 border-amber-500/15";
+    default:
+      return "bg-muted text-muted-foreground border-muted";
   }
 }
 
 function getStatusText(state: string, enabled: boolean) {
   if (!enabled) return "Disabled";
   switch (state) {
-    case "closed": return "Healthy";
-    case "open": return "Failing";
-    case "half_open": return "Testing";
-    default: return "Unknown";
+    case "closed":
+      return "Healthy";
+    case "open":
+      return "Failing";
+    case "half_open":
+      return "Testing";
+    default:
+      return "Unknown";
   }
 }
 
@@ -84,7 +97,8 @@ function formatCompact(n: number): string {
 }
 
 export function ProviderCard({ provider, onReset, resetPending }: ProviderCardProps) {
-  const showReset = provider.circuitBreakerState === "open" || provider.circuitBreakerState === "half_open";
+  const showReset =
+    provider.circuitBreakerState === "open" || provider.circuitBreakerState === "half_open";
   const keyCount = provider.keyCount ?? 1;
   const keysAvailable = provider.keysAvailable ?? keyCount;
   const hasMultiKey = keyCount > 1;
@@ -92,10 +106,12 @@ export function ProviderCard({ provider, onReset, resetPending }: ProviderCardPr
   const hasTokens = usage && usage.totalTokens > 0;
 
   return (
-    <div className={cn(
-      "rounded-xl border border-white/[0.04] bg-card p-5 transition-all duration-200 hover:border-white/[0.08]",
-      !provider.enabled && "opacity-50"
-    )}>
+    <div
+      className={cn(
+        "rounded-xl border border-white/[0.04] bg-card p-5 transition-all duration-200 hover:border-white/[0.08]",
+        !provider.enabled && "opacity-50",
+      )}
+    >
       {/* Header */}
       <div className="flex justify-between items-start gap-3 mb-4">
         <div className="min-w-0">
@@ -103,7 +119,13 @@ export function ProviderCard({ provider, onReset, resetPending }: ProviderCardPr
           <p className="text-xs font-mono text-muted-foreground mt-0.5">{provider.id}</p>
         </div>
         <div className="flex flex-wrap items-start gap-1.5 justify-end shrink-0">
-          <Badge variant="outline" className={cn("uppercase text-[10px] tracking-wider", getStatusColor(provider.circuitBreakerState, provider.enabled))}>
+          <Badge
+            variant="outline"
+            className={cn(
+              "uppercase text-[10px] tracking-wider",
+              getStatusColor(provider.circuitBreakerState, provider.enabled),
+            )}
+          >
             {getStatusText(provider.circuitBreakerState, provider.enabled)}
           </Badge>
           {hasMultiKey && (
@@ -141,12 +163,21 @@ export function ProviderCard({ provider, onReset, resetPending }: ProviderCardPr
       {/* Stats */}
       <div className="grid grid-cols-2 gap-2 text-sm font-mono mb-4">
         <div className="flex flex-col gap-0.5 p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.04]">
-          <span className="text-muted-foreground text-[10px] uppercase tracking-wider">Success</span>
+          <span className="text-muted-foreground text-[10px] uppercase tracking-wider">
+            Success
+          </span>
           <span className="text-foreground font-medium">{provider.successRequests}</span>
         </div>
         <div className="flex flex-col gap-0.5 p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.04]">
           <span className="text-muted-foreground text-[10px] uppercase tracking-wider">Failed</span>
-          <span className={cn("font-medium", provider.failedRequests > 0 ? "text-destructive" : "text-foreground")}>{provider.failedRequests}</span>
+          <span
+            className={cn(
+              "font-medium",
+              provider.failedRequests > 0 ? "text-destructive" : "text-foreground",
+            )}
+          >
+            {provider.failedRequests}
+          </span>
         </div>
       </div>
 
@@ -169,7 +200,9 @@ export function ProviderCard({ provider, onReset, resetPending }: ProviderCardPr
       {provider.lastError && (
         <div className="p-2.5 rounded-lg border border-destructive/10 bg-destructive/[0.03] text-xs text-destructive/80 flex items-start gap-2 overflow-hidden mb-4">
           <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
-          <span className="truncate" title={provider.lastError}>{provider.lastError}</span>
+          <span className="truncate" title={provider.lastError}>
+            {provider.lastError}
+          </span>
         </div>
       )}
 

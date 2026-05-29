@@ -1,9 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
+  MAX_RETRY_MS,
+  MIN_RETRY_MS,
   parseRetryAfter,
   toRetryAfterSeconds,
-  MIN_RETRY_MS,
-  MAX_RETRY_MS,
 } from "../src/routing/retry-after.js";
 
 describe("parseRetryAfter - integer seconds", () => {

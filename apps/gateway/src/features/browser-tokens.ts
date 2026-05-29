@@ -192,10 +192,7 @@ export function verifyBrowserToken(opts: VerifyOptions): BrowserTokenPayload {
     throw new BrowserTokenError("invalid_payload", "payload missing required fields");
   }
   if (parsed.v !== CURRENT_VERSION) {
-    throw new BrowserTokenError(
-      "invalid_version",
-      `unsupported payload version ${parsed.v}`,
-    );
+    throw new BrowserTokenError("invalid_version", `unsupported payload version ${parsed.v}`);
   }
 
   // Verify the signature BEFORE trusting any payload fields. This keeps
@@ -227,7 +224,7 @@ export function verifyBrowserToken(opts: VerifyOptions): BrowserTokenPayload {
 
 /** True if the process is configured to accept browser tokens at all. */
 export function isBrowserTokenEnabled(): boolean {
-  const secret = process.env["FREELLM_TOKEN_SECRET"];
+  const secret = process.env.FREELLM_TOKEN_SECRET;
   return !!secret && Buffer.byteLength(secret, "utf8") >= MIN_SECRET_BYTES;
 }
 
@@ -259,12 +256,12 @@ function signHex(payloadJson: string, secret: string): string {
 function isPayload(value: unknown): value is BrowserTokenPayload {
   if (!value || typeof value !== "object") return false;
   const v = value as Record<string, unknown>;
-  if (typeof v["v"] !== "number") return false;
-  if (typeof v["iat"] !== "number") return false;
-  if (typeof v["exp"] !== "number") return false;
-  if (typeof v["origin"] !== "string" || v["origin"].length === 0) return false;
-  if (v["identifier"] !== undefined && typeof v["identifier"] !== "string") return false;
-  if (v["vk"] !== undefined && typeof v["vk"] !== "string") return false;
+  if (typeof v.v !== "number") return false;
+  if (typeof v.iat !== "number") return false;
+  if (typeof v.exp !== "number") return false;
+  if (typeof v.origin !== "string" || v.origin.length === 0) return false;
+  if (v.identifier !== undefined && typeof v.identifier !== "string") return false;
+  if (v.vk !== undefined && typeof v.vk !== "string") return false;
   return true;
 }
 

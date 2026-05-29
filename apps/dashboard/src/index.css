@@ -116,35 +116,56 @@
   --chart-4: 225 10% 22%;
   --chart-5: 225 10% 14%;
 
-  --app-font-sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --app-font-sans: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
   --app-font-serif: Georgia, serif;
-  --app-font-mono: 'JetBrains Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
+  --app-font-mono: "JetBrains Mono", "Menlo", "Monaco", "Courier New", monospace;
   --radius: 0.625rem;
-  
-  --button-outline: rgba(255,255,255, .10);
-  --badge-outline: rgba(255,255,255, .05);
-  --opaque-button-border-intensity: 9;
-  --elevate-1: rgba(255,255,255, .04);
-  --elevate-2: rgba(255,255,255, .09);
 
-  --shadow-2xs: 0px 1px 2px 0px rgba(0,0,0, .3);
-  --shadow-xs: 0px 1px 3px 0px rgba(0,0,0, .3);
-  --shadow-sm: 0px 2px 4px -1px rgba(0,0,0, .3), 0px 1px 2px -1px rgba(0,0,0, .2);
-  --shadow: 0px 4px 6px -1px rgba(0,0,0, .3), 0px 2px 4px -2px rgba(0,0,0, .2);
-  --shadow-md: 0px 6px 10px -2px rgba(0,0,0, .3), 0px 3px 6px -3px rgba(0,0,0, .2);
-  --shadow-lg: 0px 10px 15px -3px rgba(0,0,0, .35), 0px 4px 6px -4px rgba(0,0,0, .2);
-  --shadow-xl: 0px 20px 25px -5px rgba(0,0,0, .35), 0px 8px 10px -6px rgba(0,0,0, .2);
-  --shadow-2xl: 0px 25px 50px -12px rgba(0,0,0, .5);
+  --button-outline: rgba(255, 255, 255, 0.1);
+  --badge-outline: rgba(255, 255, 255, 0.05);
+  --opaque-button-border-intensity: 9;
+  --elevate-1: rgba(255, 255, 255, 0.04);
+  --elevate-2: rgba(255, 255, 255, 0.09);
+
+  --shadow-2xs: 0px 1px 2px 0px rgba(0, 0, 0, 0.3);
+  --shadow-xs: 0px 1px 3px 0px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0px 2px 4px -1px rgba(0, 0, 0, 0.3), 0px 1px 2px -1px rgba(0, 0, 0, 0.2);
+  --shadow: 0px 4px 6px -1px rgba(0, 0, 0, 0.3), 0px 2px 4px -2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0px 6px 10px -2px rgba(0, 0, 0, 0.3), 0px 3px 6px -3px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0px 10px 15px -3px rgba(0, 0, 0, 0.35), 0px 4px 6px -4px rgba(0, 0, 0, 0.2);
+  --shadow-xl: 0px 20px 25px -5px rgba(0, 0, 0, 0.35), 0px 8px 10px -6px rgba(0, 0, 0, 0.2);
+  --shadow-2xl: 0px 25px 50px -12px rgba(0, 0, 0, 0.5);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
 
-  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-primary-border: hsl(
+    from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) /
+    alpha
+  );
+  --sidebar-accent-border: hsl(
+    from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) /
+    alpha
+  );
+  --primary-border: hsl(
+    from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) /
+    alpha
+  );
+  --secondary-border: hsl(
+    from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) /
+    alpha
+  );
+  --muted-border: hsl(
+    from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) /
+    alpha
+  );
+  --accent-border: hsl(
+    from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) /
+    alpha
+  );
+  --destructive-border: hsl(
+    from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) /
+    alpha
+  );
 }
 
 .dark {
@@ -158,50 +179,74 @@
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
-  
+
   /* Scrollbar styling for a terminal vibe */
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
   ::-webkit-scrollbar-track {
-    background: hsl(var(--background)); 
+    background: hsl(var(--background));
   }
   ::-webkit-scrollbar-thumb {
-    background: hsl(var(--muted)); 
+    background: hsl(var(--muted));
     border-radius: 4px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--muted-foreground)); 
+    background: hsl(var(--muted-foreground));
   }
 }
 
 @layer utilities {
-  input[type="search"]::-webkit-search-cancel-button { @apply hidden; }
+  input[type="search"]::-webkit-search-cancel-button {
+    @apply hidden;
+  }
   [contenteditable][data-placeholder]:empty::before {
     content: attr(data-placeholder);
     color: hsl(var(--muted-foreground));
     pointer-events: none;
   }
-  
-  .toggle-elevate::before, .toggle-elevate-2::before {
-    content: ""; pointer-events: none; position: absolute; inset: 0px; border-radius: inherit; z-index: -1;
-  }
-  .toggle-elevate.toggle-elevated::before { background-color: var(--elevate-2); }
-  .border.toggle-elevate::before { inset: -1px; }
 
-  .hover-elevate:not(.no-default-hover-elevate), .active-elevate:not(.no-default-active-elevate),
-  .hover-elevate-2:not(.no-default-hover-elevate), .active-elevate-2:not(.no-default-active-elevate) {
-    position: relative; z-index: 0;
+  .toggle-elevate::before,
+  .toggle-elevate-2::before {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0px;
+    border-radius: inherit;
+    z-index: -1;
   }
-  .hover-elevate:not(.no-default-hover-elevate)::after, .active-elevate:not(.no-default-active-elevate)::after,
-  .hover-elevate-2:not(.no-default-hover-elevate)::after, .active-elevate-2:not(.no-default-active-elevate)::after {
-    content: ""; pointer-events: none; position: absolute; inset: 0px; border-radius: inherit; z-index: 999;
+  .toggle-elevate.toggle-elevated::before {
+    background-color: var(--elevate-2);
   }
-  .hover-elevate:hover:not(.no-default-hover-elevate)::after, .active-elevate:active:not(.no-default-active-elevate)::after {
+  .border.toggle-elevate::before {
+    inset: -1px;
+  }
+
+  .hover-elevate:not(.no-default-hover-elevate),
+  .active-elevate:not(.no-default-active-elevate),
+  .hover-elevate-2:not(.no-default-hover-elevate),
+  .active-elevate-2:not(.no-default-active-elevate) {
+    position: relative;
+    z-index: 0;
+  }
+  .hover-elevate:not(.no-default-hover-elevate)::after,
+  .active-elevate:not(.no-default-active-elevate)::after,
+  .hover-elevate-2:not(.no-default-hover-elevate)::after,
+  .active-elevate-2:not(.no-default-active-elevate)::after {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0px;
+    border-radius: inherit;
+    z-index: 999;
+  }
+  .hover-elevate:hover:not(.no-default-hover-elevate)::after,
+  .active-elevate:active:not(.no-default-active-elevate)::after {
     background-color: var(--elevate-1);
   }
-  .hover-elevate-2:hover:not(.no-default-hover-elevate)::after, .active-elevate-2:active:not(.no-default-active-elevate)::after {
+  .hover-elevate-2:hover:not(.no-default-hover-elevate)::after,
+  .active-elevate-2:active:not(.no-default-active-elevate)::after {
     background-color: var(--elevate-2);
   }
   .border.hover-elevate:not(.no-hover-interaction-elevate)::after,

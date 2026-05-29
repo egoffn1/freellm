@@ -1,3 +1,4 @@
+import type { VirtualKeysResponse } from "@/api/schemas";
 /**
  * Dashboard-local hook for the admin-only virtual keys inventory
  * endpoint. Kept out of the generated api-client because it is a
@@ -5,7 +6,6 @@
  * client for a single read-only route.
  */
 import { useQuery } from "@tanstack/react-query";
-import type { VirtualKeysResponse } from "@/api/schemas";
 
 const VIRTUAL_KEYS_URL = "/api/v1/status/virtual-keys";
 

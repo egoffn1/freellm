@@ -1,13 +1,13 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
+  BrowserTokenError,
+  MAX_TTL_SECONDS,
+  MIN_SECRET_BYTES,
+  TOKEN_PREFIX,
+  assertSecret,
+  isBrowserTokenEnabled,
   signBrowserToken,
   verifyBrowserToken,
-  isBrowserTokenEnabled,
-  BrowserTokenError,
-  assertSecret,
-  MIN_SECRET_BYTES,
-  MAX_TTL_SECONDS,
-  TOKEN_PREFIX,
 } from "../src/features/browser-tokens.js";
 
 // 48-byte secret (well above MIN_SECRET_BYTES).
@@ -165,7 +165,9 @@ describe("verifyBrowserToken", () => {
       // signature verification; both count as rejection.
       expect(err).toBeInstanceOf(BrowserTokenError);
       const reason = (err as BrowserTokenError).reason;
-      expect(["bad_signature", "invalid_json", "invalid_base64", "invalid_payload"]).toContain(reason);
+      expect(["bad_signature", "invalid_json", "invalid_base64", "invalid_payload"]).toContain(
+        reason,
+      );
     }
   });
 
@@ -277,39 +279,39 @@ describe("verifyBrowserToken", () => {
 
 describe("isBrowserTokenEnabled", () => {
   it("returns false when the secret is unset", () => {
-    const prev = process.env["FREELLM_TOKEN_SECRET"];
-    delete process.env["FREELLM_TOKEN_SECRET"];
+    const prev = process.env.FREELLM_TOKEN_SECRET;
+    delete process.env.FREELLM_TOKEN_SECRET;
     try {
       expect(isBrowserTokenEnabled()).toBe(false);
     } finally {
-      if (prev !== undefined) process.env["FREELLM_TOKEN_SECRET"] = prev;
+      if (prev !== undefined) process.env.FREELLM_TOKEN_SECRET = prev;
     }
   });
 
   it("returns false when the secret is too short", () => {
-    const prev = process.env["FREELLM_TOKEN_SECRET"];
-    process.env["FREELLM_TOKEN_SECRET"] = "short";
+    const prev = process.env.FREELLM_TOKEN_SECRET;
+    process.env.FREELLM_TOKEN_SECRET = "short";
     try {
       expect(isBrowserTokenEnabled()).toBe(false);
     } finally {
       if (prev !== undefined) {
-        process.env["FREELLM_TOKEN_SECRET"] = prev;
+        process.env.FREELLM_TOKEN_SECRET = prev;
       } else {
-        delete process.env["FREELLM_TOKEN_SECRET"];
+        delete process.env.FREELLM_TOKEN_SECRET;
       }
     }
   });
 
   it("returns true when the secret meets the minimum", () => {
-    const prev = process.env["FREELLM_TOKEN_SECRET"];
-    process.env["FREELLM_TOKEN_SECRET"] = SECRET;
+    const prev = process.env.FREELLM_TOKEN_SECRET;
+    process.env.FREELLM_TOKEN_SECRET = SECRET;
     try {
       expect(isBrowserTokenEnabled()).toBe(true);
     } finally {
       if (prev !== undefined) {
-        process.env["FREELLM_TOKEN_SECRET"] = prev;
+        process.env.FREELLM_TOKEN_SECRET = prev;
       } else {
-        delete process.env["FREELLM_TOKEN_SECRET"];
+        delete process.env.FREELLM_TOKEN_SECRET;
       }
     }
   });

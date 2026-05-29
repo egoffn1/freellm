@@ -6,7 +6,7 @@
  * exposes them) and assert the env-gated enablement and prefix-stripping
  * behavior.
  */
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { CloudflareProvider } from "../src/providers/cloudflare.js";
 import type { ChatCompletionRequest } from "../src/types.js";
 
@@ -15,9 +15,7 @@ class ExposedCloudflareProvider extends CloudflareProvider {
   public exposeGetApiKeys(): string[] {
     return this.getApiKeys();
   }
-  public exposeMapRequest(
-    request: ChatCompletionRequest,
-  ): ChatCompletionRequest {
+  public exposeMapRequest(request: ChatCompletionRequest): ChatCompletionRequest {
     return this.mapRequest(request);
   }
 }
@@ -26,9 +24,7 @@ function cf() {
   return new ExposedCloudflareProvider();
 }
 
-function baseRequest(
-  overrides: Partial<ChatCompletionRequest> = {},
-): ChatCompletionRequest {
+function baseRequest(overrides: Partial<ChatCompletionRequest> = {}): ChatCompletionRequest {
   return {
     model: "cloudflare/@cf/meta/llama-3.3-70b-instruct-fp8-fast",
     messages: [{ role: "user", content: "hi" }],
@@ -43,67 +39,65 @@ let savedAccountId: string | undefined;
 let savedApiKey: string | undefined;
 
 beforeEach(() => {
-  savedAccountId = process.env["CLOUDFLARE_ACCOUNT_ID"];
-  savedApiKey = process.env["CLOUDFLARE_API_KEY"];
-  delete process.env["CLOUDFLARE_ACCOUNT_ID"];
-  delete process.env["CLOUDFLARE_API_KEY"];
+  savedAccountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+  savedApiKey = process.env.CLOUDFLARE_API_KEY;
+  delete process.env.CLOUDFLARE_ACCOUNT_ID;
+  delete process.env.CLOUDFLARE_API_KEY;
 });
 
 afterEach(() => {
   if (savedAccountId === undefined) {
-    delete process.env["CLOUDFLARE_ACCOUNT_ID"];
+    delete process.env.CLOUDFLARE_ACCOUNT_ID;
   } else {
-    process.env["CLOUDFLARE_ACCOUNT_ID"] = savedAccountId;
+    process.env.CLOUDFLARE_ACCOUNT_ID = savedAccountId;
   }
   if (savedApiKey === undefined) {
-    delete process.env["CLOUDFLARE_API_KEY"];
+    delete process.env.CLOUDFLARE_API_KEY;
   } else {
-    process.env["CLOUDFLARE_API_KEY"] = savedApiKey;
+    process.env.CLOUDFLARE_API_KEY = savedApiKey;
   }
 });
 
 describe("CloudflareProvider.getApiKeys env gating", () => {
   it("returns empty when CLOUDFLARE_ACCOUNT_ID is unset (even if API key is set)", () => {
-    process.env["CLOUDFLARE_API_KEY"] = "sk-test";
+    process.env.CLOUDFLARE_API_KEY = "sk-test";
     expect(cf().exposeGetApiKeys()).toEqual([]);
   });
 
   it("returns empty when CLOUDFLARE_API_KEY is unset (even if account id is set)", () => {
-    process.env["CLOUDFLARE_ACCOUNT_ID"] = "acc-123";
+    process.env.CLOUDFLARE_ACCOUNT_ID = "acc-123";
     expect(cf().exposeGetApiKeys()).toEqual([]);
   });
 
   it("returns parsed keys when both env vars are set", () => {
-    process.env["CLOUDFLARE_ACCOUNT_ID"] = "acc-123";
-    process.env["CLOUDFLARE_API_KEY"] = "sk-test";
+    process.env.CLOUDFLARE_ACCOUNT_ID = "acc-123";
+    process.env.CLOUDFLARE_API_KEY = "sk-test";
     expect(cf().exposeGetApiKeys()).toEqual(["sk-test"]);
   });
 
   it("supports comma-separated multi-key rotation", () => {
-    process.env["CLOUDFLARE_ACCOUNT_ID"] = "acc-123";
-    process.env["CLOUDFLARE_API_KEY"] = "a,b,c";
+    process.env.CLOUDFLARE_ACCOUNT_ID = "acc-123";
+    process.env.CLOUDFLARE_API_KEY = "a,b,c";
     expect(cf().exposeGetApiKeys()).toEqual(["a", "b", "c"]);
   });
 });
 
 describe("CloudflareProvider.baseUrl", () => {
   it("returns the Cloudflare OpenAI-compat URL scoped to the configured account id", () => {
-    process.env["CLOUDFLARE_ACCOUNT_ID"] = "acc-123";
-    expect(cf().baseUrl).toBe(
-      "https://api.cloudflare.com/client/v4/accounts/acc-123/ai/v1",
-    );
+    process.env.CLOUDFLARE_ACCOUNT_ID = "acc-123";
+    expect(cf().baseUrl).toBe("https://api.cloudflare.com/client/v4/accounts/acc-123/ai/v1");
   });
 });
 
 describe("CloudflareProvider.isEnabled", () => {
   it("returns false when CLOUDFLARE_ACCOUNT_ID is missing", () => {
-    process.env["CLOUDFLARE_API_KEY"] = "sk-test";
+    process.env.CLOUDFLARE_API_KEY = "sk-test";
     expect(cf().isEnabled()).toBe(false);
   });
 
   it("returns true when both env vars are set", () => {
-    process.env["CLOUDFLARE_ACCOUNT_ID"] = "acc-123";
-    process.env["CLOUDFLARE_API_KEY"] = "sk-test";
+    process.env.CLOUDFLARE_ACCOUNT_ID = "acc-123";
+    process.env.CLOUDFLARE_API_KEY = "sk-test";
     expect(cf().isEnabled()).toBe(true);
   });
 });

@@ -1,10 +1,6 @@
 export type CircuitBreakerState = "closed" | "open" | "half_open";
 export type RoutingStrategy = "round_robin" | "random";
-export type RequestStatus =
-  | "success"
-  | "error"
-  | "rate_limited"
-  | "all_providers_failed";
+export type RequestStatus = "success" | "error" | "rate_limited" | "all_providers_failed";
 
 export interface ChatToolCall {
   id?: string;

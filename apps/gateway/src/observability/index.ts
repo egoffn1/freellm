@@ -1,6 +1,6 @@
+import { ResponseCache } from "../routing/cache.js";
 import { RequestLog } from "./request-log.js";
 import { UsageTracker } from "./usage-tracker.js";
-import { ResponseCache } from "../routing/cache.js";
 
 export class ObservabilityStore {
   readonly requestLog: RequestLog;
