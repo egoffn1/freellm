@@ -9,6 +9,15 @@ from config import WORKSPACE_DIR, ALLOWED_BASH_PREFIXES, CONFIRM_COMMANDS, MAX_T
 
 WORKSPACE = Path(WORKSPACE_DIR).resolve()
 
+CREATED_FILES: set[str] = set()
+
+
+def get_and_clear_created_files() -> set[str]:
+    global CREATED_FILES
+    files = CREATED_FILES.copy()
+    CREATED_FILES.clear()
+    return files
+
 
 def _resolve_path(file_path: str) -> Path:
     p = Path(file_path)
@@ -70,6 +79,8 @@ async def tool_write(file_path: str, content: str) -> dict[str, Any]:
         p = _resolve_path(file_path)
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(content, encoding="utf-8")
+        rel = str(p.relative_to(WORKSPACE))
+        CREATED_FILES.add(rel)
         return {"written": True, "path": str(p), "size": len(content)}
     except PermissionError as e:
         return {"error": str(e)}
@@ -89,6 +100,8 @@ async def tool_edit(file_path: str, old_string: str, new_string: str) -> dict[st
 
         new_content = content.replace(old_string, new_string, 1)
         p.write_text(new_content, encoding="utf-8")
+        rel = str(p.relative_to(WORKSPACE))
+        CREATED_FILES.add(rel)
         return {"edited": True, "path": str(p)}
     except PermissionError as e:
         return {"error": str(e)}

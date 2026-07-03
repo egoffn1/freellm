@@ -1,13 +1,16 @@
+import os
 import asyncio
 import signal
 import logging
 from collections import defaultdict
+from pathlib import Path
 
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
 from config import TELEGRAM_BOT_TOKEN, FREELLM_BASE_URL, WORKSPACE_DIR, MAX_HISTORY
 from agent import run_agent
+from tools import get_and_clear_created_files
 from server import start_web_server
 
 
@@ -154,7 +157,20 @@ async def handle_message(update: Update, _ctx):
 
     answer = await run_agent(messages, on_status=on_status)
 
-    if len(answer) > 4000:
+    files = get_and_clear_created_files()
+    if files:
+        await status_msg.delete()
+        for fname in files:
+            fpath = Path(WORKSPACE_DIR) / fname
+            if fpath.is_file():
+                with open(fpath, "rb") as f:
+                    await update.message.reply_document(
+                        document=f,
+                        filename=fname,
+                    )
+        if answer.strip():
+            await update.message.reply_text(answer)
+    elif len(answer) > 4000:
         await status_msg.delete()
         for i in range(0, len(answer), 4000):
             await update.message.reply_text(answer[i : i + 4000])
