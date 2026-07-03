@@ -114,7 +114,7 @@ async def orchestrate(user_request: str, context: str, tools: list, on_status=No
     combined_context += f"\n\nReview: {critic_output}"
 
     if on_status:
-        await on_status("📋 Собираю ответ...")
+        await on_status("✍️ Собираю ответ...")
 
     final_msgs = [
         {"role": "system", "content": "You are a helpful assistant. Synthesize the final response from all agents."},
