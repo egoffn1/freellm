@@ -10,3 +10,14 @@ services:
       - NODE_ENV=production
       - PORT=3000
     restart: unless-stopped
+
+  telegram-bot:
+    build: apps/telegram-bot
+    container_name: freellm-bot
+    env_file:
+      - .env
+    environment:
+      - FREELLM_BASE_URL=http://freellm:3000/v1
+    depends_on:
+      - freellm
+    restart: unless-stopped
