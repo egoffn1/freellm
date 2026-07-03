@@ -1,6 +1,7 @@
 import json
 import logging
 import asyncio
+import re
 from openai import OpenAI
 from config import (
     FREELLM_BASE_URL, FREELLM_API_KEY,
@@ -11,38 +12,44 @@ from config import (
 logger = logging.getLogger(__name__)
 _client = OpenAI(base_url=FREELLM_BASE_URL, api_key=FREELLM_API_KEY)
 
+CASUAL_PATTERNS = re.compile(
+    r"^(привет|здравствуй|хай|хелло|пока|до свидания|спасибо|благодарю|"
+    r"как дела|что делаешь|кто ты|расскажи о себе|help|hi|hello|bye|"
+    r"как тебя зовут|ты кто|thanks|thank you|good morning|good evening)",
+    re.IGNORECASE,
+)
 
-AGENT_SYSTEM_PROMPT = """You are an AI coding assistant called FreeLLM Agent. You act exactly like Claude Code or Opencode.
+NEEDS_TOOLS = re.compile(
+    r"(напиш|создай|сгенер|сделай|пофикс|исправ|отредакт|измен|"
+    r"прочитай|покажи|найди|напиши|запуст|скомпил|установ|"
+    r"склон|задепло|отформат|проверь|протест|"
+    r"рефактор|оптимиз|добав|удал|переимен|"
+    r"read|write|edit|create|generate|fix|refactor|run|test|"
+    r"clone|deploy|build|compile|install|format|lint|check|"
+    r"file|файл|код|code|баг|bug|функци|function|class|"
+    r"\w+\.\w+)|(?:\.\w+\s)",
+    re.IGNORECASE,
+)
 
-## CORE RULE — YOU MUST USE TOOLS
-You have tools available: `read`, `write`, `edit`, `glob`, `grep`, `bash`, `web_fetch`, `task_done`.
+AGENT_SYSTEM_PROMPT = """You are FreeLLM Agent — an AI coding assistant like Claude Code.
 
-**You MUST use these tools to accomplish tasks. Never just talk.**
+## When to use tools
+- User asks to create/edit/read files → use `write`, `read`, `edit`
+- User asks to search code → use `grep`, `glob`
+- User asks to run commands → use `bash`
+- User uploads an image and asks about it → use `vision`
+- User asks about a URL → use `web_fetch`
+- Task complete → call `task_done` with summary
+
+## When to just talk
+- Greetings, casual questions, general knowledge → respond normally
+- No tools needed for simple conversation
 
 ## How you work
-1. User gives a task — you IMMEDIATELY call a tool
-2. Get the result, decide next step
-3. When done, call `task_done`
-
-## Examples
-- User: "напиши main.py" → you call `write` with the code
-- User: "пофикси баги" → you call `grep`/`read` → `edit`
-- User: "покажи структуру" → you call `glob`
-- User: "запусти тесты" → you call `bash`
-
-## CRITICAL INSTRUCTION
-DO NOT respond with text explaining what you plan to do.
-DO respond by CALLING THE APPROPRIATE TOOL immediately.
-You have function calling available. USE IT."""
-
-
-NO_TOOL_REMINDER = (
-    "You responded with text instead of using a tool. "
-    "This is a coding agent — you MUST call a tool to complete the task. "
-    "If the user asked to create a file, call `write`. "
-    "If they asked to read code, call `read`. "
-    "Do NOT explain. Call a tool NOW."
-)
+1. Think what the user needs
+2. If it needs a tool → call it immediately
+3. If it's just conversation → respond naturally
+4. When a multi-step task is done → call `task_done`"""
 
 
 async def _call_llm(
@@ -52,24 +59,38 @@ async def _call_llm(
     model: str | None = None,
 ):
     loop = asyncio.get_event_loop()
-    kwargs = dict(
-        model=model or AGENT_MODEL,
-        messages=messages,
-        timeout=120,
-    )
+    kwargs = dict(model=model or AGENT_MODEL, messages=messages, timeout=120)
     if tools:
         kwargs["tools"] = tools
         kwargs["tool_choice"] = tool_choice
     return await loop.run_in_executor(None, lambda: _client.chat.completions.create(**kwargs))
 
 
+def _needs_tools(text: str) -> bool:
+    return bool(NEEDS_TOOLS.search(text))
+
+
 async def run_agent(messages: list, on_status: callable = None) -> str:
+    user_text = messages[-1]["content"] if messages else ""
+    is_casual = bool(CASUAL_PATTERNS.match(user_text.strip()))
+    needs_tools = _needs_tools(user_text)
+
+    # Pure casual chat — skip tools entirely
+    if is_casual and not needs_tools:
+        sys_msg = {"role": "system", "content": "You are a helpful AI assistant. Respond conversationally."}
+        try:
+            resp = await _call_llm([sys_msg] + messages)
+            text = resp.choices[0].message.content or ""
+            messages.append({"role": "assistant", "content": text})
+            return text
+        except Exception as e:
+            return f"❌ {e}"
+
+    # Needs tools — full agent mode
     sys_msg = {"role": "system", "content": AGENT_SYSTEM_PROMPT}
     full_messages = [sys_msg] + messages
-
     tool_calls_count = 0
     tried_fallback = False
-    no_tool_retries = 0
 
     while tool_calls_count < MAX_TOOL_CALLS:
         if on_status:
@@ -80,9 +101,7 @@ async def run_agent(messages: list, on_status: callable = None) -> str:
         try:
             resp = await _call_llm(full_messages, TOOL_DEFINITIONS, "auto")
         except Exception as e:
-            err = str(e)
-            logger.error(f"AI call failed: {err}", exc_info=True)
-
+            logger.error(f"AI call failed: {e}", exc_info=True)
             if not tried_fallback:
                 tried_fallback = True
                 logger.info(f"Fallback to {AGENT_FALLBACK_MODEL}")
@@ -93,47 +112,15 @@ async def run_agent(messages: list, on_status: callable = None) -> str:
                     "content": f"Previous model failed. Now using {AGENT_FALLBACK_MODEL}. Continue.",
                 })
                 continue
-
-            return f"❌ Ошибка AI: {err}"
+            return f"❌ Ошибка AI: {e}"
 
         msg = resp.choices[0].message
 
-        # Model didn't use tools — retry with reminder
         if not msg.tool_calls:
-            no_tool_retries += 1
-            content_preview = (msg.content or "")[:80]
-            logger.warning(f"No tools used (attempt {no_tool_retries}): {content_preview}")
-
-            if no_tool_retries >= 2:
-                # Force with a different model
-                if not tried_fallback:
-                    tried_fallback = True
-                    logger.info(f"No tool use after retries, fallback to {AGENT_FALLBACK_MODEL}")
-                    if on_status:
-                        await on_status(f"🔄 fallback на {AGENT_FALLBACK_MODEL}...")
-                    full_messages.append({
-                        "role": "system",
-                        "content": NO_TOOL_REMINDER,
-                    })
-                    full_messages.append({
-                        "role": "system",
-                        "content": f"Switch to {AGENT_FALLBACK_MODEL} now. Call a tool immediately.",
-                    })
-                    continue
-                else:
-                    # Give up and return whatever was said
-                    final = msg.content or "⚠️ Бот не смог использовать инструменты."
-                    full_messages.append({"role": "assistant", "content": final})
-                    messages[:] = [m for m in full_messages if m.get("role") != "system"]
-                    return final
-
-            # Remind model to use tools
-            full_messages.append({"role": "assistant", "content": msg.content or ""})
-            full_messages.append({"role": "user", "content": NO_TOOL_REMINDER})
-            continue
-
-        # Model IS using tools
-        no_tool_retries = 0
+            final = msg.content or "✅ Готово."
+            full_messages.append({"role": "assistant", "content": final})
+            messages[:] = [m for m in full_messages if m.get("role") != "system"]
+            return final
 
         for tc in msg.tool_calls:
             tool_calls_count += 1
@@ -164,9 +151,7 @@ async def run_agent(messages: list, on_status: callable = None) -> str:
             else:
                 result = await tool_fn(**fn_args)
 
-            full_messages.append({
-                "role": "assistant", "content": None, "tool_calls": [tc],
-            })
+            full_messages.append({"role": "assistant", "content": None, "tool_calls": [tc]})
             full_messages.append({
                 "role": "tool", "tool_call_id": tc.id,
                 "content": json.dumps(result, ensure_ascii=False),
