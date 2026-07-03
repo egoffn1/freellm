@@ -6,7 +6,7 @@ from collections import defaultdict
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
-from config import TELEGRAM_BOT_TOKEN, FREELLM_BASE_URL, MAX_HISTORY
+from config import TELEGRAM_BOT_TOKEN, FREELLM_BASE_URL, WORKSPACE_DIR, MAX_HISTORY
 from agent import run_agent
 from server import start_web_server
 
@@ -24,39 +24,80 @@ async def start(update: Update, _ctx):
     await update.message.reply_text(
         "🤖 *FreeLLM Agent Bot*\n\n"
         "AI-агент для работы с кодом, как Opencode или Claude Code.\n\n"
-        "**Возможности:**\n"
-        "• 📖 Читать и анализировать код\n"
-        "• ✏️ Создавать и редактировать файлы\n"
-        "• 🔍 Искать по коду (glob, grep)\n"
-        "• 🖥 Запускать команды в терминале\n"
-        "• 🌐 Загружать веб-страницы\n"
-        "• 📋 Планировать и выполнять многошаговые задачи\n\n"
+        "**Как работать:**\n"
+        "1. Загрузите файлы — просто напишите что хотите сделать\n"
+        "2. Или `/clone` репозиторий и работайте с ним\n"
+        "3. Бот сам прочитает, изменит, создаст всё что нужно\n\n"
+        "**Примеры:**\n"
+        "• `напиши main.py с веб-сервером`\n"
+        "• `пофикси баги в проекте`\n"
+        "• `запусти тесты`\n"
+        "• `создай докерфайл`\n"
+        "• `/clone https://github.com/user/repo`\n\n"
         "Команды:\n"
         "/help — подробнее\n"
+        "/clone <url> — клонировать репозиторий\n"
         "/reset — сбросить историю\n"
-        "/status — статус моделей",
+        "/status — статус",
         parse_mode="Markdown",
     )
 
 
 async def help_cmd(update: Update, _ctx):
     await update.message.reply_text(
-        "*FreeLLM Agent Bot — справка*\n\n"
-        "Просто напишите задачу — бот сам решит, какие инструменты использовать.\n\n"
-        "*Примеры:*\n"
-        "• \"Покажи структуру проекта\" → glob + read\n"
-        "• \"Найди все обработчики ошибок\" → grep\n"
-        "• \"Создай REST API на FastAPI\" → write + bash\n"
-        "• \"Пофикси баг в функции calculate\" → read + edit\n"
-        "• \"Запусти тесты и покажи результаты\" → bash\n"
-        "• \"Сравни OpenCode и Claude Code\" → web_fetch + анализ\n\n"
-        "Команды:\n"
+        "*Команды:*\n"
         "/start — приветствие\n"
         "/help — эта справка\n"
+        "/clone <url> — клонировать Git-репозиторий в workspace\n"
         "/reset — очистить историю\n"
-        "/status — проверить FreeLLM",
+        "/status — проверить FreeLLM и модель\n\n"
+        "*Как использовать:*\n"
+        "Просто опишите задачу. Бот сам решит какие инструменты использовать.\n"
+        "Если нужно поработать с конкретным проектом — сначала /clone.\n\n"
+        "*Примеры:*\n"
+        "• \"создай REST API на FastAPI\"\n"
+        "• \"найди все ошибки в коде\"\n"
+        "• \"отформатируй весь проект\"\n"
+        "• \"сравни OpenCode и Claude Code\"",
         parse_mode="Markdown",
     )
+
+
+async def clone(update: Update, _ctx):
+    url = update.message.text.replace("/clone", "").strip()
+    if not url:
+        await update.message.reply_text(
+            "Укажите URL репозитория:\n`/clone https://github.com/user/repo`",
+            parse_mode="Markdown",
+        )
+        return
+
+    msg = await update.message.reply_text(f"📦 Клонирую `{url}`...")
+    try:
+        proc = await asyncio.create_subprocess_shell(
+            f"git clone --depth 1 {url}",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            cwd=WORKSPACE_DIR,
+        )
+        stdout, stderr = await proc.communicate(timeout=120)
+
+        if proc.returncode == 0:
+            # find cloned dir name
+            lines = stdout.decode()
+            import re
+            m = re.search(r"'(.*?)'", stderr.decode() + stdout.decode())
+            dirname = m.group(1) if m else url.rstrip("/").split("/")[-1].replace(".git", "")
+            await msg.edit_text(
+                f"✅ Репозиторий склонирован в `{dirname}`\n"
+                f"Теперь напишите задачу для работы с этим проектом.",
+                parse_mode="Markdown",
+            )
+        else:
+            err = stderr.decode()[:500]
+            await msg.edit_text(f"❌ Ошибка клонирования:\n`{err}`", parse_mode="Markdown")
+    except Exception as e:
+        await msg.edit_text(f"❌ Ошибка: {e}")
 
 
 async def reset(update: Update, _ctx):
@@ -67,13 +108,20 @@ async def reset(update: Update, _ctx):
 
 async def status(update: Update, _ctx):
     from openai import OpenAI
+    from config import AGENT_MODEL
+
     client = OpenAI(base_url=FREELLM_BASE_URL, api_key="unused")
     try:
         models = client.models.list()
         names = [m.id for m in models if not m.id.startswith("free-")]
+        import shutil
+        has_git = shutil.which("git") is not None
         await update.message.reply_text(
-            f"✅ FreeLLM доступен\n"
-            f"Моделей: {len(names)}"
+            f"✅ FreeLLM: доступен\n"
+            f"Модель: `{AGENT_MODEL}`\n"
+            f"Моделей всего: {len(names)}\n"
+            f"Git: {'✅' if has_git else '❌'}",
+            parse_mode="Markdown",
         )
     except Exception as e:
         await update.message.reply_text(f"❌ FreeLLM недоступен: {e}")
@@ -122,10 +170,11 @@ async def main():
         logger.error("TELEGRAM_BOT_TOKEN не задан!")
         return
 
-    logger.info(f"FreeLLM: {FREELLM_BASE_URL}")
+    from config import AGENT_MODEL
+    logger.info(f"FreeLLM: {FREELLM_BASE_URL} | Модель: {AGENT_MODEL} | Workspace: {WORKSPACE_DIR}")
 
+    from openai import OpenAI
     try:
-        from openai import OpenAI
         OpenAI(base_url=FREELLM_BASE_URL, api_key="unused").models.list()
         logger.info("FreeLLM OK")
     except Exception as e:
@@ -134,6 +183,7 @@ async def main():
     app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_cmd))
+    app.add_handler(CommandHandler("clone", clone))
     app.add_handler(CommandHandler("reset", reset))
     app.add_handler(CommandHandler("status", status))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
@@ -164,4 +214,4 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

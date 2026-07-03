@@ -5,7 +5,8 @@ TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 FREELLM_BASE_URL = os.getenv("FREELLM_BASE_URL", "http://localhost:3000/v1")
 FREELLM_API_KEY = os.getenv("FREELLM_API_KEY", "unused")
 
-AGENT_MODEL = os.getenv("AGENT_MODEL", "free-smart")
+AGENT_MODEL = os.getenv("AGENT_MODEL", "groq/llama-3.3-70b-versatile")
+AGENT_FALLBACK_MODEL = os.getenv("AGENT_FALLBACK_MODEL", "github/openai/gpt-4o-mini")
 MAX_HISTORY = int(os.getenv("MAX_HISTORY", "50"))
 MAX_TOOL_CALLS = int(os.getenv("MAX_TOOL_CALLS", "30"))
 
