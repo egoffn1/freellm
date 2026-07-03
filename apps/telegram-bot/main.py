@@ -213,6 +213,7 @@ async def handle_message(update: Update, _ctx):
         except Exception:
             pass
 
+    get_and_clear_created_files()  # clear leftover from previous ops
     answer = await run_agent(messages, on_status=on_status)
 
     files = get_and_clear_created_files()
