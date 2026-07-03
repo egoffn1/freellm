@@ -28,13 +28,12 @@ async def start(update: Update, _ctx):
         "🤖 *FreeLLM Agent Bot*\n\n"
         "AI-агент для работы с кодом, как Opencode или Claude Code.\n\n"
         "**Как работать:**\n"
-        "1. Загрузите файлы — просто напишите что хотите сделать\n"
-        "2. Или `/clone` репозиторий и работайте с ним\n"
-        "3. Бот сам прочитает, изменит, создаст всё что нужно\n\n"
+        "1. 📤 Пришлите файл — бот сохранит его в workspace\n"
+        "2. 📋 Напишите задачу — бот сам прочитает, изменит, создаст\n"
+        "3. 📦 `/clone` репозиторий и работайте с ним\n\n"
         "**Примеры:**\n"
         "• `напиши main.py с веб-сервером`\n"
-        "• `пофикси баги в проекте`\n"
-        "• `запусти тесты`\n"
+        "• `пофикси баги` (после загрузки файла)\n"
         "• `создай докерфайл`\n"
         "• `/clone https://github.com/user/repo`\n\n"
         "Команды:\n"
@@ -51,16 +50,17 @@ async def help_cmd(update: Update, _ctx):
         "*Команды:*\n"
         "/start — приветствие\n"
         "/help — эта справка\n"
-        "/clone <url> — клонировать Git-репозиторий в workspace\n"
+        "/clone <url> — клонировать Git-репозиторий\n"
         "/reset — очистить историю\n"
-        "/status — проверить FreeLLM и модель\n\n"
+        "/status — проверить FreeLLM\n\n"
         "*Как использовать:*\n"
-        "Просто опишите задачу. Бот сам решит какие инструменты использовать.\n"
-        "Если нужно поработать с конкретным проектом — сначала /clone.\n\n"
+        "• Пришлите файл → бот сохранит и сможет с ним работать\n"
+        "• Напишите задачу → бот сделает\n"
+        "• `/clone` проект → работайте как с локальным\n\n"
         "*Примеры:*\n"
+        "• \"найди ошибки\" (после загрузки файла)\n"
         "• \"создай REST API на FastAPI\"\n"
-        "• \"найди все ошибки в коде\"\n"
-        "• \"отформатируй весь проект\"\n"
+        "• \"отформатируй проект\"\n"
         "• \"сравни OpenCode и Claude Code\"",
         parse_mode="Markdown",
     )
@@ -128,6 +128,38 @@ async def status(update: Update, _ctx):
         )
     except Exception as e:
         await update.message.reply_text(f"❌ FreeLLM недоступен: {e}")
+
+
+async def handle_file(update: Update, ctx):
+    uid = update.effective_user.id
+    msg = update.message
+
+    file = msg.document or (msg.photo[-1] if msg.photo else None)
+    if not file:
+        return
+
+    status = await msg.reply_text("📥 Скачиваю файл...")
+
+    try:
+        tg_file = await ctx.bot.get_file(file.file_id)
+        fname = getattr(file, "file_name", None) or f"file_{file.file_id[:8]}"
+
+        dest = Path(WORKSPACE_DIR) / fname
+        dest.parent.mkdir(parents=True, exist_ok=True)
+
+        await tg_file.download_to_drive(dest)
+        rel = str(dest.relative_to(Path(WORKSPACE_DIR).resolve()))
+
+        from tools import CREATED_FILES
+        CREATED_FILES.add(rel)
+
+        await status.edit_text(
+            f"✅ Файл сохранён: `{rel}`\n"
+            f"Теперь напишите, что с ним сделать.",
+            parse_mode="Markdown",
+        )
+    except Exception as e:
+        await status.edit_text(f"❌ Ошибка: {e}")
 
 
 async def handle_message(update: Update, _ctx):
@@ -202,6 +234,7 @@ async def main():
     app.add_handler(CommandHandler("clone", clone))
     app.add_handler(CommandHandler("reset", reset))
     app.add_handler(CommandHandler("status", status))
+    app.add_handler(MessageHandler(filters.Document.ALL | filters.PHOTO, handle_file))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     await app.initialize()
