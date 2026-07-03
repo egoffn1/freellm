@@ -10,7 +10,6 @@ services:
         value: production
       - key: PORT
         value: 3000
-      # Provider API keys -- set these in the Render dashboard after deploy
       - key: GROQ_API_KEY
         sync: false
       - key: GEMINI_API_KEY
@@ -21,8 +20,27 @@ services:
         sync: false
       - key: NVIDIA_NIM_API_KEY
         sync: false
-      # Optional security settings
       - key: FREELLM_API_KEY
         sync: false
       - key: ALLOWED_ORIGINS
         sync: false
+
+  - type: web
+    name: freellm-bot
+    runtime: docker
+    dockerfilePath: ./apps/telegram-bot/Dockerfile
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: FREELLM_BASE_URL
+        value: https://freellm-9b5b.onrender.com/v1
+      - key: FREELLM_API_KEY
+        sync: false
+      - key: AGENT_MODEL
+        value: free-smart
+      - key: WORKSPACE_DIR
+        value: /workspace
