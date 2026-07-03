@@ -48,10 +48,10 @@ def _check_bash_safe(command: str) -> str | None:
     base = cmd.split("/")[-1].split(".")[0]
 
     if base in CONFIRM_COMMANDS and base not in ALLOWED_BASH_PREFIXES:
-        return f"DANGEROUS: command '{base}' requires user confirmation"
+        return f"SECURITY BLOCKED: command '{base}' is dangerous and not allowed for safety reasons. Use a different approach."
 
     if base not in ALLOWED_BASH_PREFIXES:
-        return f"Command '{base}' not in allowed list"
+        return f"SECURITY BLOCKED: command '{base}' is not in the allowed commands list. Allowed: basic dev tools, git, python, pip, npm, go, cargo, ls, cat, mkdir, etc."
 
     return None
 
