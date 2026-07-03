@@ -22,6 +22,8 @@ services:
         sync: false
       - key: FREELLM_API_KEY
         sync: false
+      - key: GITHUB_MODELS_API_KEY
+        sync: false
       - key: ALLOWED_ORIGINS
         sync: false
 
