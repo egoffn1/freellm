@@ -1,3 +1,4 @@
+import html
 import re
 
 PREMIUM = {
@@ -35,6 +36,15 @@ def premium(text: str) -> str:
 
 def md_to_html(text: str) -> str:
     text = premium(text)
+    placeholders = {}
+    def _save(m):
+        key = f"\x00P{len(placeholders)}\x00"
+        placeholders[key] = m.group(0)
+        return key
+    text = re.sub(r"<tg-emoji[^>]*>.*?</tg-emoji>", _save, text)
+    text = html.escape(text, quote=False)
+    for key, val in placeholders.items():
+        text = text.replace(key, val)
     text = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", text)
     text = re.sub(r"(?<![*])\*(.+?)\*(?![*])", r"<i>\1</i>", text)
     text = re.sub(r"`(.+?)`", r"<code>\1</code>", text)
