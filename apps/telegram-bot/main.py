@@ -178,6 +178,7 @@ async def handle_file(update: Update, ctx):
                 )
                 return
         else:
+            messages.append({"role": "user", "content": f"[Загружен файл: {rel}]"})
             await status.edit_text(
                 f"✅ Файл сохранён: `{rel}`\n"
                 f"Теперь напишите, что с ним сделать.",
@@ -216,6 +217,8 @@ async def handle_message(update: Update, _ctx):
 
     files = get_and_clear_created_files()
     if files:
+        for fname in files:
+            messages.append({"role": "system", "content": f"[Создан файл: {fname}]"})
         await status_msg.delete()
         for fname in files:
             fpath = Path(WORKSPACE_DIR) / fname
