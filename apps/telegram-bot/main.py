@@ -9,11 +9,25 @@ from pathlib import Path
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
-from config import TELEGRAM_BOT_TOKEN, FREELLM_BASE_URL, WORKSPACE_DIR, MAX_HISTORY
+from config import TELEGRAM_BOT_TOKEN, FREELLM_BASE_URL, WORKSPACE_DIR, MAX_HISTORY, MULTI_AGENT_ENABLED, RAG_ENABLED, GUARDRAILS_ENABLED, SANDBOX_ENABLED
 from agent import run_agent
 from tools import get_and_clear_created_files
 from server import start_web_server
 from cleanup import run_cleanup_loop
+from emoji import premium
+
+
+async def reply(msg, text: str, **kw):
+    kw["parse_mode"] = "HTML"
+    kw.pop("markdown", None)
+    from emoji import md_to_html
+    return await msg.reply_text(md_to_html(text), **kw)
+
+
+async def edit(msg, text: str, **kw):
+    kw["parse_mode"] = "HTML"
+    from emoji import md_to_html
+    return await msg.edit_text(md_to_html(text), **kw)
 
 
 logging.basicConfig(
@@ -49,30 +63,42 @@ def _save_history(uid: int, messages: list):
 
 
 async def start(update: Update, _ctx):
-    await update.message.reply_text(
-        "🤖 *FreeLLM Agent Bot*\n\n"
-        "AI-агент для работы с кодом, как Opencode или Claude Code.\n\n"
+    features = []
+    if MULTI_AGENT_ENABLED:
+        features.append("🧠 Мульти-агент (Manager → Researcher → Coder → Critic)")
+    if RAG_ENABLED:
+        features.append("📀 RAG-память (контекст на всю историю)")
+    if GUARDRAILS_ENABLED:
+        features.append("🛡 Защита от инъекций и утечек")
+    if SANDBOX_ENABLED:
+        features.append("🔒 Sandbox для безопасного выполнения кода")
+    features.append("🔍 Веб-поиск и исследование")
+    features.append("📦 Артефакты (multi-file проекты)")
+    features.append("👁 Анализ изображений (Vision)")
+
+    await reply(update.message,
+        "🤖 *FreeLLM Agent Bot* — AI-ассистент как Opencode / Claude / ChatGPT\n\n"
+        f"**Фишки:**\n" + "\n".join(f"• {f}" for f in features) + "\n\n"
         "**Как работать:**\n"
         "1. 📤 Пришлите файл — бот сохранит его в workspace\n"
-        "2. 📋 Напишите задачу — бот сам прочитает, изменит, создаст\n"
+        "2. 📋 Напишите задачу — бот сделает\n"
         "3. 📦 `/clone` репозиторий и работайте с ним\n\n"
         "**Примеры:**\n"
         "• `напиши main.py с веб-сервером`\n"
+        "• `создай проект калькулятора` (multi-file)\n"
         "• `пофикси баги` (после загрузки файла)\n"
-        "• `создай докерфайл`\n"
         "• `/clone https://github.com/user/repo`\n\n"
         "Команды:\n"
         "/help — подробнее\n"
         "/clone <url> — клонировать репозиторий\n"
         "/clean — удалить старые файлы (>3 дней)\n"
         "/reset — сбросить историю\n"
-        "/status — статус",
-        parse_mode="Markdown",
+        "/status — статус и фишки",
     )
 
 
 async def help_cmd(update: Update, _ctx):
-    await update.message.reply_text(
+    await reply(update.message,
         "*Команды:*\n"
         "/start — приветствие\n"
         "/help — эта справка\n"
@@ -89,20 +115,18 @@ async def help_cmd(update: Update, _ctx):
         "• \"создай REST API на FastAPI\"\n"
         "• \"отформатируй проект\"\n"
         "• \"сравни OpenCode и Claude Code\"",
-        parse_mode="Markdown",
     )
 
 
 async def clone(update: Update, _ctx):
     url = update.message.text.replace("/clone", "").strip()
     if not url:
-        await update.message.reply_text(
+        await reply(update.message,
             "Укажите URL репозитория:\n`/clone https://github.com/user/repo`",
-            parse_mode="Markdown",
         )
         return
 
-    msg = await update.message.reply_text(f"📦 Клонирую `{url}`...")
+    msg = await reply(update.message, f"📦 Клонирую `{url}`...")
     try:
         proc = await asyncio.create_subprocess_shell(
             f"git clone --depth 1 {url}",
@@ -118,34 +142,33 @@ async def clone(update: Update, _ctx):
             import re
             m = re.search(r"'(.*?)'", stderr.decode() + stdout.decode())
             dirname = m.group(1) if m else url.rstrip("/").split("/")[-1].replace(".git", "")
-            await msg.edit_text(
+            await edit(msg,
                 f"✅ Репозиторий склонирован в `{dirname}`\n"
                 f"Теперь напишите задачу для работы с этим проектом.",
-                parse_mode="Markdown",
             )
         else:
             err = stderr.decode()[:500]
-            await msg.edit_text(f"❌ Ошибка клонирования:\n`{err}`", parse_mode="Markdown")
+            await edit(msg, f"❌ Ошибка клонирования:\n`{err}`")
     except Exception as e:
-        await msg.edit_text(f"❌ Ошибка: {e}")
+        await edit(msg, f"❌ Ошибка: {e}")
 
 
 async def clean(update: Update, _ctx):
     from cleanup import _cleanup_once
-    msg = await update.message.reply_text("🧹 Чищу старые файлы...")
+    msg = await reply(update.message, "🧹 Чищу старые файлы...")
     await _cleanup_once()
-    await msg.edit_text("✅ Старые файлы удалены.")
+    await edit(msg, "✅ Старые файлы удалены.")
 
 
 async def reset(update: Update, _ctx):
     uid = update.effective_user.id
     user_history[uid] = []
-    await update.message.reply_text("🗑 История диалога очищена.")
+    await reply(update.message, "🗑 История диалога очищена.")
 
 
 async def status(update: Update, _ctx):
     from openai import OpenAI
-    from config import AGENT_MODEL
+    from config import AGENT_MODEL, AGENT_FALLBACK_MODEL
 
     client = OpenAI(base_url=FREELLM_BASE_URL, api_key="unused")
     try:
@@ -153,21 +176,52 @@ async def status(update: Update, _ctx):
         names = [m.id for m in models if not m.id.startswith("free-")]
         import shutil
         has_git = shutil.which("git") is not None
-        await update.message.reply_text(
-            f"✅ FreeLLM: доступен\n"
-            f"Модель: `{AGENT_MODEL}`\n"
-            f"Моделей всего: {len(names)}\n"
-            f"Git: {'✅' if has_git else '❌'}",
-            parse_mode="Markdown",
-        )
+
+        status_lines = [
+            "✅ *FreeLLM:* доступен",
+            f"📊 *Моделей:* {len(names)}",
+            f"🧠 *Модель:* `{AGENT_MODEL}`",
+            f"🔄 *Fallback:* `{AGENT_FALLBACK_MODEL}`",
+            "",
+            "⚙️ *Фишки:*",
+        ]
+        features = [
+            ("Мульти-агент", MULTI_AGENT_ENABLED),
+            ("RAG-память", RAG_ENABLED),
+            ("Guardrails", GUARDRAILS_ENABLED),
+            ("Sandbox", SANDBOX_ENABLED),
+            ("Git", has_git),
+            ("Веб-поиск", True),
+            ("Артефакты", True),
+            ("Vision", True),
+        ]
+        for name, enabled in features:
+            icon = "✅" if enabled else "❌"
+            status_lines.append(f"{icon} {name}")
+
+        await reply(update.message, "\n".join(status_lines))
     except Exception as e:
-        await update.message.reply_text(f"❌ FreeLLM недоступен: {e}")
+        await reply(update.message, f"❌ FreeLLM недоступен: {e}")
+
+
+async def projects_cmd(update: Update, _ctx):
+    from artifacts import list_projects, get_project, build_project_summary
+    projects = list_projects()
+    if not projects:
+        await reply(update.message, "📦 Нет созданных проектов. Попросите бота создать multi-file проект.")
+        return
+    parts = ["📦 *Проекты:*\n"]
+    for name in projects[-5:]:
+        proj = get_project(name)
+        if proj:
+            parts.append(f"• `{name}` — {len(proj.get('files', []))} файлов")
+    await reply(update.message, "\n".join(parts))
 
 
 async def history_cmd(update: Update, _ctx):
     uid = update.effective_user.id
     msgs = user_history.get(uid, [])
-    await update.message.reply_text(
+    await reply(update.message,
         f"📋 История диалога: {len(msgs)} сообщений\n"
         f"Максимум: {MAX_HISTORY * 2}\n"
         f"Первое: {msgs[0]['content'][:50] if msgs else '—'}"
@@ -182,7 +236,7 @@ async def handle_file(update: Update, ctx):
     if not file:
         return
 
-    status = await msg.reply_text("📥 Скачиваю файл...")
+    status = await reply(msg, "📥 Скачиваю файл...")
 
     try:
         tg_file = await ctx.bot.get_file(file.file_id)
@@ -211,7 +265,7 @@ async def handle_file(update: Update, ctx):
                 caption = (msg.caption or "").strip()
                 prompt = caption if caption else "Опиши подробно что на этом изображении"
 
-                await status.edit_text("🔍 Анализирую изображение..." if not caption else f"🔍 {caption}")
+                await edit(status, "🔍 Анализирую изображение..." if not caption else f"🔍 {caption}")
 
                 from tools import tool_vision
                 result = await tool_vision(rel, prompt)
@@ -221,20 +275,18 @@ async def handle_file(update: Update, ctx):
                 messages.append({"role": "assistant", "content": analysis})
 
                 _save_history(uid, messages)
-                await status.edit_text(
+                await edit(status,
                     f"👁 {analysis[:4000]}",
-                    parse_mode="Markdown",
                 )
                 return
         else:
             messages.append({"role": "user", "content": f"[Загружен файл: {rel}]"})
-            await status.edit_text(
+            await edit(status,
                 f"✅ Файл сохранён: `{rel}`\n"
                 f"Теперь напишите, что с ним сделать.",
-                parse_mode="Markdown",
             )
     except Exception as e:
-        await status.edit_text(f"❌ Ошибка: {e}")
+        await edit(status, f"❌ Ошибка: {e}")
 
 
 async def handle_message(update: Update, _ctx):
@@ -254,11 +306,11 @@ async def handle_message(update: Update, _ctx):
 
     messages.append({"role": "user", "content": text})
 
-    status_msg = await update.message.reply_text("🤔 Анализирую задачу...")
+    status_msg = await reply(update.message, "🤔 Анализирую задачу...")
 
     async def on_status(text: str):
         try:
-            await status_msg.edit_text(text, parse_mode="Markdown")
+            await edit(status_msg, text)
         except Exception:
             pass
 
@@ -296,16 +348,16 @@ async def handle_message(update: Update, _ctx):
                         filename=fname,
                     )
         if answer.strip():
-            await update.message.reply_text(answer)
+            await reply(update.message, answer)
     elif len(answer) > 4000:
         await status_msg.delete()
         for i in range(0, len(answer), 4000):
-            await update.message.reply_text(answer[i : i + 4000])
+            await reply(update.message, answer[i : i + 4000])
     else:
         try:
-            await status_msg.edit_text(answer)
+            await edit(status_msg, answer)
         except Exception:
-            await update.message.reply_text(answer)
+            await reply(update.message, answer)
 
     _save_history(uid, messages)
 
@@ -333,13 +385,29 @@ async def main():
     app.add_handler(CommandHandler("clean", clean))
     app.add_handler(CommandHandler("status", status))
     app.add_handler(CommandHandler("history", history_cmd))
+    app.add_handler(CommandHandler("projects", projects_cmd))
     app.add_handler(MessageHandler(filters.Document.ALL | filters.PHOTO, handle_file))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     _load_histories()
     await app.initialize()
     await app.start()
-    await app.updater.start_polling(allowed_updates=Update.ALL_TYPES)
+
+    # Удаляем вебхук, если был установлен ранее — иначе polling не работает
+    try:
+        await app.bot.delete_webhook(drop_pending_updates=True)
+    except Exception as e:
+        logger.warning(f"delete_webhook error: {e}")
+
+    # Небольшая пауза, чтобы старый инстанс точно завершился
+    await asyncio.sleep(2)
+
+    await app.updater.start_polling(
+        allowed_updates=Update.ALL_TYPES,
+        poll_interval=1.0,
+        timeout=30,
+        bootstrap_retries=-1,
+    )
     logger.info("🤖 Бот запущен")
 
     shutdown_event = asyncio.Event()

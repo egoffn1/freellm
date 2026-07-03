@@ -5,9 +5,8 @@ import re
 from openai import OpenAI
 from config import (
     FREELLM_BASE_URL, FREELLM_API_KEY,
-    AGENT_MODEL, AGENT_FALLBACK_MODEL, MAX_TOOL_CALLS,
+    AGENT_MODEL, AGENT_FALLBACK_MODEL, MAX_TOOL_CALLS, MULTI_AGENT_ENABLED,
 )
-
 
 logger = logging.getLogger(__name__)
 _client = OpenAI(base_url=FREELLM_BASE_URL, api_key=FREELLM_API_KEY)
@@ -31,49 +30,59 @@ NEEDS_TOOLS = re.compile(
     re.IGNORECASE,
 )
 
-AGENT_SYSTEM_PROMPT = """You are FreeLLM Agent — an AI coding assistant like Claude Code.
+AGENT_SYSTEM_PROMPT = """You are FreeLLM Agent — an advanced AI coding assistant inspired by Opencode, Claude Code, ChatGPT, DeepSeek, and Mistral.
+
+## 🧠 Core Principles
+- **Chain of Thought**: Before each response, think step-by-step internally. Plan before acting.
+- **Multi-step reasoning**: Break complex tasks into smaller steps. Verify each step before continuing.
+- **Self-reflection**: After completing a task, review your work for errors and improvements.
 
 ## ⚠️ SECURITY — NEVER DO THESE (deadly serious)
-These actions are BLOCKED by the system. Do not attempt them:
-
-- **NO system-level commands**: Do not use `bash` to run `sudo`, `su`, `chown`, `passwd`, `poweroff`, `reboot`, `shutdown`, `kill`, `killall`, `pkill`, `init`, `mkfs`, `dd`, `format`, `>|`. These are explicitly forbidden.
-- **NO write outside workspace**: You can only read/write files inside the workspace directory. Paths like `/etc/`, `/var/`, `/root/`, `../` outside workspace will be rejected.
-- **NO accessing other users' files**: You work with ONE user's files at a time. Never try to read `/home/`, `/tmp/` of other users.
-- **NO deleting essential files**: Do not delete the bot's own code (`/app/` directory), system files, or workspace configuration.
-- **NO installing/uninstalling system packages**: Use `bash` only for development commands (build, test, git, lint, run code). Do not `apt install`, `dnf install`, `brew install` system packages.
+- **NO system-level commands**: sudo, su, chown, passwd, poweroff, reboot, shutdown, kill, killall, pkill, init, mkfs, dd, format, >|
+- **NO write outside workspace**: You can only read/write files inside the workspace directory.
+- **NO accessing other users' files**: You work with ONE user's files at a time.
+- **NO deleting essential files**: Do not delete the bot's own code (`/app/` directory) or system files.
+- **NO installing/uninstalling system packages**: Use `bash` only for development commands (build, test, git, lint, run code).
 - **NO mining, exploits, malware**: Do not generate cryptocurrency miners, exploits, viruses, or any malicious code.
-- **NO privilege escalation**: Do not attempt to gain root access, modify `/etc/sudoers`, or change file permissions on system files.
-
-**If the user asks you to do any of these, refuse politely and explain it's blocked for security.**
+- **NO privilege escalation**: Do not attempt to gain root access or modify system permissions.
 
 ## ✅ SAFE operations — these are fine
 - Create/edit/read files in workspace → use `write`, `read`, `edit`
 - Search code → use `grep`, `glob`
 - Run development commands → use `bash` (git, python, npm, pip, go, cargo, ls, cat, mkdir, etc.)
+- Test Python code safely → use `sandbox`
+- Search the web for info → use `research`
+- Create multi-file projects → use `scaffold`
 - Analyze images → use `vision`
 - Fetch web pages → use `web_fetch`
-- Task complete → call `task_done` with summary
+
+## 🔧 Tool Usage Guidelines
+- **sandbox**: Always test Python code before delivering it. Write code, test it with sandbox, fix errors, then deliver.
+- **research**: Use for any question requiring up-to-date information (APIs, libraries, docs, news).
+- **scaffold**: For multi-file projects (web apps, libraries, full-stack). Creates proper file structure.
+- **bash**: Use for git, npm, python scripts, compilation, testing.
+- **vision**: For images, screenshots, diagrams uploaded by user.
+
+## 💬 Conversation Style
+- Respond in Russian unless the user writes in another language
+- Be concise but thorough
+- For code tasks: explain what you did, show the code, note any tradeoffs
+- For research: cite sources, summarize findings
+- For multi-step: keep the user updated on progress
+
+## 📋 Context & Memory
+- History contains `[Загружен файл: имя]`, `[Создан файл: имя]` entries
+- User may reference files from earlier in conversation
+- Previous conversation context is available via RAG memory
 
 ## How to handle requests
 - User says "прочитай" / "read" / "скажи что там":
-  1. Find the most recent file mentioned in history (`[Загружен файл: имя]` or `[Создан файл: имя]`)
+  1. Find the most recent file mentioned in history
   2. Call `read` on it
   3. Summarize in Russian
-- User asks for code → use `write` to create the file, then `task_done`
-- User uploads a file → it's saved in workspace, look in history for the filename
-- User uploads an image → history contains the vision analysis
-- Greetings, casual chat → respond normally without tools
-
-## Conversation history
-History contains `[Загружен файл: имя]`, `[Создан файл: имя]`, and `[Анализ изображения]` entries.
-Use these to understand what files exist and what the user is referring to.
-
-## How you work
-1. Think what the user needs
-2. If it needs a tool → call it
-3. If conversation → respond naturally
-4. For multi-step tasks → call one tool at a time, examine results, continue
-5. When fully done → call `task_done` with summary and list of changed files"""
+- User asks for code → write + test + deliver
+- Multi-file projects → use `scaffold` to create organized project structure
+- When fully done → call `task_done` with summary and list of changed files"""
 
 
 async def _call_llm(
@@ -99,6 +108,19 @@ async def run_agent(messages: list, on_status: callable = None) -> str:
     is_casual = bool(CASUAL_PATTERNS.match(user_text.strip()))
     needs_tools = _needs_tools(user_text)
 
+    from guardrails import check_input, check_output, sanitize_output
+    guard = check_input(user_text)
+    if guard["blocked"]:
+        return "\n".join(guard["warnings"])
+
+    is_complex = len(user_text) > 100 or any(kw in user_text.lower()
+        for kw in ["проект", "приложение", "сайт", "full-stack", "архитектур",
+                    "multi-file", "несколько файлов", "complete", "full"])
+
+    from rag_memory import rag
+    rag.add_messages(messages)
+    memory_context = rag.build_context(user_text)
+
     # Pure casual chat — skip tools entirely
     if is_casual and not needs_tools:
         sys_msg = {"role": "system", "content": "You are a helpful AI assistant. Respond conversationally."}
@@ -110,11 +132,37 @@ async def run_agent(messages: list, on_status: callable = None) -> str:
         except Exception as e:
             return f"❌ {e}"
 
-    # Needs tools — full agent mode
-    sys_msg = {"role": "system", "content": AGENT_SYSTEM_PROMPT}
+    # Multi-agent orchestration for complex tasks
+    if is_complex and MULTI_AGENT_ENABLED:
+        if on_status:
+            await on_status("🧠 Запускаю мульти-агентную систему...")
+        from multiagent import orchestrate
+        context_parts = []
+        for m in messages[-10:]:
+            context_parts.append(f"{m['role']}: {m['content'][:500]}")
+        context_str = "\n".join(context_parts)
+        if memory_context:
+            context_str += f"\n\nRelevant context:\n{memory_context}"
+
+        from tools import TOOL_DEFINITIONS
+        result = await orchestrate(user_text, context_str, TOOL_DEFINITIONS, on_status)
+        messages.append({"role": "assistant", "content": result})
+        result = sanitize_output(result)
+        check = check_output(result)
+        if check["warnings"]:
+            result += "\n\n" + "\n".join(check["warnings"])
+        return result
+
+    # Standard agent mode
+    ctx_note = ""
+    if memory_context:
+        ctx_note = f"\n\nRelevant context from previous conversations:\n{memory_context}"
+
+    sys_msg = {"role": "system", "content": AGENT_SYSTEM_PROMPT + ctx_note}
     full_messages = [sys_msg] + messages
     tool_calls_count = 0
     tried_fallback = False
+    no_tool_retries = 0
 
     while tool_calls_count < MAX_TOOL_CALLS:
         if on_status:
@@ -141,10 +189,26 @@ async def run_agent(messages: list, on_status: callable = None) -> str:
         msg = resp.choices[0].message
 
         if not msg.tool_calls:
+            if needs_tools and no_tool_retries < 2:
+                no_tool_retries += 1
+                if on_status:
+                    await on_status(f"🤔 Напоминаю использовать инструменты (попытка {no_tool_retries + 1})...")
+                full_messages.append({
+                    "role": "system",
+                    "content": "The user's request requires tools. You MUST use appropriate tools to accomplish it. Don't just talk — do."
+                })
+                continue
             final = msg.content or "✅ Готово."
             full_messages.append({"role": "assistant", "content": final})
             messages[:] = [m for m in full_messages if m.get("role") != "system"]
+            final = sanitize_output(final)
+            rag.add(f"[Assistant] {final}", {"role": "assistant"})
+            check = check_output(final)
+            if check["warnings"]:
+                final += "\n\n" + "\n".join(check["warnings"])
             return final
+
+        no_tool_retries = 0
 
         for tc in msg.tool_calls:
             tool_calls_count += 1
@@ -166,6 +230,8 @@ async def run_agent(messages: list, on_status: callable = None) -> str:
                     result += "\n\n📁 Файлы:\n" + "\n".join(f"• `{f}`" for f in files)
                 full_messages.append({"role": "assistant", "content": result})
                 messages[:] = [m for m in full_messages if m.get("role") != "system"]
+                result = sanitize_output(result)
+                rag.add(f"[Done] {summary}", {"role": "system"})
                 return result
 
             from tools import TOOL_NAME_MAP
@@ -180,6 +246,9 @@ async def run_agent(messages: list, on_status: callable = None) -> str:
                 "role": "tool", "tool_call_id": tc.id,
                 "content": json.dumps(result, ensure_ascii=False),
             })
+
+            if tool_calls_count >= MAX_TOOL_CALLS:
+                break
 
     final = "⚠️ Достигнут лимит шагов."
     full_messages.append({"role": "assistant", "content": final})

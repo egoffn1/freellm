@@ -9,7 +9,7 @@ from openai import OpenAI
 
 from config import (
     WORKSPACE_DIR, ALLOWED_BASH_PREFIXES, CONFIRM_COMMANDS, MAX_TOOL_CALLS,
-    FREELLM_BASE_URL, FREELLM_API_KEY,
+    FREELLM_BASE_URL, FREELLM_API_KEY, AGENT_MODEL,
 )
 
 
@@ -256,6 +256,36 @@ async def tool_vision(file_path: str, prompt: str = "Опиши что на эт
         return {"error": str(e)}
 
 
+async def tool_sandbox(code: str, language: str = "python") -> dict[str, Any]:
+    from sandbox import run_sandboxed
+    return await run_sandboxed(code, language)
+
+
+async def tool_research(query: str) -> dict[str, Any]:
+    from web_search import web_search
+    results = await web_search(query)
+    return results
+
+
+async def tool_scaffold(name: str, files: list[dict]) -> dict[str, Any]:
+    from artifacts import scaffold_project
+    manifest = await scaffold_project(name, files)
+    return {"project": manifest["name"], "files": manifest["files"], "entry": manifest.get("entry")}
+
+
+async def tool_list_projects() -> dict[str, Any]:
+    from artifacts import list_projects
+    return {"projects": list_projects()}
+
+
+async def tool_get_project(name: str) -> dict[str, Any]:
+    from artifacts import get_project, build_project_summary
+    proj = get_project(name)
+    if not proj:
+        return {"error": f"Project '{name}' not found"}
+    return {"summary": build_project_summary(proj), "manifest": proj}
+
+
 TOOL_DEFINITIONS = [
     {
         "type": "function",
@@ -396,6 +426,62 @@ TOOL_DEFINITIONS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "sandbox",
+            "description": "Execute Python code in a secure sandbox with resource limits. Use to test code, run calculations, or analyze data.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "code": {"type": "string", "description": "Python code to execute"},
+                    "language": {"type": "string", "enum": ["python", "shell"], "default": "python"},
+                },
+                "required": ["code"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "research",
+            "description": "Search the web for current information. Use when you need up-to-date facts, documentation, or data.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Search query"},
+                },
+                "required": ["query"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "scaffold",
+            "description": "Create a multi-file project. Use for generating complete applications with multiple files.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "Project name"},
+                    "files": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "path": {"type": "string", "description": "File path relative to project root"},
+                                "content": {"type": "string", "description": "File content"},
+                                "language": {"type": "string", "description": "Programming language"},
+                            },
+                            "required": ["path", "content"],
+                        },
+                        "description": "List of files to create",
+                    },
+                },
+                "required": ["name", "files"],
+            },
+        },
+    },
 ]
 
 TOOL_NAME_MAP = {
@@ -407,4 +493,7 @@ TOOL_NAME_MAP = {
     "bash": tool_bash,
     "web_fetch": tool_web_fetch,
     "vision": tool_vision,
+    "sandbox": tool_sandbox,
+    "research": tool_research,
+    "scaffold": tool_scaffold,
 }

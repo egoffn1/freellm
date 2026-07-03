@@ -3,3 +3,5 @@ openai>=1.0
 httpx>=0.27
 markdownify>=0.12
 aiohttp>=3.9
+numpy>=1.24
+duckduckgo_search>=6.0
