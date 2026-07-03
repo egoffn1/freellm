@@ -1,10 +1,19 @@
 import asyncio
+import base64
 import subprocess
 import re
 from pathlib import Path
 from typing import Any
 
-from config import WORKSPACE_DIR, ALLOWED_BASH_PREFIXES, CONFIRM_COMMANDS, MAX_TOOL_CALLS
+from openai import OpenAI
+
+from config import (
+    WORKSPACE_DIR, ALLOWED_BASH_PREFIXES, CONFIRM_COMMANDS, MAX_TOOL_CALLS,
+    FREELLM_BASE_URL, FREELLM_API_KEY,
+)
+
+
+_vison_client = OpenAI(base_url=FREELLM_BASE_URL, api_key=FREELLM_API_KEY)
 
 
 WORKSPACE = Path(WORKSPACE_DIR).resolve()
@@ -206,6 +215,47 @@ async def tool_web_fetch(url: str, format: str = "markdown") -> dict[str, Any]:
         return {"error": str(e)}
 
 
+async def tool_vision(file_path: str, prompt: str = "Опиши что на этом изображении") -> dict[str, Any]:
+    try:
+        p = _resolve_path(file_path)
+        if not p.exists():
+            return {"error": f"File not found: {file_path}"}
+
+        raw = p.read_bytes()
+        b64 = base64.b64encode(raw).decode("utf-8")
+        ext = p.suffix.lower()
+        mime = {
+            ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+            ".png": "image/png", ".gif": "image/gif",
+            ".webp": "image/webp", ".bmp": "image/bmp",
+        }.get(ext, "image/png")
+
+        data_url = f"data:{mime};base64,{b64}"
+
+        loop = asyncio.get_event_loop()
+        resp = await loop.run_in_executor(
+            None,
+            lambda: _vison_client.chat.completions.create(
+                model="free-smart",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {"type": "image_url", "image_url": {"url": data_url}},
+                        ],
+                    }
+                ],
+                max_tokens=2000,
+                timeout=60,
+            ),
+        )
+
+        return {"analysis": resp.choices[0].message.content}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 TOOL_DEFINITIONS = [
     {
         "type": "function",
@@ -304,6 +354,21 @@ TOOL_DEFINITIONS = [
     {
         "type": "function",
         "function": {
+            "name": "vision",
+            "description": "Analyze an image file using AI vision. Send the file path and a question about the image. Use this for photos, screenshots, diagrams, etc.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "file_path": {"type": "string", "description": "Path to the image file"},
+                    "prompt": {"type": "string", "description": "Question or instruction about the image", "default": "Опиши что на этом изображении"},
+                },
+                "required": ["file_path"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "web_fetch",
             "description": "Fetch content from a URL. Returns the page content as markdown or text.",
             "parameters": {
@@ -341,4 +406,5 @@ TOOL_NAME_MAP = {
     "grep": tool_grep,
     "bash": tool_bash,
     "web_fetch": tool_web_fetch,
+    "vision": tool_vision,
 }

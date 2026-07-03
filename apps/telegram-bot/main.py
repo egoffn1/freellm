@@ -144,6 +144,10 @@ async def handle_file(update: Update, ctx):
         tg_file = await ctx.bot.get_file(file.file_id)
         fname = getattr(file, "file_name", None) or f"file_{file.file_id[:8]}"
 
+        # Ensure unique name for photos without extension
+        if msg.photo and "." not in fname:
+            fname += ".jpg"
+
         dest = Path(WORKSPACE_DIR) / fname
         dest.parent.mkdir(parents=True, exist_ok=True)
 
@@ -153,11 +157,32 @@ async def handle_file(update: Update, ctx):
         from tools import CREATED_FILES
         CREATED_FILES.add(rel)
 
-        await status.edit_text(
-            f"✅ Файл сохранён: `{rel}`\n"
-            f"Теперь напишите, что с ним сделать.",
-            parse_mode="Markdown",
-        )
+        messages = user_history[uid]
+
+        # photos → auto-analyze with vision
+        if msg.photo:
+            ext = Path(fname).suffix.lower()
+            image_exts = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"}
+            if ext in image_exts:
+                await status.edit_text("🔍 Анализирую изображение через Gemini Vision...")
+                from tools import tool_vision
+                result = await tool_vision(rel, "Опиши подробно что на этом изображении. Если есть текст — прочитай его.")
+                analysis = result.get("analysis", "") or result.get("error", "не удалось")
+                messages.append({"role": "user", "content": f"[Загружено изображение: {rel}]"})
+                messages.append({"role": "assistant", "content": f"[Анализ изображения {rel}]: {analysis}"})
+                await status.edit_text(
+                    f"✅ Файл сохранён: `{rel}`\n"
+                    f"👁 Изображение проанализировано.\n"
+                    f"Теперь можно спрашивать про него.",
+                    parse_mode="Markdown",
+                )
+                return
+        else:
+            await status.edit_text(
+                f"✅ Файл сохранён: `{rel}`\n"
+                f"Теперь напишите, что с ним сделать.",
+                parse_mode="Markdown",
+            )
     except Exception as e:
         await status.edit_text(f"❌ Ошибка: {e}")
 
