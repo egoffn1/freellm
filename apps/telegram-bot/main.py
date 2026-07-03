@@ -12,6 +12,7 @@ from config import TELEGRAM_BOT_TOKEN, FREELLM_BASE_URL, WORKSPACE_DIR, MAX_HIST
 from agent import run_agent
 from tools import get_and_clear_created_files
 from server import start_web_server
+from cleanup import run_cleanup_loop
 
 
 logging.basicConfig(
@@ -39,6 +40,7 @@ async def start(update: Update, _ctx):
         "Команды:\n"
         "/help — подробнее\n"
         "/clone <url> — клонировать репозиторий\n"
+        "/clean — удалить старые файлы (>3 дней)\n"
         "/reset — сбросить историю\n"
         "/status — статус",
         parse_mode="Markdown",
@@ -50,7 +52,8 @@ async def help_cmd(update: Update, _ctx):
         "*Команды:*\n"
         "/start — приветствие\n"
         "/help — эта справка\n"
-        "/clone <url> — клонировать Git-репозиторий\n"
+        "/clone <url> — клонировать репозиторий\n"
+        "/clean — удалить файлы старше 3 дней\n"
         "/reset — очистить историю\n"
         "/status — проверить FreeLLM\n\n"
         "*Как использовать:*\n"
@@ -101,6 +104,13 @@ async def clone(update: Update, _ctx):
             await msg.edit_text(f"❌ Ошибка клонирования:\n`{err}`", parse_mode="Markdown")
     except Exception as e:
         await msg.edit_text(f"❌ Ошибка: {e}")
+
+
+async def clean(update: Update, _ctx):
+    from cleanup import _cleanup_once
+    msg = await update.message.reply_text("🧹 Чищу старые файлы...")
+    await _cleanup_once()
+    await msg.edit_text("✅ Старые файлы удалены.")
 
 
 async def reset(update: Update, _ctx):
@@ -262,6 +272,7 @@ async def main():
     app.add_handler(CommandHandler("help", help_cmd))
     app.add_handler(CommandHandler("clone", clone))
     app.add_handler(CommandHandler("reset", reset))
+    app.add_handler(CommandHandler("clean", clean))
     app.add_handler(CommandHandler("status", status))
     app.add_handler(MessageHandler(filters.Document.ALL | filters.PHOTO, handle_file))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
@@ -283,7 +294,10 @@ async def main():
         except NotImplementedError:
             pass
 
-    await start_web_server(shutdown_event)
+    await asyncio.gather(
+        start_web_server(shutdown_event),
+        run_cleanup_loop(shutdown_event),
+    )
 
     logger.info("Остановка...")
     await app.updater.stop()

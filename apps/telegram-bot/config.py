@@ -20,3 +20,6 @@ ALLOWED_BASH_PREFIXES = os.getenv(
 CONFIRM_COMMANDS = os.getenv("CONFIRM_COMMANDS", "rm,dd,mkfs,format,>|,sudo,su,chown,chgrp,passwd,useradd,usermod,groupadd,poweroff,reboot,shutdown,init,kill,killall,pkill").split(",")
 
 PORT = int(os.getenv("PORT", "8080"))
+
+FILE_TTL_DAYS = int(os.getenv("FILE_TTL_DAYS", "3"))
+CLEANUP_INTERVAL_HOURS = int(os.getenv("CLEANUP_INTERVAL_HOURS", "1"))
