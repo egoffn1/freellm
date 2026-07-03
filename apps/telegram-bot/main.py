@@ -1,4 +1,5 @@
 import os
+import json
 import asyncio
 import signal
 import logging
@@ -22,6 +23,29 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 user_history: dict[int, list] = defaultdict(list)
+HISTORY_DIR = Path(WORKSPACE_DIR) / ".histories"
+
+
+def _load_histories():
+    HISTORY_DIR.mkdir(parents=True, exist_ok=True)
+    for f in HISTORY_DIR.iterdir():
+        if f.suffix == ".json":
+            try:
+                uid = int(f.stem)
+                data = json.loads(f.read_text())
+                user_history[uid] = data[-MAX_HISTORY * 2:]
+            except Exception as e:
+                logger.warning(f"Failed to load history {f.name}: {e}")
+    logger.info(f"Loaded {len(user_history)} user histories")
+
+
+def _save_history(uid: int, messages: list):
+    HISTORY_DIR.mkdir(parents=True, exist_ok=True)
+    path = HISTORY_DIR / f"{uid}.json"
+    try:
+        path.write_text(json.dumps(messages[-MAX_HISTORY * 2:], ensure_ascii=False))
+    except Exception as e:
+        logger.warning(f"Failed to save history for {uid}: {e}")
 
 
 async def start(update: Update, _ctx):
@@ -140,6 +164,16 @@ async def status(update: Update, _ctx):
         await update.message.reply_text(f"❌ FreeLLM недоступен: {e}")
 
 
+async def history_cmd(update: Update, _ctx):
+    uid = update.effective_user.id
+    msgs = user_history.get(uid, [])
+    await update.message.reply_text(
+        f"📋 История диалога: {len(msgs)} сообщений\n"
+        f"Максимум: {MAX_HISTORY * 2}\n"
+        f"Первое: {msgs[0]['content'][:50] if msgs else '—'}"
+    )
+
+
 async def handle_file(update: Update, ctx):
     uid = update.effective_user.id
     msg = update.message
@@ -186,6 +220,7 @@ async def handle_file(update: Update, ctx):
                 messages.append({"role": "user", "content": f"[Загружено изображение: {rel}]" + (f" — {caption}" if caption else "")})
                 messages.append({"role": "assistant", "content": analysis})
 
+                _save_history(uid, messages)
                 await status.edit_text(
                     f"👁 {analysis[:4000]}",
                     parse_mode="Markdown",
@@ -272,6 +307,8 @@ async def handle_message(update: Update, _ctx):
         except Exception:
             await update.message.reply_text(answer)
 
+    _save_history(uid, messages)
+
 
 async def main():
     if not TELEGRAM_BOT_TOKEN:
@@ -295,9 +332,11 @@ async def main():
     app.add_handler(CommandHandler("reset", reset))
     app.add_handler(CommandHandler("clean", clean))
     app.add_handler(CommandHandler("status", status))
+    app.add_handler(CommandHandler("history", history_cmd))
     app.add_handler(MessageHandler(filters.Document.ALL | filters.PHOTO, handle_file))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
+    _load_histories()
     await app.initialize()
     await app.start()
     await app.updater.start_polling(allowed_updates=Update.ALL_TYPES)
