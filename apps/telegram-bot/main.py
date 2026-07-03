@@ -223,10 +223,27 @@ async def handle_message(update: Update, _ctx):
         except Exception:
             pass
 
-    get_and_clear_created_files()  # clear leftover from previous ops
+    get_and_clear_created_files()
     answer = await run_agent(messages, on_status=on_status)
 
     files = get_and_clear_created_files()
+
+    if not files and "```" in answer:
+        import re
+        from tools import CREATED_FILES
+        blocks = re.findall(r"```(\w+)?\n(.*?)```", answer, re.DOTALL)
+        extract_dir = Path(WORKSPACE_DIR)
+        extract_dir.mkdir(parents=True, exist_ok=True)
+        for i, (lang, code) in enumerate(blocks):
+            code = code.strip()
+            if not code:
+                continue
+            name = f"bot_{i+1}.{lang or 'py'}" if lang else f"file_{i+1}.txt"
+            (extract_dir / name).write_text(code, encoding="utf-8")
+            CREATED_FILES.add(name)
+            files.append(name)
+        answer = re.sub(r"```\w*\n.*?```", "", answer, flags=re.DOTALL)
+        answer = re.sub(r"\n{3,}", "\n\n", answer).strip()
     if files:
         for fname in files:
             messages.append({"role": "system", "content": f"[Создан файл: {fname}]"})
