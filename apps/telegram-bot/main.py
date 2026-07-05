@@ -548,21 +548,6 @@ async def main():
     await app.initialize()
     await app.start()
 
-    try:
-        await app.bot.delete_webhook(drop_pending_updates=True)
-    except Exception as e:
-        logger.warning(f"delete_webhook error: {e}")
-
-    await asyncio.sleep(2)
-
-    await app.updater.start_polling(
-        allowed_updates=Update.ALL_TYPES,
-        poll_interval=1.0,
-        timeout=30,
-        bootstrap_retries=-1,
-    )
-    logger.info("🤖 Бот запущен")
-
     shutdown_event = asyncio.Event()
 
     async def _shutdown():
@@ -581,12 +566,11 @@ async def main():
             pass
 
     await asyncio.gather(
-        start_web_server(shutdown_event),
+        start_web_server(telegram_app=app, shutdown_event=shutdown_event),
         run_cleanup_loop(shutdown_event),
     )
 
     logger.info("Остановка...")
-    await app.updater.stop()
     await app.stop()
     await app.shutdown()
 

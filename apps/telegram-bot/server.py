@@ -10,6 +10,7 @@ from tools import _resolve_uid_by_token
 logger = logging.getLogger(__name__)
 
 PUBLIC_URL = os.getenv("RENDER_EXTERNAL_URL", "https://freellm-bot.onrender.com")
+_telegram_app = None
 
 
 async def handle_health(_request):
@@ -71,11 +72,29 @@ async def handle_serve(request):
     )
 
 
-async def start_web_server(shutdown_event: asyncio.Event | None = None):
+async def handle_webhook(request):
+    from telegram import Update
+    if not _telegram_app:
+        return web.json_response({"error": "not ready"}, status=503)
+    try:
+        data = await request.json()
+        update = Update.de_json(data, _telegram_app.bot)
+        await _telegram_app.process_update(update)
+        return web.Response(status=200)
+    except Exception as e:
+        logger.error(f"Webhook error: {e}")
+        return web.json_response({"error": str(e)}, status=500)
+
+
+async def start_web_server(telegram_app=None, shutdown_event: asyncio.Event | None = None):
+    global _telegram_app
+    _telegram_app = telegram_app
+
     app = web.Application()
     app.router.add_get("/", handle_index)
     app.router.add_get("/healthz", handle_health)
     app.router.add_get("/serve/{filename:.+}", handle_serve)
+    app.router.add_post("/webhook", handle_webhook)
 
     runner = web.AppRunner(app)
     await runner.setup()
@@ -85,6 +104,22 @@ async def start_web_server(shutdown_event: asyncio.Event | None = None):
     logger.info(f"Web server running on 0.0.0.0:{PORT}")
     logger.info(f"Static files served at {PUBLIC_URL}/serve/")
 
+    if _telegram_app:
+        webhook_url = f"{PUBLIC_URL}/webhook"
+        try:
+            await _telegram_app.bot.set_webhook(
+                url=webhook_url,
+                allowed_updates=["message", "edited_message", "callback_query"],
+            )
+            logger.info(f"Webhook set to {webhook_url}")
+        except Exception as e:
+            logger.warning(f"Failed to set webhook: {e}")
+
     if shutdown_event:
         await shutdown_event.wait()
         await runner.cleanup()
+        if _telegram_app:
+            try:
+                await _telegram_app.bot.delete_webhook()
+            except Exception:
+                pass
