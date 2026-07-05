@@ -31,6 +31,13 @@ logger = logging.getLogger(__name__)
 
 MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
 
+user_history: dict[int, list] = defaultdict(list)
+running_tasks: dict[int, asyncio.Task] = {}
+cancel_events: dict[int, asyncio.Event] = {}
+user_rate_limits: dict[int, list[float]] = defaultdict(list)
+task_semaphore = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
+HISTORY_DIR = Path(WORKSPACE_DIR) / ".histories"
+
 
 async def reply(msg, text: str, **kw):
     kw["parse_mode"] = "HTML"
@@ -65,6 +72,56 @@ def main_keyboard():
         [KeyboardButton("🛑 Стоп"), KeyboardButton("📋 Статус")],
     ]
     return ReplyKeyboardMarkup(buttons, resize_keyboard=True)
+
+
+def _load_histories():
+    HISTORY_DIR.mkdir(parents=True, exist_ok=True)
+    loaded = 0
+    for f in HISTORY_DIR.iterdir():
+        if f.suffix == ".json":
+            if loaded >= MAX_HISTORY_LOAD_FILES:
+                logger.warning(f"Hit max history load limit ({MAX_HISTORY_LOAD_FILES})")
+                break
+            try:
+                if f.stat().st_size > 1024 * 1024:
+                    logger.warning(f"History file too large, skipping: {f.name}")
+                    f.unlink(missing_ok=True)
+                    continue
+                uid = int(f.stem)
+                data = json.loads(f.read_text())
+                user_history[uid] = data[-MAX_HISTORY * 2:]
+                loaded += 1
+            except Exception as e:
+                logger.warning(f"Failed to load history {f.name}: {e}")
+    logger.info(f"Loaded {loaded} user histories")
+
+
+def _save_history(uid: int, messages: list):
+    HISTORY_DIR.mkdir(parents=True, exist_ok=True)
+    path = HISTORY_DIR / f"{uid}.json"
+    try:
+        path.write_text(json.dumps(messages[-MAX_HISTORY * 2:], ensure_ascii=False))
+    except Exception as e:
+        logger.warning(f"Failed to save history for {uid}: {e}")
+
+
+def _trim_history_by_size(messages: list, max_chars: int = MAX_CONTEXT_SIZE_CHARS) -> list:
+    total = sum(len(m.get("content", "")) for m in messages)
+    while total > max_chars and len(messages) > 2:
+        removed = messages.pop(0)
+        total -= len(removed.get("content", ""))
+    return messages
+
+
+def _rate_limit(uid: int) -> bool:
+    now = time.time()
+    window = 60.0
+    limits = user_rate_limits[uid]
+    limits[:] = [t for t in limits if now - t < window]
+    if len(limits) >= RATE_LIMIT_PER_MINUTE:
+        return False
+    limits.append(now)
+    return True
 
 
 def inline_task_actions() -> InlineKeyboardMarkup:
