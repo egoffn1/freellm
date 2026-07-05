@@ -170,7 +170,8 @@ async def handle_callback(update: Update, _ctx):
                 last_user = m["content"]
                 break
         if last_user:
-            status_msg = await query.message.reply_text("🤔 Повторяю...")
+            from emoji import md_to_html
+            status_msg = await query.message.reply_text(md_to_html("🤔 Повторяю..."), parse_mode="HTML")
             await _execute_agent_task(
                 update.effective_user, uid, messages, status_msg,
                 cancel_events, running_tasks, user_history, task_semaphore, user_rate_limits,
@@ -196,13 +197,14 @@ async def handle_callback(update: Update, _ctx):
 
 async def _handle_settings_callback(query, uid: int, data: str):
     from firebase_db import get_user_settings, save_user_settings
+    from emoji import md_to_html
     settings = get_user_settings(uid)
 
     if data == "settings_lang":
         new_lang = "en" if settings.get("language") == "ru" else "ru"
         save_user_settings(uid, {"language": new_lang})
         emoji = "🇬🇧 English" if new_lang == "en" else "🇷🇺 Русский"
-        await query.edit_message_text(f"✅ Язык изменён на {emoji}")
+        await query.edit_message_text(md_to_html(f"✅ Язык изменён на {emoji}"))
 
     elif data == "settings_model":
         models = ["", "groq/llama-3.3-70b-versatile", "github/openai/gpt-4o-mini", "groq/qwen-qwq-32b"]
@@ -211,12 +213,12 @@ async def _handle_settings_callback(query, uid: int, data: str):
         new_model = models[idx]
         save_user_settings(uid, {"model": new_model})
         label = new_model if new_model else "по умолчанию"
-        await query.edit_message_text(f"✅ Модель: {label}")
+        await query.edit_message_text(md_to_html(f"✅ Модель: {label}"))
 
     elif data == "settings_notif":
         new_val = not settings.get("notifications", True)
         save_user_settings(uid, {"notifications": new_val})
-        await query.edit_message_text(f"✅ Уведомления: {'вкл' if new_val else 'выкл'}")
+        await query.edit_message_text(md_to_html(f"✅ Уведомления: {'вкл' if new_val else 'выкл'}"))
 
     elif data == "settings_integrations":
         from firebase_db import list_integrations, get_integration
@@ -228,7 +230,7 @@ async def _handle_settings_callback(query, uid: int, data: str):
         else:
             lines.append("Нет подключенных сервисов.")
         lines.append("\nДоступно: Gmail, GitHub (скоро), Discord (скоро)")
-        await query.edit_message_text("\n".join(lines))
+        await query.edit_message_text(md_to_html("\n".join(lines)), parse_mode="HTML")
 
     elif data == "settings_close":
         await query.message.delete()
