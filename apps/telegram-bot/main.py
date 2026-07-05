@@ -37,6 +37,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 user_history: dict[int, list] = defaultdict(list)
+running_tasks: dict[int, asyncio.Task] = {}
+cancel_events: dict[int, asyncio.Event] = {}
 HISTORY_DIR = Path(WORKSPACE_DIR) / ".histories"
 
 
@@ -93,6 +95,7 @@ async def start(update: Update, _ctx):
         "/clone <url> — клонировать репозиторий\n"
         "/clean — удалить старые файлы (>3 дней)\n"
         "/reset — сбросить историю\n"
+        "/stop — остановить задачу\n"
         "/status — статус и фишки",
     )
 
@@ -289,12 +292,31 @@ async def handle_file(update: Update, ctx):
         await edit(status, f"❌ Ошибка: {e}")
 
 
+async def stop_cmd(update: Update, _ctx):
+    uid = update.effective_user.id
+    if uid in running_tasks and not running_tasks[uid].done():
+        if uid in cancel_events:
+            cancel_events[uid].set()
+        running_tasks[uid].cancel()
+        await reply(update.message, "⏹ Задача остановлена.")
+        logger.info(f"User {uid} cancelled their task")
+    else:
+        await reply(update.message, "🤷 Нет активной задачи для остановки.")
+
+
 async def handle_message(update: Update, _ctx):
     uid = update.effective_user.id
     text = update.message.text
 
     if not text:
         return
+
+    # Cancel any existing task for this user
+    if uid in running_tasks and not running_tasks[uid].done():
+        if uid in cancel_events:
+            cancel_events[uid].set()
+        running_tasks[uid].cancel()
+        await asyncio.sleep(0.3)
 
     await update.message.chat.send_action("typing")
 
@@ -307,15 +329,51 @@ async def handle_message(update: Update, _ctx):
     messages.append({"role": "user", "content": text})
 
     status_msg = await reply(update.message, "🤔 Анализирую задачу...")
+    log_msg = await reply(update.message, "📋 Лог:\n")
+
+    cancel_events[uid] = asyncio.Event()
 
     async def on_status(text: str):
         try:
             await edit(status_msg, text)
         except Exception:
-            pass
+            try:
+                nonlocal status_msg
+                status_msg = await reply(update.message, text)
+            except Exception:
+                pass
+
+    async def log_action(text: str):
+        try:
+            await edit(log_msg, f"📋 Лог:\n{text[:3500]}")
+        except Exception:
+            try:
+                nonlocal log_msg
+                log_msg = await reply(update.message, f"📋 Лог:\n{text[:3500]}")
+            except Exception:
+                pass
 
     get_and_clear_created_files()
-    answer = await run_agent(messages, on_status=on_status)
+
+    task = asyncio.create_task(
+        run_agent(messages, on_status=on_status, cancel_event=cancel_events[uid])
+    )
+    running_tasks[uid] = task
+
+    try:
+        answer = await task
+    except asyncio.CancelledError:
+        answer = "⏹ Задача отменена."
+    finally:
+        if uid in running_tasks and running_tasks[uid] is task:
+            del running_tasks[uid]
+        if uid in cancel_events:
+            del cancel_events[uid]
+
+    try:
+        await log_msg.delete()
+    except Exception:
+        pass
 
     files = get_and_clear_created_files()
 
@@ -338,7 +396,10 @@ async def handle_message(update: Update, _ctx):
     if files:
         for fname in files:
             messages.append({"role": "system", "content": f"[Создан файл: {fname}]"})
-        await status_msg.delete()
+        try:
+            await status_msg.delete()
+        except Exception:
+            pass
         for fname in files:
             fpath = Path(WORKSPACE_DIR) / fname
             if fpath.is_file():
@@ -350,7 +411,10 @@ async def handle_message(update: Update, _ctx):
         if answer.strip():
             await reply(update.message, answer)
     elif len(answer) > 4000:
-        await status_msg.delete()
+        try:
+            await status_msg.delete()
+        except Exception:
+            pass
         for i in range(0, len(answer), 4000):
             await reply(update.message, answer[i : i + 4000])
     else:
@@ -386,6 +450,7 @@ async def main():
     app.add_handler(CommandHandler("status", status))
     app.add_handler(CommandHandler("history", history_cmd))
     app.add_handler(CommandHandler("projects", projects_cmd))
+    app.add_handler(CommandHandler("stop", stop_cmd))
     app.add_handler(MessageHandler(filters.Document.ALL | filters.PHOTO, handle_file))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 

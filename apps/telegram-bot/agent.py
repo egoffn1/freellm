@@ -103,25 +103,23 @@ def _needs_tools(text: str) -> bool:
     return bool(NEEDS_TOOLS.search(text))
 
 
-async def run_agent(messages: list, on_status: callable = None) -> str:
+async def run_agent(messages: list, on_status: callable = None, cancel_event: asyncio.Event = None) -> str:
     user_text = messages[-1]["content"] if messages else ""
     is_casual = bool(CASUAL_PATTERNS.match(user_text.strip()))
     needs_tools = _needs_tools(user_text)
+
+    if cancel_event and cancel_event.is_set():
+        return "⏹ Задача отменена."
 
     from guardrails import check_input, check_output, sanitize_output
     guard = check_input(user_text)
     if guard["blocked"]:
         return "\n".join(guard["warnings"])
 
-    is_complex = len(user_text) > 100 or any(kw in user_text.lower()
-        for kw in ["проект", "приложение", "сайт", "full-stack", "архитектур",
-                    "multi-file", "несколько файлов", "complete", "full"])
-
     from rag_memory import rag
     rag.add_messages(messages)
     memory_context = rag.build_context(user_text)
 
-    # Pure casual chat — skip tools entirely
     if is_casual and not needs_tools:
         sys_msg = {"role": "system", "content": "You are a helpful AI assistant. Respond conversationally."}
         try:
@@ -132,28 +130,6 @@ async def run_agent(messages: list, on_status: callable = None) -> str:
         except Exception as e:
             return f"❌ {e}"
 
-    # Multi-agent orchestration for complex tasks
-    if is_complex and MULTI_AGENT_ENABLED:
-        if on_status:
-            await on_status("🧠 Запускаю мульти-агентную систему...")
-        from multiagent import orchestrate
-        context_parts = []
-        for m in messages[-10:]:
-            context_parts.append(f"{m['role']}: {m['content'][:500]}")
-        context_str = "\n".join(context_parts)
-        if memory_context:
-            context_str += f"\n\nRelevant context:\n{memory_context}"
-
-        from tools import TOOL_DEFINITIONS
-        result = await orchestrate(user_text, context_str, TOOL_DEFINITIONS, on_status)
-        messages.append({"role": "assistant", "content": result})
-        result = sanitize_output(result)
-        check = check_output(result)
-        if check["warnings"]:
-            result += "\n\n" + "\n".join(check["warnings"])
-        return result
-
-    # Standard agent mode
     ctx_note = ""
     if memory_context:
         ctx_note = f"\n\nRelevant context from previous conversations:\n{memory_context}"
@@ -165,6 +141,9 @@ async def run_agent(messages: list, on_status: callable = None) -> str:
     no_tool_retries = 0
 
     while tool_calls_count < MAX_TOOL_CALLS:
+        if cancel_event and cancel_event.is_set():
+            return "⏹ Задача отменена."
+
         if on_status:
             await on_status(f"🔄 Шаг {tool_calls_count + 1}: анализ...")
 
@@ -172,6 +151,8 @@ async def run_agent(messages: list, on_status: callable = None) -> str:
 
         try:
             resp = await _call_llm(full_messages, TOOL_DEFINITIONS, "auto")
+        except asyncio.CancelledError:
+            return "⏹ Задача отменена."
         except Exception as e:
             logger.error(f"AI call failed: {e}", exc_info=True)
             if not tried_fallback:
@@ -203,14 +184,13 @@ async def run_agent(messages: list, on_status: callable = None) -> str:
             messages[:] = [m for m in full_messages if m.get("role") != "system"]
             final = sanitize_output(final)
             rag.add(f"[Assistant] {final}", {"role": "assistant"})
-            check = check_output(final)
-            if check["warnings"]:
-                final += "\n\n" + "\n".join(check["warnings"])
             return final
 
         no_tool_retries = 0
 
         for tc in msg.tool_calls:
+            if cancel_event and cancel_event.is_set():
+                return "⏹ Задача отменена."
             tool_calls_count += 1
             fn_name = tc.function.name
             try:
