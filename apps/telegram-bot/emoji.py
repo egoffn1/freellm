@@ -26,6 +26,10 @@ PREMIUM = {
     "🛡": '<tg-emoji emoji-id="5251203410396458957">🛡</tg-emoji>',
     "🔒": '<tg-emoji emoji-id="5296369303661067030">🔒</tg-emoji>',
     "📋": '<tg-emoji emoji-id="5197269100878907942">📋</tg-emoji>',
+    "🌐": '<tg-emoji emoji-id="5447410659077661506">🌐</tg-emoji>',
+    "🛑": '<tg-emoji emoji-id="6084515769780013003">🛑</tg-emoji>',
+    "📊": '<tg-emoji emoji-id="5431577498364158238">📊</tg-emoji>',
+    "💬": '<tg-emoji emoji-id="5443038326535759644">💬</tg-emoji>',
 }
 
 
