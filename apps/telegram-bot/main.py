@@ -89,6 +89,9 @@ def _load_histories():
                     continue
                 uid = int(f.stem)
                 data = json.loads(f.read_text())
+                for m in data:
+                    if m.get("content") is None:
+                        m["content"] = ""
                 user_history[uid] = data[-MAX_HISTORY * 2:]
                 loaded += 1
             except Exception as e:
@@ -99,17 +102,23 @@ def _load_histories():
 def _save_history(uid: int, messages: list):
     HISTORY_DIR.mkdir(parents=True, exist_ok=True)
     path = HISTORY_DIR / f"{uid}.json"
+    out = []
+    for m in messages[-MAX_HISTORY * 2:]:
+        m = dict(m)
+        if m.get("content") is None:
+            m["content"] = ""
+        out.append(m)
     try:
-        path.write_text(json.dumps(messages[-MAX_HISTORY * 2:], ensure_ascii=False))
+        path.write_text(json.dumps(out, ensure_ascii=False))
     except Exception as e:
         logger.warning(f"Failed to save history for {uid}: {e}")
 
 
 def _trim_history_by_size(messages: list, max_chars: int = MAX_CONTEXT_SIZE_CHARS) -> list:
-    total = sum(len(m.get("content", "")) for m in messages)
+    total = sum(len(m.get("content") or "") for m in messages)
     while total > max_chars and len(messages) > 2:
         removed = messages.pop(0)
-        total -= len(removed.get("content", ""))
+        total -= len(removed.get("content") or "")
     return messages
 
 
