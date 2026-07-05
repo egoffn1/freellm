@@ -219,7 +219,7 @@ async def run_agent(messages: list, on_status: callable = None, on_log: callable
     settings_note = ""
     if user_id:
         try:
-            from firebase_db import get_user_settings, list_integrations
+            from firebase_db import get_user_settings, list_integrations, list_mcp_servers
             settings = get_user_settings(user_id)
             if settings.get("language") == "en":
                 settings_note = "\n\n## User Preferences\nThe user prefers English. Respond in English."
@@ -227,9 +227,18 @@ async def run_agent(messages: list, on_status: callable = None, on_log: callable
                 settings_note = "\n\n## User Preferences\nThe user prefers Russian. Respond in Russian."
             if settings.get("model"):
                 settings_note += f"\nPreferred model: {settings['model']}"
+
+            parts = []
             integrations = list_integrations(user_id)
             if integrations:
-                settings_note += f"\nConnected services: {', '.join(integrations)}"
+                parts.append(f"integrations: {', '.join(integrations)}")
+            mcp_servers = list_mcp_servers(user_id)
+            if mcp_servers:
+                mcp_names = [s.get("name", "?") for s in mcp_servers if s.get("enabled")]
+                if mcp_names:
+                    parts.append(f"MCP servers: {', '.join(mcp_names)}")
+            if parts:
+                settings_note += f"\nConnected: {'; '.join(parts)}"
         except Exception:
             pass
 

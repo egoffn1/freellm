@@ -209,3 +209,100 @@ def list_integrations(uid: int) -> list[str]:
     except Exception as e:
         logger.warning(f"Firebase list_integrations error: {e}")
         return []
+
+
+def list_all_integrations(uid: int) -> list[dict]:
+    client = db()
+    if client is None:
+        return []
+
+    try:
+        docs = client.collection("integrations").document(str(uid)).collection("services").stream()
+        result = []
+        for doc in docs:
+            data = doc.to_dict()
+            data["service"] = doc.id
+            result.append(data)
+        return result
+    except Exception as e:
+        logger.warning(f"Firebase list_all_integrations error: {e}")
+        return []
+
+
+def delete_integration(uid: int, service: str):
+    client = db()
+    if client is None:
+        return
+
+    try:
+        client.collection("integrations").document(str(uid)).collection("services").document(service).delete()
+        logger.info(f"Integration {service} deleted for user {uid}")
+    except Exception as e:
+        logger.warning(f"Firebase delete_integration error: {e}")
+
+
+# ─── MCP servers ────────────────────────────────────────────
+
+MCP_CONFIG_SCHEMA = {
+    "command": {"type": "string", "description": "Command to start MCP server (e.g. npx, python, uvx)"},
+    "args": {"type": "array", "description": "CLI arguments for the command"},
+    "env": {"type": "object", "description": "Environment variables"},
+}
+
+
+def save_mcp_server(uid: int, name: str, config: dict):
+    client = db()
+    if client is None:
+        return
+
+    clean = {
+        "command": config.get("command", ""),
+        "args": config.get("args", []),
+        "env": config.get("env", {}),
+        "enabled": config.get("enabled", True),
+        "type": "mcp",
+        "updated_at": SERVER_TIMESTAMP,
+    }
+    try:
+        client.collection("integrations").document(str(uid)).collection("services").document(f"mcp_{name}").set(clean, merge=True)
+        logger.info(f"MCP server '{name}' saved for user {uid}")
+    except Exception as e:
+        logger.warning(f"Firebase save_mcp_server error: {e}")
+
+
+def get_mcp_server(uid: int, name: str) -> dict | None:
+    client = db()
+    if client is None:
+        return None
+
+    try:
+        doc = client.collection("integrations").document(str(uid)).collection("services").document(f"mcp_{name}").get()
+        if doc.exists:
+            return doc.to_dict()
+        return None
+    except Exception as e:
+        logger.warning(f"Firebase get_mcp_server error: {e}")
+        return None
+
+
+def delete_mcp_server(uid: int, name: str):
+    delete_integration(uid, f"mcp_{name}")
+
+
+def list_mcp_servers(uid: int) -> list[dict]:
+    client = db()
+    if client is None:
+        return []
+
+    try:
+        docs = client.collection("integrations").document(str(uid)).collection("services").stream()
+        result = []
+        for doc in docs:
+            data = doc.to_dict()
+            if data.get("type") == "mcp":
+                data["name"] = doc.id.replace("mcp_", "", 1)
+                result.append(data)
+        return result
+    except Exception as e:
+        logger.warning(f"Firebase list_mcp_servers error: {e}")
+        return []

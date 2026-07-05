@@ -426,6 +426,132 @@ async def tool_user_settings_set(key: str, value: str) -> str:
     return f"✅ {key} = {value}"
 
 
+# ─── Integration & MCP tools ─────────────────────────────────
+
+async def tool_integration_list() -> str:
+    from firebase_db import list_all_integrations
+    uid = current_user_id.get()
+    if not uid:
+        return "❌ Нет data пользователя."
+    integrations = list_all_integrations(uid)
+    if not integrations:
+        return "Нет подключенных сервисов."
+    lines = ["🔗 **Интеграции:**"]
+    for i in integrations:
+        svc = i.get("service", "?")
+        mcp_type = " (MCP)" if i.get("type") == "mcp" else ""
+        enabled = "✅" if i.get("enabled") else "❌"
+        lines.append(f"  {enabled} **{svc}**{mcp_type}")
+    return "\n".join(lines)
+
+
+async def tool_integration_connect(service: str, config_json: str) -> str:
+    from firebase_db import save_integration
+    uid = current_user_id.get()
+    if not uid:
+        return "❌ Нет data пользователя."
+
+    try:
+        config = json.loads(config_json) if config_json else {}
+    except json.JSONDecodeError:
+        return "❌ config_json невалидный JSON."
+
+    if service == "gmail":
+        await _gmail_list(max_results=1)
+        save_integration(uid, "gmail", {"enabled": True, **config})
+        return "✅ Gmail подключён."
+
+    save_integration(uid, service, {"enabled": True, **config})
+    return f"✅ {service} подключён."
+
+
+async def tool_integration_disconnect(service: str) -> str:
+    from firebase_db import delete_integration
+    uid = current_user_id.get()
+    if not uid:
+        return "❌ Нет data пользователя."
+    delete_integration(uid, service)
+    return f"✅ {service} отключён."
+
+
+async def tool_mcp_connect(name: str, command: str, args_json: str = "[]", env_json: str = "{}") -> str:
+    from firebase_db import save_mcp_server, get_mcp_server
+    uid = current_user_id.get()
+    if not uid:
+        return "❌ Нет data пользователя."
+
+    try:
+        args = json.loads(args_json)
+        env = json.loads(env_json)
+    except json.JSONDecodeError:
+        return "❌ args_json или env_json невалидный JSON."
+
+    save_mcp_server(uid, name, {"command": command, "args": args, "env": env, "enabled": True})
+    return f"✅ MCP сервер '{name}' сохранён. Проверь командой mcp_test."
+
+
+async def tool_mcp_disconnect(name: str) -> str:
+    from firebase_db import delete_mcp_server
+    uid = current_user_id.get()
+    if not uid:
+        return "❌ Нет data пользователя."
+    delete_mcp_server(uid, name)
+    return f"✅ MCP сервер '{name}' удалён."
+
+
+async def tool_mcp_list() -> str:
+    from firebase_db import list_mcp_servers
+    uid = current_user_id.get()
+    if not uid:
+        return "❌ Нет data пользователя."
+    servers = list_mcp_servers(uid)
+    if not servers:
+        return "Нет подключенных MCP серверов."
+    lines = ["🔌 **MCP серверы:**"]
+    for s in servers:
+        enabled = "✅" if s.get("enabled") else "❌"
+        lines.append(f"  {enabled} **{s.get('name', '?')}** — `{s.get('command', '')}`")
+    return "\n".join(lines)
+
+
+async def tool_mcp_test(name: str, tool_name: str = "", args_json: str = "{}") -> str:
+    from firebase_db import get_mcp_server
+    from mcp_client import mcp_call_server, mcp_list_tools, HAS_MCP
+
+    if not HAS_MCP:
+        return "❌ MCP пакет не установлен."
+
+    uid = current_user_id.get()
+    if not uid:
+        return "❌ Нет data пользователя."
+
+    server = get_mcp_server(uid, name)
+    if not server:
+        return f"❌ MCP сервер '{name}' не найден."
+    if not server.get("enabled"):
+        return f"❌ MCP сервер '{name}' отключён."
+
+    command = server.get("command", "")
+    args = server.get("args", [])
+
+    if not tool_name:
+        tools = await mcp_list_tools(command, args)
+        if not tools:
+            return f"❌ Не удалось получить список инструментов от '{name}'."
+        lines = [f"🔧 **Инструменты MCP '{name}':**"]
+        for t in tools:
+            lines.append(f"  • **{t['name']}** — {t['description'][:100]}")
+        return "\n".join(lines)
+
+    try:
+        arguments = json.loads(args_json)
+    except json.JSONDecodeError:
+        return "❌ args_json невалидный JSON."
+
+    result = await mcp_call_server(command, args, tool_name, arguments)
+    return result
+
+
 # ─── Tool definitions ─────────────────────────────────────────
 
 TOOL_DEFINITIONS = [
@@ -734,6 +860,98 @@ TOOL_DEFINITIONS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "integration_list",
+            "description": "List all connected integrations (Gmail, MCP servers, etc.) for the current user.",
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "integration_connect",
+            "description": "Connect a new integration/service. For Gmail, just call this with service='gmail'. For custom services, pass config_json.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "service": {"type": "string", "description": "Service name: gmail, github, discord, etc."},
+                    "config_json": {"type": "string", "description": "Optional JSON config for the service"},
+                },
+                "required": ["service"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "integration_disconnect",
+            "description": "Disconnect and remove an integration/service.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "service": {"type": "string", "description": "Service name to disconnect"},
+                },
+                "required": ["service"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "mcp_list",
+            "description": "List all configured MCP servers for the current user.",
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "mcp_connect",
+            "description": "Configure a new MCP server. Provide name, command (e.g. npx, python, uvx), args as JSON array, and optional env vars as JSON object.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "Name for this MCP server"},
+                    "command": {"type": "string", "description": "Command to run (e.g. npx, python, uvx)"},
+                    "args_json": {"type": "string", "description": "JSON array of CLI arguments, e.g. [\"-y\", \"@modelcontextprotocol/server-filesystem\", \"/tmp\"]"},
+                    "env_json": {"type": "string", "description": "Optional JSON object of environment variables"},
+                },
+                "required": ["name", "command"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "mcp_disconnect",
+            "description": "Remove an MCP server configuration.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "MCP server name to remove"},
+                },
+                "required": ["name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "mcp_test",
+            "description": "Test an MCP server: list its tools or call a specific tool. If tool_name is empty, lists all tools. If tool_name is provided, calls that tool with args_json.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "MCP server name"},
+                    "tool_name": {"type": "string", "description": "Tool name to call (leave empty to list tools)"},
+                    "args_json": {"type": "string", "description": "JSON object of arguments for the tool"},
+                },
+                "required": ["name"],
+            },
+        },
+    },
 ]
 
 TOOL_NAME_MAP = {
@@ -756,4 +974,11 @@ TOOL_NAME_MAP = {
     "gmail_unread_count": tool_gmail_unread_count,
     "user_settings_get": tool_user_settings_get,
     "user_settings_set": tool_user_settings_set,
+    "integration_list": tool_integration_list,
+    "integration_connect": tool_integration_connect,
+    "integration_disconnect": tool_integration_disconnect,
+    "mcp_list": tool_mcp_list,
+    "mcp_connect": tool_mcp_connect,
+    "mcp_disconnect": tool_mcp_disconnect,
+    "mcp_test": tool_mcp_test,
 }
