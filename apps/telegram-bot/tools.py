@@ -391,6 +391,41 @@ async def tool_gmail_unread_count() -> str:
     return await _gmail_unread_count()
 
 
+# ─── User settings tools ──────────────────────────────────────
+
+async def tool_user_settings_get() -> str:
+    from firebase_db import get_user_settings, list_integrations
+    uid = current_user_id.get()
+    if not uid:
+        return "❌ Нет data пользователя."
+    settings = get_user_settings(uid)
+    integrations = list_integrations(uid)
+    lines = [f"Язык: {settings.get('language', 'ru')}"]
+    model = settings.get("model")
+    if model:
+        lines.append(f"Модель: {model}")
+    lines.append(f"Уведомления: {'вкл' if settings.get('notifications', True) else 'выкл'}")
+    if integrations:
+        lines.append(f"Подключено: {', '.join(integrations)}")
+    return "\n".join(lines)
+
+
+async def tool_user_settings_set(key: str, value: str) -> str:
+    allowed = {"language", "model", "notifications"}
+    if key not in allowed:
+        return f"❌ Нельзя изменить {key}. Допустимо: {', '.join(allowed)}"
+    from firebase_db import get_user_settings, save_user_settings
+    uid = current_user_id.get()
+    if not uid:
+        return "❌ Нет data пользователя."
+    settings = get_user_settings(uid)
+    if key == "notifications":
+        value = str(value).lower() in ("true", "1", "да", "yes")
+    settings[key] = value
+    save_user_settings(uid, {key: value})
+    return f"✅ {key} = {value}"
+
+
 # ─── Tool definitions ─────────────────────────────────────────
 
 TOOL_DEFINITIONS = [
@@ -673,6 +708,32 @@ TOOL_DEFINITIONS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "user_settings_get",
+            "description": "Get current user settings (language, model, notifications, connected integrations).",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "user_settings_set",
+            "description": "Change a user setting. Allowed keys: language (ru/en), model (model name or empty), notifications (true/false).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "key": {"type": "string", "description": "Setting key: language, model, or notifications"},
+                    "value": {"type": "string", "description": "Setting value"},
+                },
+                "required": ["key", "value"],
+            },
+        },
+    },
 ]
 
 TOOL_NAME_MAP = {
@@ -693,4 +754,6 @@ TOOL_NAME_MAP = {
     "gmail_send": tool_gmail_send,
     "gmail_search": tool_gmail_search,
     "gmail_unread_count": tool_gmail_unread_count,
+    "user_settings_get": tool_user_settings_get,
+    "user_settings_set": tool_user_settings_set,
 }

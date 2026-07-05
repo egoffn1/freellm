@@ -146,7 +146,7 @@ def _needs_tools(text: str) -> bool:
     return bool(NEEDS_TOOLS.search(text))
 
 
-async def run_agent(messages: list, on_status: callable = None, on_log: callable = None, cancel_event: asyncio.Event = None) -> str:
+async def run_agent(messages: list, on_status: callable = None, on_log: callable = None, cancel_event: asyncio.Event = None, user_id: int = 0) -> str:
     user_text = messages[-1]["content"] if messages else ""
     is_casual = bool(CASUAL_PATTERNS.match(user_text.strip()))
     needs_tools = _needs_tools(user_text)
@@ -216,7 +216,24 @@ async def run_agent(messages: list, on_status: callable = None, on_log: callable
         plan_str = json.dumps(plan, ensure_ascii=False, indent=2)
         ctx_note += f"\n\n## Reasoning Plan\nFollow this plan:\n{plan_str}"
 
-    sys_msg = {"role": "system", "content": AGENT_SYSTEM_PROMPT + ctx_note}
+    settings_note = ""
+    if user_id:
+        try:
+            from firebase_db import get_user_settings, list_integrations
+            settings = get_user_settings(user_id)
+            if settings.get("language") == "en":
+                settings_note = "\n\n## User Preferences\nThe user prefers English. Respond in English."
+            elif settings.get("language") == "ru":
+                settings_note = "\n\n## User Preferences\nThe user prefers Russian. Respond in Russian."
+            if settings.get("model"):
+                settings_note += f"\nPreferred model: {settings['model']}"
+            integrations = list_integrations(user_id)
+            if integrations:
+                settings_note += f"\nConnected services: {', '.join(integrations)}"
+        except Exception:
+            pass
+
+    sys_msg = {"role": "system", "content": AGENT_SYSTEM_PROMPT + ctx_note + settings_note}
     full_messages = [sys_msg] + messages
     tool_calls_count = 0
     tried_fallback = False

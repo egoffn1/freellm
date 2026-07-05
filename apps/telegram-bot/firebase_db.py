@@ -120,3 +120,92 @@ def save_history(uid: int, messages: list):
         })
     except Exception as e:
         logger.warning(f"Firebase save_history error: {e}")
+
+
+# ─── User settings ───────────────────────────────────────
+
+DEFAULT_USER_SETTINGS = {
+    "language": "ru",
+    "model": "",
+    "notifications": True,
+}
+
+def get_user_settings(uid: int) -> dict:
+    client = db()
+    if client is None:
+        return dict(DEFAULT_USER_SETTINGS)
+
+    try:
+        doc = client.collection("users").document(str(uid)).get()
+        if doc.exists:
+            data = doc.to_dict()
+            out = dict(DEFAULT_USER_SETTINGS)
+            out.update({k: v for k, v in data.items() if k in DEFAULT_USER_SETTINGS})
+            return out
+        return dict(DEFAULT_USER_SETTINGS)
+    except Exception as e:
+        logger.warning(f"Firebase get_user_settings error: {e}")
+        return dict(DEFAULT_USER_SETTINGS)
+
+
+def save_user_settings(uid: int, settings: dict):
+    client = db()
+    if client is None:
+        return
+
+    clean = {k: v for k, v in settings.items() if k in DEFAULT_USER_SETTINGS}
+    clean["updated_at"] = SERVER_TIMESTAMP
+    try:
+        client.collection("users").document(str(uid)).set(clean, merge=True)
+        logger.info(f"Settings saved for user {uid}")
+    except Exception as e:
+        logger.warning(f"Firebase save_user_settings error: {e}")
+
+
+# ─── Integrations ─────────────────────────────────────────
+
+def get_integration(uid: int, service: str) -> dict | None:
+    client = db()
+    if client is None:
+        return None
+
+    try:
+        doc = client.collection("integrations").document(str(uid)).collection("services").document(service).get()
+        if doc.exists:
+            return doc.to_dict()
+        return None
+    except Exception as e:
+        logger.warning(f"Firebase get_integration error: {e}")
+        return None
+
+
+def save_integration(uid: int, service: str, data: dict):
+    client = db()
+    if client is None:
+        return
+
+    data["updated_at"] = SERVER_TIMESTAMP
+    try:
+        client.collection("integrations").document(str(uid)).collection("services").document(service).set(data, merge=True)
+    except Exception as e:
+        logger.warning(f"Firebase save_integration error: {e}")
+
+
+def list_integrations(uid: int) -> list[str]:
+    client = db()
+    if client is None:
+        return []
+
+    try:
+        docs = client.collection("integrations").document(str(uid)).collection("services").list_documents()
+        services = []
+        for doc in docs:
+            snap = doc.get()
+            if snap.exists:
+                data = snap.to_dict()
+                if data.get("enabled"):
+                    services.append(doc.id)
+        return services
+    except Exception as e:
+        logger.warning(f"Firebase list_integrations error: {e}")
+        return []

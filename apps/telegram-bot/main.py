@@ -69,7 +69,7 @@ async def edit(msg, text: str, **kw):
 def main_keyboard():
     buttons = [
         [KeyboardButton("🌐 Создать сайт"), KeyboardButton("🔍 Поиск")],
-        [KeyboardButton("📁 Мои файлы"), KeyboardButton("🧹 Очистить")],
+        [KeyboardButton("📁 Мои файлы"), KeyboardButton("⚙️ Настройки")],
         [KeyboardButton("🛑 Стоп"), KeyboardButton("📋 Статус")],
     ]
     return ReplyKeyboardMarkup(buttons, resize_keyboard=True)
@@ -177,10 +177,54 @@ async def handle_callback(update: Update, _ctx):
             )
         return
 
+    if data.startswith("settings_"):
+        await _handle_settings_callback(query, uid, data)
+        return
+
     cmd = cmd_map.get(data)
     if cmd:
         update.message = query.message
         await handle_message(update, _ctx)
+
+
+async def _handle_settings_callback(query, uid: int, data: str):
+    from firebase_db import get_user_settings, save_user_settings
+    settings = get_user_settings(uid)
+
+    if data == "settings_lang":
+        new_lang = "en" if settings.get("language") == "ru" else "ru"
+        save_user_settings(uid, {"language": new_lang})
+        emoji = "🇬🇧 English" if new_lang == "en" else "🇷🇺 Русский"
+        await query.edit_message_text(f"✅ Язык изменён на {emoji}")
+
+    elif data == "settings_model":
+        models = ["", "groq/llama-3.3-70b-versatile", "github/openai/gpt-4o-mini", "groq/qwen-qwq-32b"]
+        current = settings.get("model", "")
+        idx = (models.index(current) + 1) % len(models) if current in models else 1
+        new_model = models[idx]
+        save_user_settings(uid, {"model": new_model})
+        label = new_model if new_model else "по умолчанию"
+        await query.edit_message_text(f"✅ Модель: {label}")
+
+    elif data == "settings_notif":
+        new_val = not settings.get("notifications", True)
+        save_user_settings(uid, {"notifications": new_val})
+        await query.edit_message_text(f"✅ Уведомления: {'вкл' if new_val else 'выкл'}")
+
+    elif data == "settings_integrations":
+        from firebase_db import list_integrations, get_integration
+        services = list_integrations(uid)
+        lines = ["🔗 **Подключенные сервисы**\n"]
+        if services:
+            for s in services:
+                lines.append(f"• **{s}** — ✅")
+        else:
+            lines.append("Нет подключенных сервисов.")
+        lines.append("\nДоступно: Gmail, GitHub (скоро), Discord (скоро)")
+        await query.edit_message_text("\n".join(lines))
+
+    elif data == "settings_close":
+        await query.message.delete()
 
 
 async def start(update: Update, _ctx):
@@ -215,6 +259,8 @@ async def start(update: Update, _ctx):
         "/clean — удалить старые файлы (>3 дней)\n"
         "/reset — сбросить историю\n"
         "/stop — остановить задачу\n"
+        "/settings — настройки пользователя\n"
+        "/integrations — подключенные сервисы\n"
         "/status — статус и фишки",
         parse_mode="HTML",
         reply_markup=main_keyboard(),
@@ -487,7 +533,7 @@ async def _execute_agent_task(
     async def run_with_timeout():
         async with task_semaphore:
             return await asyncio.wait_for(
-                run_agent(messages, on_status=on_status, on_log=on_log, cancel_event=cancel_event),
+                run_agent(messages, on_status=on_status, on_log=on_log, cancel_event=cancel_event, user_id=uid),
                 timeout=AGENT_TIMEOUT_SECONDS,
             )
 
@@ -584,6 +630,52 @@ async def stop_cmd(update: Update, _ctx):
         await reply(update.message, "🤷 Нет активной задачи для остановки.")
 
 
+async def settings_cmd(update: Update, _ctx):
+    uid = update.effective_user.id
+    from firebase_db import get_user_settings, list_integrations
+    settings = get_user_settings(uid)
+    integrations = list_integrations(uid)
+
+    lang = "🇷🇺 Русский" if settings.get("language") == "ru" else "🇬🇧 English"
+    model = settings.get("model") or "по умолчанию"
+    notif = "✅ Вкл" if settings.get("notifications") else "❌ Выкл"
+    ints = ", ".join(integrations) if integrations else "—"
+
+    kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton(f"Язык: {lang}", callback_data="settings_lang")],
+        [InlineKeyboardButton(f"Модель: {model[:20]}", callback_data="settings_model")],
+        [InlineKeyboardButton(f"Уведомления: {notif}", callback_data="settings_notif")],
+        [InlineKeyboardButton("🔗 Интеграции", callback_data="settings_integrations")],
+        [InlineKeyboardButton("❌ Закрыть", callback_data="settings_close")],
+    ])
+    await reply(update.message,
+        f"⚙️ **Настройки**\n\n"
+        f"Язык: {lang}\n"
+        f"Модель: {model}\n"
+        f"Уведомления: {notif}\n"
+        f"Подключено: {ints}",
+        reply_markup=kb,
+    )
+
+
+async def integrations_cmd(update: Update, _ctx):
+    uid = update.effective_user.id
+    from firebase_db import list_integrations, get_integration
+
+    services = list_integrations(uid)
+    lines = ["🔗 **Подключенные сервисы**\n"]
+    if services:
+        for s in services:
+            data = get_integration(uid, s)
+            connected = data.get("updated_at", "") if data else ""
+            lines.append(f"• **{s}** — ✅ подключено")
+    else:
+        lines.append("Нет подключенных сервисов.")
+
+    lines.append("\nДоступно: Gmail, GitHub (скоро), Discord (скоро)")
+    await reply(update.message, "\n".join(lines))
+
+
 BUTTON_COMMANDS = {
     "🌐 Создать сайт": "создай сайт и запусти его",
     "🔍 Поиск": "найди информацию в интернете",
@@ -591,6 +683,7 @@ BUTTON_COMMANDS = {
     "🧹 Очистить": "/clean",
     "🛑 Стоп": "/stop",
     "📋 Статус": "/status",
+    "⚙️ Настройки": "/settings",
 }
 
 
@@ -606,6 +699,7 @@ async def handle_message(update: Update, _ctx):
         cmd_map = {
             "stop": stop_cmd, "reset": reset, "clean": clean,
             "status": status, "projects": projects_cmd,
+            "settings": settings_cmd, "integrations": integrations_cmd,
         }
         handler = cmd_map.get(cmd)
         if handler:
@@ -645,6 +739,8 @@ async def main():
     app.add_handler(CommandHandler("history", history_cmd))
     app.add_handler(CommandHandler("projects", projects_cmd))
     app.add_handler(CommandHandler("stop", stop_cmd))
+    app.add_handler(CommandHandler("settings", settings_cmd))
+    app.add_handler(CommandHandler("integrations", integrations_cmd))
     app.add_handler(CallbackQueryHandler(handle_callback))
     app.add_handler(MessageHandler(filters.Document.ALL | filters.PHOTO, handle_file))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
