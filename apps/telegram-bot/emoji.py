@@ -1,5 +1,6 @@
 import html
 import re
+from telegram import InlineKeyboardButton
 
 
 PREMIUM = {
@@ -780,3 +781,44 @@ def md_to_html(text: str) -> str:
     text = re.sub(r"^## (.+)$", r"<b>\1</b>", text, flags=re.MULTILINE)
     text = re.sub(r"^# (.+)$", r"<b>\1</b>", text, flags=re.MULTILINE)
     return text
+
+
+_EMOJI_ID_RE = re.compile(r'emoji-id="(\d+)"')
+EMOJI_IDS: dict[str, str] = {}
+for _char, _tag in PREMIUM.items():
+    _m = _EMOJI_ID_RE.search(_tag)
+    if _m:
+        _base = _char.replace('\ufe0f', '')
+        if _base not in EMOJI_IDS:
+            EMOJI_IDS[_base] = _m.group(1)
+_EMOJI_IDS_SORTED = sorted(EMOJI_IDS.items(), key=lambda x: -len(x[0]))
+
+
+_RI_START = ord('\U0001F1E6')
+_RI_END = ord('\U0001F1FF')
+
+def premium_btn(
+    text: str,
+    callback_data: str | None = None,
+    url: str | None = None,
+) -> InlineKeyboardButton:
+    for char, eid in _EMOJI_IDS_SORTED:
+        # skip regional indicator symbols (part of flag pairs)
+        if len(char) == 1 and _RI_START <= ord(char) <= _RI_END:
+            continue
+        if char in text:
+            clean = text.replace(char, '', 1)
+            while '  ' in clean:
+                clean = clean.replace('  ', ' ')
+            clean = clean.strip()
+            return InlineKeyboardButton(
+                text=clean,
+                callback_data=callback_data,
+                url=url,
+                api_kwargs={"icon_custom_emoji_id": eid},
+            )
+    return InlineKeyboardButton(
+        text=text,
+        callback_data=callback_data,
+        url=url,
+    )

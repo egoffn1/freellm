@@ -7,7 +7,7 @@ import time
 from collections import defaultdict
 from pathlib import Path
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
+from telegram import Update, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler
 
 from config import (
@@ -22,7 +22,7 @@ from server import start_web_server
 from cleanup import run_cleanup_loop
 from firebase_db import init_firebase
 from prompt_loader import init_prompts
-from emoji import premium
+from emoji import premium, premium_btn
 
 
 logging.basicConfig(
@@ -138,12 +138,12 @@ def _rate_limit(uid: int) -> bool:
 def inline_task_actions() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
         [
-            InlineKeyboardButton("🔄 Повторить", callback_data="retry"),
-            InlineKeyboardButton("🛑 Стоп", callback_data="stop"),
+            premium_btn("🔄 Повторить", callback_data="retry"),
+            premium_btn("🛑 Стоп", callback_data="stop"),
         ],
         [
-            InlineKeyboardButton("📋 Статус", callback_data="status"),
-            InlineKeyboardButton("🗑 Сброс", callback_data="reset"),
+            premium_btn("📋 Статус", callback_data="status"),
+            premium_btn("🗑 Сброс", callback_data="reset"),
         ],
     ])
 
@@ -645,11 +645,11 @@ async def settings_cmd(update: Update, _ctx):
     ints = ", ".join(integrations) if integrations else "—"
 
     kb = InlineKeyboardMarkup([
-        [InlineKeyboardButton(f"Язык: {lang}", callback_data="settings_lang")],
-        [InlineKeyboardButton(f"Модель: {model[:20]}", callback_data="settings_model")],
-        [InlineKeyboardButton(f"Уведомления: {notif}", callback_data="settings_notif")],
-        [InlineKeyboardButton("🔗 Интеграции", callback_data="settings_integrations")],
-        [InlineKeyboardButton("❌ Закрыть", callback_data="settings_close")],
+        [premium_btn(f"Язык: {lang}", callback_data="settings_lang")],
+        [premium_btn(f"Модель: {model[:20]}", callback_data="settings_model")],
+        [premium_btn(f"Уведомления: {notif}", callback_data="settings_notif")],
+        [premium_btn("🔗 Интеграции", callback_data="settings_integrations")],
+        [premium_btn("❌ Закрыть", callback_data="settings_close")],
     ])
     await reply(update.message,
         f"⚙️ **Настройки**\n\n"
