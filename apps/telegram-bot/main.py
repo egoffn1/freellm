@@ -480,6 +480,9 @@ async def handle_file(update: Update, ctx):
                 await edit(status,
                     f"👁 {analysis[:4000]}",
                 )
+                if caption:
+                    await edit(status, f"👁 Анализ готов. Выполняю: {caption}")
+                    await _execute_agent_task(update, uid, messages, status, cancel_events, running_tasks, user_history, task_semaphore, user_rate_limits)
                 return
         caption = (msg.caption or "").strip()
         messages.append({"role": "user", "content": f"[Загружен файл: {rel}]" + (f" — {caption}" if caption else "")})
@@ -722,6 +725,10 @@ async def handle_message(update: Update, _ctx):
     uid = update.effective_user.id
     text = update.message.text
     if not text:
+        return
+
+    # skip if message has media — handled by handle_file
+    if update.message.photo or update.message.document or update.message.voice or update.message.video or update.message.audio:
         return
 
     text = BUTTON_COMMANDS.get(text, text)
