@@ -1,4 +1,5 @@
 import json
+import asyncio
 import logging
 from typing import Any
 
@@ -49,7 +50,7 @@ async def mcp_call_server(
                     return "\n".join(parts) if parts else str(result)
                 return str(result)
 
-    except TimeoutError:
+    except asyncio.TimeoutError:
         return f"❌ Таймаут MCP вызова ({timeout}с)"
     except Exception as e:
         return f"❌ MCP ошибка: {e}"
