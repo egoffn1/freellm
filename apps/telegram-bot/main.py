@@ -331,39 +331,28 @@ async def handle_file(update: Update, ctx):
                     f"👁 {analysis[:4000]}",
                 )
                 return
+        caption = (msg.caption or "").strip()
+        messages.append({"role": "user", "content": f"[Загружен файл: {rel}]" + (f" — {caption}" if caption else "")})
+        if caption:
+            await edit(status, f"📥 Файл `{rel}` сохранён, выполняю: {caption[:100]}...")
+            await _execute_agent_task(update, uid, messages, status, cancel_events, running_tasks, user_history, task_semaphore, user_rate_limits)
         else:
-            messages.append({"role": "user", "content": f"[Загружен файл: {rel}]"})
-            await edit(status,
-                f"✅ Файл сохранён: `{rel}`\n"
-                f"Теперь напишите, что с ним сделать.",
-            )
+            await edit(status, f"✅ Файл сохранён: `{rel}`")
     except Exception as e:
         await edit(status, f"❌ Ошибка: {e}")
 
 
-async def stop_cmd(update: Update, _ctx):
-    uid = update.effective_user.id
-    stopped = False
-    if uid in cancel_events and not cancel_events[uid].is_set():
-        cancel_events[uid].set()
-        stopped = True
-    if uid in running_tasks and not running_tasks[uid].done():
-        running_tasks[uid].cancel()
-        stopped = True
-    if stopped:
-        await reply(update.message, "⏹ Задача остановлена.")
-        logger.info(f"User {uid} cancelled their task")
-    else:
-        await reply(update.message, "🤷 Нет активной задачи для остановки.")
-
-
-async def handle_message(update: Update, _ctx):
-    uid = update.effective_user.id
-    text = update.message.text
-
-    if not text:
-        return
-
+async def _execute_agent_task(
+    update: Update,
+    uid: int,
+    messages: list,
+    status_msg,
+    cancel_events: dict,
+    running_tasks: dict,
+    user_history: dict,
+    task_semaphore: asyncio.Semaphore,
+    user_rate_limits: dict,
+):
     if not _rate_limit(uid):
         await reply(update.message, "⏳ Слишком много запросов. Подождите минуту.")
         return
@@ -376,17 +365,13 @@ async def handle_message(update: Update, _ctx):
 
     await update.message.chat.send_action("typing")
 
-    messages = user_history[uid]
-
     max_len = MAX_HISTORY * 2
     if len(messages) > max_len:
         messages[:] = messages[-max_len:]
 
     messages = _trim_history_by_size(messages, MAX_CONTEXT_SIZE_CHARS)
 
-    messages.append({"role": "user", "content": text})
-
-    status_msg = await reply(update.message, "🤔 Анализирую задачу...")
+    await edit(status_msg, "🤔 Анализирую задачу...")
 
     cancel_events[uid] = asyncio.Event()
 
@@ -494,6 +479,36 @@ async def handle_message(update: Update, _ctx):
             await reply(update.message, answer)
 
     _save_history(uid, messages)
+
+
+async def stop_cmd(update: Update, _ctx):
+    uid = update.effective_user.id
+    stopped = False
+    if uid in cancel_events and not cancel_events[uid].is_set():
+        cancel_events[uid].set()
+        stopped = True
+    if uid in running_tasks and not running_tasks[uid].done():
+        running_tasks[uid].cancel()
+        stopped = True
+    if stopped:
+        await reply(update.message, "⏹ Задача остановлена.")
+        logger.info(f"User {uid} cancelled their task")
+    else:
+        await reply(update.message, "🤷 Нет активной задачи для остановки.")
+
+
+async def handle_message(update: Update, _ctx):
+    uid = update.effective_user.id
+    text = update.message.text
+    if not text:
+        return
+    messages = user_history[uid]
+    messages.append({"role": "user", "content": text})
+    status_msg = await reply(update.message, "🤔 Анализирую задачу...")
+    await _execute_agent_task(
+        update, uid, messages, status_msg,
+        cancel_events, running_tasks, user_history, task_semaphore, user_rate_limits,
+    )
 
 
 async def main():
