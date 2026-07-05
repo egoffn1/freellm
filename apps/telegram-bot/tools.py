@@ -466,21 +466,25 @@ async def tool_integration_list() -> str:
     return "\n".join(lines)
 
 
-async def tool_integration_connect(service: str, config_json: str) -> str:
+async def tool_integration_connect(service: str, config_json: str = "") -> str:
     from firebase_db import save_integration
     uid = current_user_id.get()
     if not uid:
         return "❌ Нет data пользователя."
 
-    try:
-        config = json.loads(config_json) if config_json else {}
-    except json.JSONDecodeError:
-        return "❌ config_json невалидный JSON."
+    config = {}
+    if config_json:
+        try:
+            config = json.loads(config_json)
+        except json.JSONDecodeError:
+            return "❌ config_json невалидный JSON."
 
     if service == "gmail":
-        await _gmail_list(max_results=1)
+        result = await _gmail_list(max_results=1)
+        if "❌" in result:
+            return f"❌ Gmail не подключён: {result}"
         save_integration(uid, "gmail", {"enabled": True, **config})
-        return "✅ Gmail подключён."
+        return "✅ Gmail подключён!"
 
     save_integration(uid, service, {"enabled": True, **config})
     return f"✅ {service} подключён."

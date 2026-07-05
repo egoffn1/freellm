@@ -242,7 +242,16 @@ async def run_agent(messages: list, on_status: callable = None, on_log: callable
         except Exception:
             pass
 
-    sys_msg = {"role": "system", "content": AGENT_SYSTEM_PROMPT + ctx_note + settings_note}
+    loaded_prompts = ""
+    try:
+        from prompt_loader import load_prompts
+        loaded_prompts = load_prompts()
+        if loaded_prompts:
+            loaded_prompts = f"\n\n## Loaded Rules\n{loaded_prompts}"
+    except Exception:
+        pass
+
+    sys_msg = {"role": "system", "content": AGENT_SYSTEM_PROMPT + ctx_note + settings_note + loaded_prompts}
     full_messages = [sys_msg] + messages
     tool_calls_count = 0
     tried_fallback = False
