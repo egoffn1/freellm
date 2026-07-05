@@ -45,7 +45,10 @@ Respond in JSON:
 """
 
 
-async def reason(user_request: str, context: str = "") -> dict:
+async def reason(user_request: str, context: str = "", cancel_event: asyncio.Event = None) -> dict:
+    if cancel_event and cancel_event.is_set():
+        return {"analysis": "cancelled", "steps": [], "needs_web_search": False, "risks": []}
+
     messages = [{"role": "system", "content": REASONING_PROMPT}]
     if context:
         messages.append({"role": "user", "content": f"Контекст:\n{context}\n\nЗапрос:\n{user_request}"})
@@ -54,14 +57,19 @@ async def reason(user_request: str, context: str = "") -> dict:
 
     loop = asyncio.get_event_loop()
     try:
-        resp = await loop.run_in_executor(
-            None,
-            lambda: _client.chat.completions.create(
-                model=AGENT_MODEL,
-                messages=messages,
-                timeout=60,
+        resp = await asyncio.wait_for(
+            loop.run_in_executor(
+                None,
+                lambda: _client.chat.completions.create(
+                    model=AGENT_MODEL,
+                    messages=messages,
+                    timeout=30,
+                ),
             ),
+            timeout=35,
         )
+        if cancel_event and cancel_event.is_set():
+            return {"analysis": "cancelled", "steps": [], "needs_web_search": False, "risks": []}
         text = resp.choices[0].message.content or ""
         return _parse_json(text) or {
             "analysis": user_request,
@@ -69,6 +77,9 @@ async def reason(user_request: str, context: str = "") -> dict:
             "needs_web_search": False,
             "risks": [],
         }
+    except asyncio.TimeoutError:
+        logger.warning("Reasoning timed out")
+        return {"analysis": user_request, "steps": [], "needs_web_search": False, "risks": ["timeout"]}
     except Exception as e:
         logger.warning(f"Reasoning failed: {e}")
         return {
@@ -79,20 +90,26 @@ async def reason(user_request: str, context: str = "") -> dict:
         }
 
 
-async def reflect(task: str, result: str) -> dict:
+async def reflect(task: str, result: str, cancel_event: asyncio.Event = None) -> dict:
+    if cancel_event and cancel_event.is_set():
+        return {"score": 0, "issues": ["cancelled"], "suggestions": [], "ready": True}
+
     messages = [
         {"role": "system", "content": REFLECTION_PROMPT},
         {"role": "user", "content": f"Task: {task}\n\nResult:\n{result}"},
     ]
     loop = asyncio.get_event_loop()
     try:
-        resp = await loop.run_in_executor(
-            None,
-            lambda: _client.chat.completions.create(
-                model=AGENT_MODEL,
-                messages=messages,
-                timeout=30,
+        resp = await asyncio.wait_for(
+            loop.run_in_executor(
+                None,
+                lambda: _client.chat.completions.create(
+                    model=AGENT_MODEL,
+                    messages=messages,
+                    timeout=20,
+                ),
             ),
+            timeout=25,
         )
         text = resp.choices[0].message.content or ""
         return _parse_json(text) or {"score": 5, "issues": ["Could not parse reflection"], "suggestions": [], "ready": True}

@@ -294,10 +294,14 @@ async def handle_file(update: Update, ctx):
 
 async def stop_cmd(update: Update, _ctx):
     uid = update.effective_user.id
+    stopped = False
+    if uid in cancel_events and not cancel_events[uid].is_set():
+        cancel_events[uid].set()
+        stopped = True
     if uid in running_tasks and not running_tasks[uid].done():
-        if uid in cancel_events:
-            cancel_events[uid].set()
         running_tasks[uid].cancel()
+        stopped = True
+    if stopped:
         await reply(update.message, "⏹ Задача остановлена.")
         logger.info(f"User {uid} cancelled their task")
     else:
@@ -369,6 +373,9 @@ async def handle_message(update: Update, _ctx):
         answer = await task
     except asyncio.CancelledError:
         answer = "⏹ Задача отменена."
+    except Exception as e:
+        logger.error(f"Task crashed: {e}", exc_info=True)
+        answer = f"❌ Ошибка выполнения: {e}"
     finally:
         if uid in running_tasks and running_tasks[uid] is task:
             del running_tasks[uid]

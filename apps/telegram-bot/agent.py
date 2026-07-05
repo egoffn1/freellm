@@ -143,7 +143,13 @@ async def run_agent(messages: list, on_status: callable = None, on_log: callable
         ctx_parts = []
         for m in messages[-6:]:
             ctx_parts.append(f"{m['role']}: {m['content'][:300]}")
-        plan = await reason(user_text, "\n".join(ctx_parts))
+        try:
+            plan = await reason(user_text, "\n".join(ctx_parts), cancel_event)
+        except asyncio.CancelledError:
+            return "⏹ Задача отменена."
+        except Exception as e:
+            logger.warning(f"Reasoning error: {e}")
+            plan = None
         if plan and plan.get("steps"):
             steps_str = "\n".join(f"  • {s['step']}. [{s['tool']}] {s['description'][:80]}" for s in plan["steps"])
             if on_log:
