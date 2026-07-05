@@ -295,13 +295,17 @@ async def clone(update: Update, _ctx):
         )
         return
 
+    uid = update.effective_user.id
+    user_ws = Path(WORKSPACE_DIR) / str(uid)
+    user_ws.mkdir(parents=True, exist_ok=True)
+
     msg = await reply(update.message, f"📦 Клонирую `{url}`...")
     try:
         proc = await asyncio.create_subprocess_shell(
             f"git clone --depth 1 --single-branch {url}",
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
-            cwd=WORKSPACE_DIR,
+            cwd=str(user_ws),
         )
         try:
             stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=60)
@@ -311,10 +315,18 @@ async def clone(update: Update, _ctx):
             return
 
         if proc.returncode == 0:
-            lines = stdout.decode()
             import re
-            m = re.search(r"'(.*?)'", stderr.decode() + stdout.decode())
+            text = stderr.decode() + stdout.decode()
+            m = re.search(r"'(.*?)'", text)
             dirname = m.group(1) if m else url.rstrip("/").split("/")[-1].replace(".git", "")
+            full_path = user_ws / dirname
+            if not full_path.exists():
+                for p in user_ws.iterdir():
+                    if p.is_dir() and p.name not in (".git", "__pycache__"):
+                        dirname = p.name
+                        break
+            messages = user_history.get(uid, [])
+            messages.append({"role": "system", "content": f"[Репозиторий склонирован в папку: {dirname}]"})
             await edit(msg,
                 f"✅ Репозиторий склонирован в `{dirname}`\n"
                 f"Теперь напишите задачу для работы с этим проектом.",
