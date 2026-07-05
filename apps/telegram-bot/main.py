@@ -20,6 +20,7 @@ from agent import run_agent
 from tools import get_and_clear_created_files, current_user_id
 from server import start_web_server
 from cleanup import run_cleanup_loop
+from firebase_db import init_firebase
 from emoji import premium
 
 
@@ -649,6 +650,7 @@ async def main():
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     _load_histories()
+    init_firebase()
     await app.initialize()
     await app.start()
 

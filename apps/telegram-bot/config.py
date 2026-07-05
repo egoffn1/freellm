@@ -41,3 +41,6 @@ GMAIL_ENABLED = os.getenv("GMAIL_ENABLED", "false").lower() == "true"
 GMAIL_CREDENTIALS_FILE = os.getenv("GMAIL_CREDENTIALS_FILE", "")
 GMAIL_TOKEN_FILE = os.getenv("GMAIL_TOKEN_FILE", "")
 GMAIL_TOKEN_JSON = os.getenv("GMAIL_TOKEN_JSON", "")
+
+FIREBASE_SERVICE_ACCOUNT_JSON = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON", "")
+FIREBASE_ENABLED = os.getenv("FIREBASE_ENABLED", "false").lower() == "true"

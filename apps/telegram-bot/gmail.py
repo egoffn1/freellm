@@ -7,6 +7,7 @@ from email.mime.multipart import MIMEMultipart
 from pathlib import Path
 
 from config import WORKSPACE_DIR, GMAIL_CREDENTIALS_FILE, GMAIL_TOKEN_FILE, GMAIL_TOKEN_JSON
+from firebase_db import get_gmail_token as _fb_get_token, save_gmail_token as _fb_save_token
 
 logger = logging.getLogger(__name__)
 
@@ -38,34 +39,53 @@ def _get_token_path() -> Path:
     return Path(WORKSPACE_DIR) / ".gmail_token.json"
 
 
+def _persist_token(token_json: str):
+    token_path = _get_token_path()
+    token_path.parent.mkdir(parents=True, exist_ok=True)
+    token_path.write_text(token_json)
+
+    from tools import current_user_id
+    uid = current_user_id.get()
+    if uid:
+        _fb_save_token(uid, token_json)
+
+
+def _load_token() -> str | None:
+    from tools import current_user_id
+    uid = current_user_id.get()
+    if uid:
+        fb_token = _fb_get_token(uid)
+        if fb_token:
+            return fb_token
+
+    if GMAIL_TOKEN_JSON:
+        return GMAIL_TOKEN_JSON
+
+    token_path = _get_token_path()
+    if token_path.exists():
+        return token_path.read_text()
+
+    return None
+
+
 def _authenticate() -> Credentials | None:
     if not HAS_GOOGLE:
         logger.error("google-api-python-client not installed")
         return None
 
     creds = None
-    token_path = _get_token_path()
+    token_json = _load_token()
 
-    # 1. Try env var token JSON
-    if GMAIL_TOKEN_JSON:
+    if token_json:
         try:
-            creds = Credentials.from_authorized_user_info(json.loads(GMAIL_TOKEN_JSON), SCOPES)
+            creds = Credentials.from_authorized_user_info(json.loads(token_json), SCOPES)
         except Exception as e:
-            logger.warning(f"Failed to load token from GMAIL_TOKEN_JSON: {e}")
+            logger.warning(f"Failed to load token: {e}")
 
-    # 2. Try token file
-    if not creds and token_path.exists():
-        try:
-            creds = Credentials.from_authorized_user_file(str(token_path), SCOPES)
-        except Exception as e:
-            logger.warning(f"Failed to load token file: {e}")
-
-    # 3. Refresh if expired
     if creds and creds.expired and creds.refresh_token:
         try:
             creds.refresh(Request())
-            token_path.parent.mkdir(parents=True, exist_ok=True)
-            token_path.write_text(creds.to_json())
+            _persist_token(creds.to_json())
             return creds
         except Exception as e:
             logger.warning(f"Token refresh failed: {e}")
@@ -74,23 +94,19 @@ def _authenticate() -> Credentials | None:
     if creds and creds.valid:
         return creds
 
-    # 4. First-time auth flow
     creds_path = _get_creds_path()
     if not creds_path.exists():
         logger.error(
             f"No Gmail credentials file at {creds_path}. "
             f"Create a Google Cloud project, enable Gmail API, "
-            f"download OAuth desktop credentials and place at {creds_path}, "
-            f"or set GMAIL_TOKEN_JSON env var with the token"
+            f"download OAuth desktop credentials and place there"
         )
         return None
 
     try:
         flow = InstalledAppFlow.from_client_secrets_file(str(creds_path), SCOPES)
         creds = flow.run_local_server(port=0)
-        token_path.parent.mkdir(parents=True, exist_ok=True)
-        token_path.write_text(creds.to_json())
-        logger.info(f"Gmail token saved to {token_path}")
+        _persist_token(creds.to_json())
         return creds
     except Exception as e:
         logger.error(f"Gmail auth failed: {e}")
