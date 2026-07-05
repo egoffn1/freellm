@@ -57,13 +57,19 @@ async def _search_fallback(query: str, max_results: int) -> dict:
     html = resp.text
     results = []
     for match in re.finditer(
-        r'<a[^>]*class="result__a"[^>]*href="(.*?)"[^>]*>(.*?)</a>.*?'
-        r'<a[^>]*class="result__snippet"[^>]*>(.*?)</a>',
+        r'<a[^>]*class="result__a"[^>]*href="(.*?)"[^>]*>(.*?)</a>',
         html, re.DOTALL
     ):
+        snippet_match = re.search(
+            r'class="result__snippet"[^>]*>(.*?)</a>',
+            html[match.end():], re.DOTALL
+        )
+        snippet = re.sub(r"<[^>]+>", "", snippet_match.group(1)).strip() if snippet_match else ""
+        # skip ads and non-result links
+        if "//duckduckgo.com/y.js" in match.group(1):
+            continue
         href = match.group(1)
         title = re.sub(r"<[^>]+>", "", match.group(2)).strip()
-        snippet = re.sub(r"<[^>]+>", "", match.group(3)).strip()
         results.append({"title": title, "url": href, "snippet": snippet[:500]})
         if len(results) >= max_results:
             break

@@ -116,8 +116,8 @@ async def tool_read(file_path: str, offset: int = 0, limit: int = 2000) -> dict[
         content = p.read_text(encoding="utf-8", errors="replace")
         lines = content.splitlines()
 
-        start = offset if offset >= 0 else 0
-        end = start + limit if limit else len(lines)
+        start = max(offset, 0) if offset >= 0 else 0
+        end = min(start + limit if limit else len(lines), len(lines))
         selected = lines[start:end]
 
         return {
@@ -228,7 +228,6 @@ async def tool_bash(command: str, timeout: int = 60, workdir: str | None = None)
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             cwd=str(cwd),
-            timeout=timeout,
         )
         stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
 
@@ -335,12 +334,14 @@ async def tool_scaffold(name: str, files: list[dict]) -> dict[str, Any]:
 
 async def tool_list_projects() -> dict[str, Any]:
     from artifacts import list_projects
-    return {"projects": list_projects()}
+    uid = current_user_id.get()
+    return {"projects": list_projects(uid)}
 
 
 async def tool_get_project(name: str) -> dict[str, Any]:
     from artifacts import get_project, build_project_summary
-    proj = get_project(name)
+    uid = current_user_id.get()
+    proj = get_project(name, uid)
     if not proj:
         return {"error": f"Project '{name}' not found"}
     return {"summary": build_project_summary(proj), "manifest": proj}

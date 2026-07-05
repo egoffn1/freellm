@@ -2,7 +2,7 @@ import json
 import logging
 from pathlib import Path
 
-from config import WORKSPACE_DIR, FIREBASE_SERVICE_ACCOUNT_JSON
+from config import WORKSPACE_DIR, FIREBASE_SERVICE_ACCOUNT_JSON, FIREBASE_ENABLED
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +29,10 @@ def init_firebase():
 
     if not HAS_FIREBASE:
         logger.warning("firebase-admin not installed")
+        return False
+
+    if not FIREBASE_ENABLED:
+        logger.info("FIREBASE_ENABLED is false — Firebase disabled")
         return False
 
     if not FIREBASE_SERVICE_ACCOUNT_JSON:

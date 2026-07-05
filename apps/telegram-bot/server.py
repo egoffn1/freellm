@@ -33,7 +33,11 @@ async def handle_index(_request):
 
 async def handle_serve(request):
     filename = request.match_info.get("filename", "")
-    if not filename or ".." in filename:
+    if not filename:
+        raise web.HTTPBadRequest(text="Invalid filename")
+
+    safe_path = Path(filename)
+    if ".." in safe_path.parts or safe_path.is_absolute():
         raise web.HTTPBadRequest(text="Invalid filename")
 
     import html
@@ -43,11 +47,15 @@ async def handle_serve(request):
     if len(parts) == 2:
         uid = _resolve_uid_by_token(parts[0])
         if uid is not None:
-            filepath = Path(WORKSPACE_DIR) / str(uid) / parts[1]
+            filepath = (Path(WORKSPACE_DIR) / str(uid) / parts[1]).resolve()
         else:
             raise web.HTTPForbidden(text="Invalid access token")
     else:
-        filepath = Path(WORKSPACE_DIR) / filename
+        filepath = (Path(WORKSPACE_DIR) / filename).resolve()
+
+    base = Path(WORKSPACE_DIR).resolve()
+    if not str(filepath).startswith(str(base)):
+        raise web.HTTPForbidden(text="Access denied")
 
     if not filepath.exists() or not filepath.is_file():
         raise web.HTTPNotFound(text=f"File not found")

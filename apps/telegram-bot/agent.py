@@ -353,7 +353,7 @@ async def run_agent(messages: list, on_status: callable = None, on_log: callable
             fn_name = tc.function.name
             try:
                 fn_args = json.loads(tc.function.arguments)
-            except json.JSONDecodeError:
+            except (json.JSONDecodeError, TypeError):
                 fn_args = {}
 
             if on_log:

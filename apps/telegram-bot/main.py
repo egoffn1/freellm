@@ -170,7 +170,6 @@ async def handle_callback(update: Update, _ctx):
                 last_user = m["content"]
                 break
         if last_user:
-            messages.append({"role": "user", "content": last_user})
             status_msg = await query.message.reply_text("🤔 Повторяю...")
             await _execute_agent_task(
                 update.effective_user, uid, messages, status_msg,
@@ -184,8 +183,15 @@ async def handle_callback(update: Update, _ctx):
 
     cmd = cmd_map.get(data)
     if cmd:
-        update.message = query.message
-        await handle_message(update, _ctx)
+        user_text_map = {
+            "/stop": "остановить задачу",
+            "/reset": "сбросить историю",
+            "/status": "показать статус",
+            "/clean": "очистить файлы",
+        }
+        fake_update = update
+        fake_update.message = query.message
+        await handle_message(fake_update, _ctx)
 
 
 async def _handle_settings_callback(query, uid: int, data: str):
@@ -391,14 +397,15 @@ async def status(update: Update, _ctx):
 
 
 async def projects_cmd(update: Update, _ctx):
+    uid = update.effective_user.id
     from artifacts import list_projects, get_project, build_project_summary
-    projects = list_projects()
+    projects = list_projects(uid)
     if not projects:
         await reply(update.message, "📦 Нет созданных проектов. Попросите бота создать multi-file проект.")
         return
     parts = ["📦 *Проекты:*\n"]
     for name in projects[-5:]:
-        proj = get_project(name)
+        proj = get_project(name, uid)
         if proj:
             parts.append(f"• `{name}` — {len(proj.get('files', []))} файлов")
     await reply(update.message, "\n".join(parts))

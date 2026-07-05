@@ -26,9 +26,11 @@ async def mcp_call_server(
         return "❌ mcp пакет не установлен. pip install mcp"
 
     try:
+        env = arguments.pop("_env", None) or {}
         server_params = StdioServerParameters(
             command=server_command,
             args=server_args,
+            env=env,
         )
 
         async with stdio_client(server_params) as (read, write):

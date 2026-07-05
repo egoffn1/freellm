@@ -41,32 +41,23 @@ async def scaffold_project(name: str, files: list[dict], user_id: int = 0) -> di
     return manifest
 
 
-def get_project(name: str) -> dict | None:
-    for base in [PROJECTS_DIR]:
-        if not base.exists():
-            continue
-        for uid_dir in base.iterdir():
-            if uid_dir.is_dir():
-                manifest_path = uid_dir / name / ".manifest.json"
-                if manifest_path.exists():
-                    return json.loads(manifest_path.read_text(encoding="utf-8"))
+def get_project(name: str, user_id: int = 0) -> dict | None:
+    base = PROJECTS_DIR / str(user_id) if user_id else PROJECTS_DIR
+    manifest_path = base / name / ".manifest.json"
+    if manifest_path.exists():
+        return json.loads(manifest_path.read_text(encoding="utf-8"))
     return None
 
 
-def list_projects() -> list[str]:
-    if not PROJECTS_DIR.exists():
+def list_projects(user_id: int = 0) -> list[str]:
+    base = PROJECTS_DIR / str(user_id) if user_id else PROJECTS_DIR
+    if not base.exists():
         return []
-    projects = []
-    for uid_dir in PROJECTS_DIR.iterdir():
-        if uid_dir.is_dir():
-            for d in uid_dir.iterdir():
-                if d.is_dir() and (d / ".manifest.json").exists():
-                    projects.append(d.name)
-    return sorted(projects)
+    return sorted(d.name for d in base.iterdir() if d.is_dir() and (d / ".manifest.json").exists())
 
 
-def build_html_preview(name: str) -> str:
-    proj = get_project(name)
+def build_html_preview(name: str, user_id: int = 0) -> str:
+    proj = get_project(name, user_id)
     if not proj:
         return "<h1>Project not found</h1>"
     entry = proj.get("entry")

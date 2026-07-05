@@ -82,13 +82,17 @@ def _authenticate() -> Credentials | None:
         except Exception as e:
             logger.warning(f"Failed to load token: {e}")
 
-    if creds and creds.expired and creds.refresh_token:
-        try:
-            creds.refresh(Request())
-            _persist_token(creds.to_json())
-            return creds
-        except Exception as e:
-            logger.warning(f"Token refresh failed: {e}")
+    if creds and creds.expired:
+        if creds.refresh_token:
+            try:
+                creds.refresh(Request())
+                _persist_token(creds.to_json())
+                return creds
+            except Exception as e:
+                logger.warning(f"Token refresh failed: {e}")
+                creds = None
+        else:
+            logger.warning("Token expired and no refresh token — re-authenticating")
             creds = None
 
     if creds and creds.valid:
