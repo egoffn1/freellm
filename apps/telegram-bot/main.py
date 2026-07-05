@@ -241,7 +241,7 @@ async def start(update: Update, _ctx):
     features.append("📦 Артефакты (multi-file проекты)")
     features.append("👁 Анализ изображений (Vision)")
 
-    await update.message.reply_text(
+    await reply(update.message,
         "🤖 *FreeLLM Agent Bot* — AI-ассистент как Opencode / Claude / ChatGPT\n\n"
         f"**Фишки:**\n" + "\n".join(f"• {f}" for f in features) + "\n\n"
         "**Как работать:**\n"
@@ -255,14 +255,13 @@ async def start(update: Update, _ctx):
         "• `/clone https://github.com/user/repo`\n\n"
         "Команды:\n"
         "/help — подробнее\n"
-        "/clone <url> — клонировать репозиторий\n"
-        "/clean — удалить старые файлы (>3 дней)\n"
+        "/clone &lt;url&gt; — клонировать репозиторий\n"
+        "/clean — удалить старые файлы (&gt;3 дней)\n"
         "/reset — сбросить историю\n"
         "/stop — остановить задачу\n"
         "/settings — настройки пользователя\n"
         "/integrations — подключенные сервисы\n"
         "/status — статус и фишки",
-        parse_mode="HTML",
         reply_markup=main_keyboard(),
     )
 
