@@ -5,6 +5,7 @@ from pathlib import Path
 from aiohttp import web
 
 from config import PORT, WORKSPACE_DIR
+from tools import _resolve_uid_by_token
 
 logger = logging.getLogger(__name__)
 
@@ -34,16 +35,21 @@ async def handle_serve(request):
     if not filename or ".." in filename:
         raise web.HTTPBadRequest(text="Invalid filename")
 
+    import html
+    safe_name = html.escape(filename, quote=True)
+
     parts = filename.split("/", 1)
-    if len(parts) == 2 and parts[0].isdigit():
-        filepath = Path(WORKSPACE_DIR) / parts[0] / parts[1]
+    if len(parts) == 2:
+        uid = _resolve_uid_by_token(parts[0])
+        if uid is not None:
+            filepath = Path(WORKSPACE_DIR) / str(uid) / parts[1]
+        else:
+            raise web.HTTPForbidden(text="Invalid access token")
     else:
-        if "/" in filename:
-            raise web.HTTPBadRequest(text="Invalid filename")
         filepath = Path(WORKSPACE_DIR) / filename
 
     if not filepath.exists() or not filepath.is_file():
-        raise web.HTTPNotFound(text=f"File {filename} not found")
+        raise web.HTTPNotFound(text=f"File not found")
 
     content = filepath.read_bytes()
     ext = filepath.suffix.lower()

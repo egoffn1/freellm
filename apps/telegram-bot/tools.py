@@ -1,8 +1,10 @@
 import asyncio
 import base64
 import contextvars
+import json
 import subprocess
 import re
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -12,6 +14,30 @@ from config import (
     WORKSPACE_DIR, ALLOWED_BASH_PREFIXES, CONFIRM_COMMANDS, MAX_TOOL_CALLS,
     FREELLM_BASE_URL, FREELLM_API_KEY, AGENT_MODEL, MAX_FILE_SIZE_MB,
 )
+
+TOKEN_FILE = Path(WORKSPACE_DIR) / ".user_tokens.json"
+
+
+def _get_user_token(uid: int) -> str:
+    tokens = {}
+    if TOKEN_FILE.exists():
+        tokens = json.loads(TOKEN_FILE.read_text())
+    suid = str(uid)
+    if suid not in tokens:
+        tokens[suid] = uuid.uuid4().hex[:16]
+        TOKEN_FILE.parent.mkdir(parents=True, exist_ok=True)
+        TOKEN_FILE.write_text(json.dumps(tokens, ensure_ascii=False))
+    return tokens[suid]
+
+
+def _resolve_uid_by_token(token: str) -> int | None:
+    if not TOKEN_FILE.exists():
+        return None
+    tokens = json.loads(TOKEN_FILE.read_text())
+    for suid, tok in tokens.items():
+        if tok == token:
+            return int(suid)
+    return None
 
 
 _vison_client = OpenAI(base_url=FREELLM_BASE_URL, api_key=FREELLM_API_KEY)
@@ -323,7 +349,8 @@ async def tool_host_file(filename: str) -> dict[str, Any]:
     fpath = _get_user_workspace() / filename
     if not fpath.exists():
         return {"error": f"File '{filename}' not found in workspace"}
-    serve_path = f"{uid}/{filename}" if uid else filename
+    token = _get_user_token(uid) if uid else ""
+    serve_path = f"{token}/{filename}" if token else filename
     url = f"{PUBLIC_URL}/serve/{serve_path}"
     return {"url": url, "filename": filename, "message": f"Файл доступен по ссылке: {url}"}
 
