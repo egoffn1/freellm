@@ -329,9 +329,10 @@ async def handle_message(update: Update, _ctx):
     messages.append({"role": "user", "content": text})
 
     status_msg = await reply(update.message, "🤔 Анализирую задачу...")
-    log_msg = await reply(update.message, "📋 Лог:\n")
 
     cancel_events[uid] = asyncio.Event()
+
+    log_lines = []
 
     async def on_status(text: str):
         nonlocal status_msg
@@ -343,20 +344,24 @@ async def handle_message(update: Update, _ctx):
             except Exception:
                 pass
 
-    async def log_action(text: str):
-        nonlocal log_msg
+    async def on_log(text: str):
+        nonlocal status_msg
+        log_lines.append(text)
+        visible = "\n".join(log_lines[-8:])
         try:
-            await edit(log_msg, f"📋 Лог:\n{text[:3500]}")
+            await edit(status_msg, f"{status_text}\n\n📋 **Лог действий:**\n{visible[:3500]}")
         except Exception:
             try:
-                log_msg = await reply(update.message, f"📋 Лог:\n{text[:3500]}")
+                status_msg = await reply(update.message, f"🤔 Выполняю...\n\n📋 **Лог действий:**\n{visible[:3500]}")
             except Exception:
                 pass
+
+    status_text = "🤔 Выполняю..."
 
     get_and_clear_created_files()
 
     task = asyncio.create_task(
-        run_agent(messages, on_status=on_status, cancel_event=cancel_events[uid])
+        run_agent(messages, on_status=on_status, on_log=on_log, cancel_event=cancel_events[uid])
     )
     running_tasks[uid] = task
 

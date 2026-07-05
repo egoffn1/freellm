@@ -103,7 +103,7 @@ def _needs_tools(text: str) -> bool:
     return bool(NEEDS_TOOLS.search(text))
 
 
-async def run_agent(messages: list, on_status: callable = None, cancel_event: asyncio.Event = None) -> str:
+async def run_agent(messages: list, on_status: callable = None, on_log: callable = None, cancel_event: asyncio.Event = None) -> str:
     user_text = messages[-1]["content"] if messages else ""
     is_casual = bool(CASUAL_PATTERNS.match(user_text.strip()))
     needs_tools = _needs_tools(user_text)
@@ -121,6 +121,8 @@ async def run_agent(messages: list, on_status: callable = None, cancel_event: as
     memory_context = rag.build_context(user_text)
 
     if is_casual and not needs_tools:
+        if on_log:
+            await on_log("💬 Ответ на приветствие")
         sys_msg = {"role": "system", "content": "You are a helpful AI assistant. Respond conversationally."}
         try:
             resp = await _call_llm([sys_msg] + messages)
@@ -133,6 +135,8 @@ async def run_agent(messages: list, on_status: callable = None, cancel_event: as
     # Deep reasoning step — create a plan before acting
     plan = None
     if needs_tools and len(user_text) > 20:
+        if on_log:
+            await on_log("🧠 Запуск глубокого размышления (Reasoning)...")
         if on_status:
             await on_status("🧠 Анализирую и составляю план...")
         from reasoning import reason
@@ -141,11 +145,17 @@ async def run_agent(messages: list, on_status: callable = None, cancel_event: as
             ctx_parts.append(f"{m['role']}: {m['content'][:300]}")
         plan = await reason(user_text, "\n".join(ctx_parts))
         if plan and plan.get("steps"):
+            steps_str = "\n".join(f"  • {s['step']}. [{s['tool']}] {s['description'][:80]}" for s in plan["steps"])
+            if on_log:
+                await on_log(f"📋 План:\n{steps_str}")
             plan_summary = "\n".join(f"  {s['step']}. [{s['tool']}] {s['description'][:100]}" for s in plan["steps"])
             if on_status:
                 await on_status(f"📋 План:\n{plan_summary[:200]}...")
-            if plan.get("needs_web_search") and on_status:
-                await on_status("🔍 Потребуется веб-поиск — выполняю исследование...")
+            if plan.get("needs_web_search"):
+                if on_log:
+                    await on_log("🔍 Запланирован веб-поиск")
+                if on_status:
+                    await on_status("🔍 Потребуется веб-поиск — выполняю исследование...")
 
     ctx_note = ""
     if memory_context:
@@ -164,6 +174,9 @@ async def run_agent(messages: list, on_status: callable = None, cancel_event: as
         if cancel_event and cancel_event.is_set():
             return "⏹ Задача отменена."
 
+        if on_log:
+            await on_log(f"🔄 Шаг {tool_calls_count + 1}: обращение к LLM...")
+
         if on_status:
             await on_status(f"🔄 Шаг {tool_calls_count + 1}: анализ...")
 
@@ -178,6 +191,8 @@ async def run_agent(messages: list, on_status: callable = None, cancel_event: as
             if not tried_fallback:
                 tried_fallback = True
                 logger.info(f"Fallback to {AGENT_FALLBACK_MODEL}")
+                if on_log:
+                    await on_log(f"🔄 Модель {AGENT_MODEL} не ответила, переключение на {AGENT_FALLBACK_MODEL}")
                 if on_status:
                     await on_status(f"🔄 fallback на {AGENT_FALLBACK_MODEL}...")
                 full_messages.append({
@@ -192,6 +207,8 @@ async def run_agent(messages: list, on_status: callable = None, cancel_event: as
         if not msg.tool_calls:
             if needs_tools and no_tool_retries < 2:
                 no_tool_retries += 1
+                if on_log:
+                    await on_log(f"🤔 Модель не использует инструменты, напоминаю (попытка {no_tool_retries + 1})")
                 if on_status:
                     await on_status(f"🤔 Напоминаю использовать инструменты (попытка {no_tool_retries + 1})...")
                 full_messages.append({
@@ -217,6 +234,10 @@ async def run_agent(messages: list, on_status: callable = None, cancel_event: as
                 fn_args = json.loads(tc.function.arguments)
             except json.JSONDecodeError:
                 fn_args = {}
+
+            if on_log:
+                args_str = json.dumps(fn_args, ensure_ascii=False)[:120]
+                await on_log(f"🛠 Шаг {tool_calls_count}: `{fn_name}`\n{args_str}")
 
             if on_status:
                 args_str = json.dumps(fn_args, ensure_ascii=False)[:80]
