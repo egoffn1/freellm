@@ -280,6 +280,7 @@ async def history_cmd(update: Update, _ctx):
 async def handle_file(update: Update, ctx):
     uid = update.effective_user.id
     msg = update.message
+    current_user_id.set(uid)
 
     file = msg.document or (msg.photo[-1] if msg.photo else None)
     if not file:
