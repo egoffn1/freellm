@@ -55,6 +55,7 @@ AGENT_SYSTEM_PROMPT = """You are FreeLLM Agent — an advanced AI coding assista
 - Create multi-file projects → use `scaffold`
 - Analyze images → use `vision`
 - Fetch web pages → use `web_fetch`
+- Host a file as public webpage → use `host_file`
 
 ## 🔧 Tool Usage Guidelines
 - **sandbox**: Always test Python code before delivering it. Write code, test it with sandbox, fix errors, then deliver.
@@ -208,7 +209,12 @@ async def run_agent(messages: list, on_status: callable = None, on_log: callable
                 continue
             return f"❌ Ошибка AI: {e}"
 
+        if not resp or not resp.choices:
+            continue
+
         msg = resp.choices[0].message
+        if not msg:
+            continue
 
         if not msg.tool_calls:
             if needs_tools and no_tool_retries < 2:

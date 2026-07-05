@@ -286,6 +286,18 @@ async def tool_get_project(name: str) -> dict[str, Any]:
     return {"summary": build_project_summary(proj), "manifest": proj}
 
 
+async def tool_host_file(filename: str) -> dict[str, Any]:
+    from pathlib import Path
+    from config import WORKSPACE_DIR
+    import os
+    PUBLIC_URL = os.getenv("RENDER_EXTERNAL_URL", "https://freellm-bot.onrender.com")
+    fpath = Path(WORKSPACE_DIR) / filename
+    if not fpath.exists():
+        return {"error": f"File '{filename}' not found in workspace"}
+    url = f"{PUBLIC_URL}/serve/{filename}"
+    return {"url": url, "filename": filename, "message": f"Файл доступен по ссылке: {url}"}
+
+
 TOOL_DEFINITIONS = [
     {
         "type": "function",
@@ -482,6 +494,20 @@ TOOL_DEFINITIONS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "host_file",
+            "description": "Make a workspace file publicly accessible via URL and return the link. Use after creating HTML/CSS/JS files to let the user see them in a browser.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "filename": {"type": "string", "description": "Name of the file in workspace to host"},
+                },
+                "required": ["filename"],
+            },
+        },
+    },
 ]
 
 TOOL_NAME_MAP = {
@@ -496,4 +522,5 @@ TOOL_NAME_MAP = {
     "sandbox": tool_sandbox,
     "research": tool_research,
     "scaffold": tool_scaffold,
+    "host_file": tool_host_file,
 }
