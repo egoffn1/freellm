@@ -1,11 +1,12 @@
 import json
 import logging
 import asyncio
+import os
 import re
 from openai import OpenAI
 from config import (
     FREELLM_BASE_URL, FREELLM_API_KEY,
-    AGENT_MODEL, AGENT_FALLBACK_MODEL, MAX_TOOL_CALLS, MULTI_AGENT_ENABLED,
+    AGENT_MODEL, AGENT_CODE_MODEL, AGENT_FALLBACK_MODEL, MAX_TOOL_CALLS, MULTI_AGENT_ENABLED,
     WORKSPACE_DIR, LLM_CALL_TIMEOUT,
 )
 
@@ -32,66 +33,73 @@ NEEDS_TOOLS = re.compile(
     re.IGNORECASE,
 )
 
-AGENT_SYSTEM_PROMPT = """You are ТНИИ — an AI coding assistant.
+AGENT_SYSTEM_PROMPT = """Ты — ТНИИ, универсальный ИИ-ассистент в Telegram. Твоя аудитория — разработчики и обычные пользователи. Ты автоматически переключаешься между двумя режимами.
 
-## 🧠 Core Principles
-- Think step-by-step internally before acting.
-- Break complex tasks into smaller steps. Verify each step.
+## 🎭 Режим 1: ПРОФЕССИОНАЛЬНЫЙ КОДЕР (кодинг, рефакторинг, архитектура)
+- Роль: Senior Fullstack Developer и архитектор ПО мирового уровня.
+- Качество: Только production-ready код. Никаких упрощений, заглушек (TODO) или псевдокода.
+- Стандарты: PEP8 (Python), ESLint/Prettier (JS/TS), SOLID принципы.
+- Edge Cases: Всегда обрабатывай ошибки (try-catch, валидация). Учитывай крайние случаи.
+- Структура ответа: 1) одно предложение об архитектуре; 2) полный блок кода; 3) до 4 пунктов пояснений.
 
-## ⚠️ SECURITY — NEVER DO THESE (deadly serious)
-- **NO system-level commands**: sudo, su, chown, passwd, poweroff, reboot, shutdown, kill, killall, pkill, init, mkfs, dd, format, >|
-- **NO write outside workspace**: You can only read/write files inside the workspace directory.
-- **NO accessing other users' files**: You work with ONE user's files at a time.
-- **NO deleting essential files**: Do not delete the bot's own code (`/app/` directory) or system files.
-- **NO installing/uninstalling system packages**: Use `bash` only for development commands (build, test, git, lint, run code).
-- **NO mining, exploits, malware**: Do not generate cryptocurrency miners, exploits, viruses, or any malicious code.
-- **NO privilege escalation**: Do not attempt to gain root access or modify system permissions.
+## 🎭 Режим 2: ОБЩЕНИЕ (шутим, флудим, болтаем)
+- Роль: Харизматичный, остроумный, слегка ироничный собеседник.
+- Тон: Дружелюбный, живой, адаптивный. Не сухой робот.
+- Эмодзи: не более 1-2 на сообщение.
+- Шути про боли программистов (дедлайны, баги, джунов), но избегай банальных анекдотов.
 
-## ✅ SAFE operations — these are fine
-- Create/edit/read files in workspace → use `write`, `read`, `edit`
-- Search code → use `grep`, `glob`
-- Run development commands → use `bash` (git, python, npm, pip, go, cargo, ls, cat, mkdir, etc.)
-- Test Python code safely → use `sandbox`
-- Search the web for info → use `research`
-- Create multi-file projects → use `scaffold`
-- Analyze images → use `vision`
-- Fetch web pages → use `web_fetch`
-- Host a file as public webpage → use `host_file`
-- IMPORTANT: When you create HTML/CSS/JS files for a website, you MUST call `host_file` for the main HTML file to provide the user a working URL. If you don't, the user can't see the result.
+## ⚠️ SECURITY — НИКОГДА
+- **NO** системные команды: sudo, su, chown, passwd, poweroff, reboot, shutdown, kill, pkill, init, mkfs, dd, format, >|
+- **NO** запись вне workspace (только в `/workspace/{uid}/`)
+- **NO** чужие файлы других пользователей
+- **NO** системные пакеты (install/uninstall). Только dev-команды (build, test, git, lint, run)
+- **NO** майнинг, эксплойты, вирусы, вредоносный код
+- **NO** эскалация привилегий
 
-## 🔧 Tool Usage Guidelines
-- **sandbox**: Always test Python code before delivering it. Write code, test it with sandbox, fix errors, then deliver.
-- **research**: Use for any question requiring up-to-date information (APIs, libraries, docs, news).
-- **scaffold**: For multi-file projects (web apps, libraries, full-stack). Creates proper file structure.
-- **bash**: Use for git, npm, python scripts, compilation, testing.
-- **vision**: For images, screenshots, diagrams uploaded by user.
+## ✅ РАЗРЕШЕНО
+- write/read/edit — файлы в workspace
+- grep/glob — поиск по коду
+- bash — git, python, npm, pip, go, cargo, ls, cat, mkdir и т.д.
+- sandbox — безопасный запуск Python
+- research — веб-поиск
+- scaffold — многофайловые проекты
+- vision — анализ изображений
+- web_fetch — загрузка страниц
+- host_file — публикация HTML как веб-страницы (ОБЯЗАТЕЛЬНО для HTML/CSS/JS сайтов)
 
-## 💬 Personality
-- Mirror the user's tone and style. If they write formally, match it. If they're casual/swear, match that.
-- Keep responses short unless asked to elaborate.
-- For code tasks: explain what you did, show the code, note any tradeoffs.
-- For research: cite sources, summarize findings.
-- For multi-step: keep the user updated on progress.
+## 🛠 Гайдлайны инструментов
+- sandbox: Всегда тестируй Python код перед сдачей. Пиши → тестируй → чини → сдавай.
+- research: Для любых вопросов требующих актуальной информации (API, библиотеки, документация).
+- scaffold: Для многофайловых проектов (веб-приложения, библиотеки, фулстек).
+- bash: Для git, npm, python-скриптов, компиляции, тестирования.
+- vision: Для изображений, скриншотов, диаграмм от пользователя.
 
-## 📋 Context & Memory
-- History contains `[Загружен файл: имя]`, `[Создан файл: имя]` entries
-- User may reference files from earlier in conversation
-- Previous conversation context is available via RAG memory
+## 💬 Личность
+- Зеркаль тон пользователя. Формально → формально. По-пацански → по-пацански.
+- Пиши коротко и по делу. Телефонный формат: абзацы, списки, жирный для ключевого.
+- Для кода: объясни решение, покажи код, отметь нюансы.
+- Для исследований: цитируй источники, суммируй выводы.
 
-## CRITICAL RULES
-- When user asks to write/create code, you MUST call the `write` tool. Do NOT just describe what the code would look like.
-- Use ONLY the filename, never full paths like `/home/user/file.py`. Just `main.py` is enough.
-- When `write` returns an error, do NOT say the file was created. Report the error or try a different approach.
-- Only call `task_done` when you have actually completed the work using tools.
+## 📋 Контекст и память
+- В истории есть `[Загружен файл: имя]`, `[Создан файл: имя]`
+- Пользователь может ссылаться на файлы из ранних сообщений
+- Доступна RAG-память из предыдущих сессий
 
-## How to handle requests
-- User says "прочитай" / "read" / "скажи что там":
-  1. Find the most recent file mentioned in history
-  2. Call `read` on it
-  3. Summarize in Russian
-- User asks for code → use `write` tool, test with `sandbox`, then call `task_done`
-- Multi-file projects → use `scaffold` to create organized project structure
-- When fully done → call `task_done` with summary and list of changed files"""
+## 🚫 ЗАПРЕЩЁННЫЕ ФРАЗЫ
+- "Как искусственный интеллект, я не могу..."
+- "Вот простой пример кода..."
+- "Пожалуйста, помните, что это всего лишь шаблон..."
+- "Вот базовая реализация..."
+- Не обрывай код на середине. Если не влезает — оптимизируй или разбей на модули.
+
+## 📝 CRITICAL RULES
+- Пиши код через `write`. Не описывай словами, что написал бы.
+- Используй ТОЛЬКО имя файла, без полного пути (просто `main.py`).
+- Если `write` вернул ошибку — не говори что файл создан. Сообщи об ошибке.
+- `task_done` — только когда работа реально завершена.
+- Пользователь сказал "прочитай" → `read` файл → суммируй на русском.
+- Многофайловые проекты → `scaffold`.
+- Готов → `task_done` с саммари и списком файлов."""
 
 
 def _is_html(text: str) -> bool:
@@ -178,13 +186,15 @@ async def run_agent(messages: list, on_status: callable = None, on_log: callable
                 err = err[:200] + "... (HTML ответ от API)"
             return f"❌ {err}"
 
-    # Deep reasoning step — create a plan before acting
+    # Phase 1: Deep reasoning / planning (only for coding tasks)
     plan = None
-    if needs_tools and len(user_text) > 20:
+    is_complex_coding = needs_tools and not is_casual and len(user_text) > 20
+
+    if is_complex_coding:
         if on_log:
-            await on_log("🧠 Запуск глубокого размышления (Reasoning)...")
+            await on_log("🧠 Фаза 1: архитектурное планирование...")
         if on_status:
-            await on_status("🧠 Анализирую и составляю план...")
+            await on_status("🧠 Анализирую и составляю архитектурный план...")
         from reasoning import reason
         ctx_parts = []
         for m in messages[-6:]:
@@ -209,12 +219,25 @@ async def run_agent(messages: list, on_status: callable = None, on_log: callable
                 if on_status:
                     await on_status("🔍 Потребуется веб-поиск — выполняю исследование...")
 
+    # Phase 2: execution
     ctx_note = ""
     if memory_context:
         ctx_note = f"\n\nRelevant context from previous conversations:\n{memory_context}"
-    if plan and plan.get("steps"):
+
+    if is_complex_coding and plan and plan.get("steps"):
         plan_str = json.dumps(plan, ensure_ascii=False, indent=2)
-        ctx_note += f"\n\n## Reasoning Plan\nFollow this plan:\n{plan_str}"
+        ctx_note += (
+            f"\n\n## Architectural Plan (strictly follow this)\n{plan_str}"
+            "\n\nYou are now in EXECUTION mode. Follow the plan above step by step."
+            " Write production-ready code. No simplifications, no stubs, no TODOs."
+        )
+        current_model = AGENT_CODE_MODEL
+        if on_log:
+            await on_log(f"🚀 Фаза 2: исполнение (модель: {AGENT_CODE_MODEL})...")
+        if on_status:
+            await on_status(f"🚀 Выполняю план (модель: {AGENT_CODE_MODEL})...")
+    else:
+        current_model = AGENT_MODEL
 
     settings_note = ""
     if user_id:
@@ -262,6 +285,8 @@ async def run_agent(messages: list, on_status: callable = None, on_log: callable
     if on_log:
         await on_log("🚀 Запуск агента...")
 
+    from tools import current_user_id as _uid
+
     while tool_calls_count < MAX_TOOL_CALLS:
         if cancel_event and cancel_event.is_set():
             return "⏹ Задача отменена."
@@ -275,7 +300,7 @@ async def run_agent(messages: list, on_status: callable = None, on_log: callable
         from tools import TOOL_DEFINITIONS
 
         try:
-            resp = await _call_llm(full_messages, TOOL_DEFINITIONS, "auto")
+            resp = await _call_llm(full_messages, TOOL_DEFINITIONS, "auto", model=current_model)
         except asyncio.CancelledError:
             return "⏹ Задача отменена."
         except Exception as e:
@@ -295,7 +320,7 @@ async def run_agent(messages: list, on_status: callable = None, on_log: callable
                 tried_fallback = True
                 logger.info(f"Fallback to {AGENT_FALLBACK_MODEL}")
                 if on_log:
-                    await on_log(f"🔄 Модель {AGENT_MODEL} не ответила, переключение на {AGENT_FALLBACK_MODEL}")
+                    await on_log(f"🔄 Модель {current_model} не ответила, переключение на {AGENT_FALLBACK_MODEL}")
                 if on_status:
                     await on_status(f"🔄 fallback на {AGENT_FALLBACK_MODEL}...")
                 full_messages.append({
@@ -367,6 +392,56 @@ async def run_agent(messages: list, on_status: callable = None, on_log: callable
             if fn_name == "task_done":
                 summary = fn_args.get("summary", "")
                 files = fn_args.get("files", [])
+
+                # Self-correction before finalizing
+                if is_complex_coding and files:
+                    if on_log:
+                        await on_log("🔍 Self-correction: проверка созданных файлов...")
+                    if on_status:
+                        await on_status("🔍 Проверяю код на баги...")
+                    try:
+                        code_snippets = []
+                        for fname in files[:5]:
+                            try:
+                                fp = os.path.join(WORKSPACE_DIR, str(_uid.get()), fname)
+                                with open(fp, encoding="utf-8", errors="replace") as f:
+                                    code_snippets.append(f"--- {fname} ---\n{f.read()[:2000]}")
+                            except Exception:
+                                pass
+                        if code_snippets:
+                            review_prompt = (
+                                "Review this code for bugs, syntax errors, and logic issues. "
+                                "If you find problems, output the FIXED code with the same filename markers. "
+                                "If the code is clean, output just: OK"
+                                "\n\n" + "\n".join(code_snippets)
+                            )
+                            review_resp = await _call_llm(
+                                [{"role": "system", "content": "You are a code reviewer. Find bugs, output fixes."},
+                                 {"role": "user", "content": review_prompt}],
+                                model=AGENT_CODE_MODEL,
+                            )
+                            review_text = review_resp.choices[0].message.content or ""
+                            if review_text.strip() != "OK":
+                                if on_log:
+                                    await on_log("🔧 Self-correction: найдены проблемы, исправляю...")
+                                if on_status:
+                                    await on_status("🔧 Исправляю найденные баги...")
+                                for fname in files[:5]:
+                                    marker = f"--- {fname} ---"
+                                    idx = review_text.find(marker)
+                                    if idx >= 0:
+                                        rest = review_text[idx + len(marker):]
+                                        end_idx = rest.find("\n--- ")
+                                        block = rest[:end_idx] if end_idx > 0 else rest
+                                        block = block.strip().strip("`").strip()
+                                        if block:
+                                            from tools import tool_write
+                                            await tool_write(filename=fname, content=block)
+                                            if on_log:
+                                                await on_log(f"✏️ Исправлен: {fname}")
+                    except Exception as e:
+                        logger.warning(f"Self-correction error: {e}")
+
                 result = summary
                 if files:
                     result += "\n\n📁 Файлы:\n" + "\n".join(f"• `{f}`" for f in files)
@@ -392,6 +467,59 @@ async def run_agent(messages: list, on_status: callable = None, on_log: callable
 
             if tool_calls_count >= MAX_TOOL_CALLS:
                 break
+
+    # Self-correction: verify created files for bugs
+    if is_complex_coding:
+        from tools import CREATED_FILES
+        created = list(CREATED_FILES.get(_uid.get(), set()))[:5]
+        if created:
+            if on_log:
+                await on_log("🔍 Self-correction: проверка созданных файлов...")
+            if on_status:
+                await on_status("🔍 Проверяю код на баги...")
+            try:
+                code_snippets = []
+                for fname in created:
+                    try:
+                        fp = os.path.join(WORKSPACE_DIR, str(uid), fname)
+                        with open(fp, encoding="utf-8", errors="replace") as f:
+                            code_snippets.append(f"--- {fname} ---\n{f.read()[:2000]}")
+                    except Exception:
+                        pass
+                if code_snippets:
+                    review_prompt = (
+                        "Review this code for bugs, syntax errors, and logic issues. "
+                        "If you find problems, output the FIXED code with the same filename markers. "
+                        "If the code is clean, output just: OK"
+                        "\n\n" + "\n".join(code_snippets)
+                    )
+                    review_resp = await _call_llm(
+                        [{"role": "system", "content": "You are a code reviewer. Find bugs, output fixes."},
+                         {"role": "user", "content": review_prompt}],
+                        model=AGENT_CODE_MODEL,
+                    )
+                    review_text = review_resp.choices[0].message.content or ""
+                    if review_text.strip() != "OK":
+                        if on_log:
+                            await on_log("🔧 Self-correction: найдены проблемы, исправляю...")
+                        if on_status:
+                            await on_status("🔧 Исправляю найденные баги...")
+                        for fname in created:
+                            marker = f"--- {fname} ---"
+                            marker_end = f"--- {fname} ---"
+                            idx = review_text.find(marker)
+                            if idx >= 0:
+                                rest = review_text[idx + len(marker):]
+                                end_idx = rest.find("\n--- ")
+                                block = rest[:end_idx] if end_idx > 0 else rest
+                                block = block.strip().strip("```").strip()
+                                if block and "```" not in block[:10]:
+                                    from tools import tool_write
+                                    await tool_write(filename=fname, content=block)
+                                    if on_log:
+                                        await on_log(f"✏️ Исправлен: {fname}")
+            except Exception as e:
+                logger.warning(f"Self-correction error: {e}")
 
     final = "⚠️ Достигнут лимит шагов."
     full_messages.append({"role": "assistant", "content": final})

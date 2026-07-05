@@ -207,7 +207,7 @@ async def _handle_settings_callback(query, uid: int, data: str):
         await query.edit_message_text(md_to_html(f"✅ Язык изменён на {emoji}"))
 
     elif data == "settings_model":
-        models = ["", "groq/llama-3.3-70b-versatile", "github/openai/gpt-4o-mini", "groq/qwen-qwq-32b"]
+        models = ["", "groq/llama-3.3-70b-versatile", "github/openai/gpt-4o-mini", "groq/qwen-qwq-32b", "groq/qwen-2.5-coder-32b"]
         current = settings.get("model", "")
         idx = (models.index(current) + 1) % len(models) if current in models else 1
         new_model = models[idx]
@@ -362,7 +362,7 @@ async def reset(update: Update, _ctx):
 
 async def status(update: Update, _ctx):
     from openai import OpenAI
-    from config import AGENT_MODEL, AGENT_FALLBACK_MODEL
+    from config import AGENT_MODEL, AGENT_CODE_MODEL, AGENT_FALLBACK_MODEL
 
     client = OpenAI(base_url=FREELLM_BASE_URL, api_key="unused")
     try:
@@ -375,6 +375,7 @@ async def status(update: Update, _ctx):
             "✅ *ТНИИ:* доступен",
             f"📊 *Моделей:* {len(names)}",
             f"🧠 *Модель:* `{AGENT_MODEL}`",
+            f"💻 *Код-модель:* `{AGENT_CODE_MODEL}`",
             f"🔄 *Fallback:* `{AGENT_FALLBACK_MODEL}`",
             "",
             "⚙️ *Фишки:*",
