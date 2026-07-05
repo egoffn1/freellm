@@ -32,7 +32,7 @@ NEEDS_TOOLS = re.compile(
     re.IGNORECASE,
 )
 
-AGENT_SYSTEM_PROMPT = """You are FreeLLM Agent — an AI coding assistant.
+AGENT_SYSTEM_PROMPT = """You are ТНИИ — an AI coding assistant.
 
 ## 🧠 Core Principles
 - Think step-by-step internally before acting.

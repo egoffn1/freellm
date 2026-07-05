@@ -251,7 +251,7 @@ async def start(update: Update, _ctx):
     features.append("👁 Анализ изображений (Vision)")
 
     await reply(update.message,
-        "🤖 *FreeLLM Agent Bot* — AI-ассистент как Opencode / Claude / ChatGPT\n\n"
+        "🤖 *ТНИИ* — AI-ассистент как Opencode / Claude / ChatGPT\n\n"
         f"**Фишки:**\n" + "\n".join(f"• {f}" for f in features) + "\n\n"
         "**Как работать:**\n"
         "1. 📤 Пришлите файл — бот сохранит его в workspace\n"
@@ -283,7 +283,7 @@ async def help_cmd(update: Update, _ctx):
         "/clone <url> — клонировать репозиторий\n"
         "/clean — удалить файлы старше 3 дней\n"
         "/reset — очистить историю\n"
-        "/status — проверить FreeLLM\n\n"
+        "/status — проверить ТНИИ\n\n"
         "*Как использовать:*\n"
         "• Пришлите файл → бот сохранит и сможет с ним работать\n"
         "• Напишите задачу → бот сделает\n"
@@ -372,7 +372,7 @@ async def status(update: Update, _ctx):
         has_git = shutil.which("git") is not None
 
         status_lines = [
-            "✅ *FreeLLM:* доступен",
+            "✅ *ТНИИ:* доступен",
             f"📊 *Моделей:* {len(names)}",
             f"🧠 *Модель:* `{AGENT_MODEL}`",
             f"🔄 *Fallback:* `{AGENT_FALLBACK_MODEL}`",
@@ -395,7 +395,7 @@ async def status(update: Update, _ctx):
 
         await reply(update.message, "\n".join(status_lines))
     except Exception as e:
-        await reply(update.message, f"❌ FreeLLM недоступен: {e}")
+        await reply(update.message, f"❌ ТНИИ недоступен: {e}")
 
 
 async def projects_cmd(update: Update, _ctx):
@@ -751,14 +751,14 @@ async def main():
         return
 
     from config import AGENT_MODEL
-    logger.info(f"FreeLLM: {FREELLM_BASE_URL} | Модель: {AGENT_MODEL} | Workspace: {WORKSPACE_DIR}")
+    logger.info(f"ТНИИ: {FREELLM_BASE_URL} | Модель: {AGENT_MODEL} | Workspace: {WORKSPACE_DIR}")
 
     from openai import OpenAI
     try:
         OpenAI(base_url=FREELLM_BASE_URL, api_key="unused").models.list()
-        logger.info("FreeLLM OK")
+        logger.info("ТНИИ OK")
     except Exception as e:
-        logger.warning(f"FreeLLM недоступен: {e}")
+        logger.warning(f"ТНИИ недоступен: {e}")
 
     app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))

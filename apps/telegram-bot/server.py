@@ -26,7 +26,7 @@ async def handle_index(_request):
                 files.append({"name": f.name, "url": f"/serve/{f.name}"})
     return web.json_response({
         "service": "freellm-bot",
-        "description": "Telegram bot for FreeLLM agent",
+        "description": "Telegram bot for ТНИИ agent",
         "files": files,
     })
 
