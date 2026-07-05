@@ -393,6 +393,26 @@ async def tool_gmail_unread_count() -> str:
 
 # ─── User settings tools ──────────────────────────────────────
 
+async def tool_user_settings_update(settings_json: str) -> str:
+    from firebase_db import get_user_settings, save_user_settings
+    uid = current_user_id.get()
+    if not uid:
+        return "❌ Нет data пользователя."
+    try:
+        updates = json.loads(settings_json)
+    except json.JSONDecodeError:
+        return "❌ Невалидный JSON."
+
+    allowed = {"language", "model", "notifications"}
+    if "notifications" in updates:
+        updates["notifications"] = str(updates["notifications"]).lower() in ("true", "1", "да", "yes")
+
+    save_user_settings(uid, {k: v for k, v in updates.items() if k in allowed})
+    settings = get_user_settings(uid)
+    model_label = settings.get("model") or "по умолчанию"
+    return f"✅ Настройки обновлены. Модель: {model_label}, язык: {settings.get('language', 'ru')}, уведомления: {'вкл' if settings.get('notifications', True) else 'выкл'}"
+
+
 async def tool_user_settings_get() -> str:
     from firebase_db import get_user_settings, list_integrations
     uid = current_user_id.get()
@@ -423,7 +443,8 @@ async def tool_user_settings_set(key: str, value: str) -> str:
         value = str(value).lower() in ("true", "1", "да", "yes")
     settings[key] = value
     save_user_settings(uid, {key: value})
-    return f"✅ {key} = {value}"
+    model_label = settings.get("model") or "по умолчанию"
+    return f"✅ {key} = {value}. Текущая модель: {model_label}, язык: {settings.get('language', 'ru')}"
 
 
 # ─── Integration & MCP tools ─────────────────────────────────
@@ -849,14 +870,28 @@ TOOL_DEFINITIONS = [
         "type": "function",
         "function": {
             "name": "user_settings_set",
-            "description": "Change a user setting. Allowed keys: language (ru/en), model (model name or empty), notifications (true/false).",
+            "description": "Change ONE user setting. For changing multiple at once use user_settings_update. Allowed keys: language (ru/en), model (model name or empty string for default), notifications (true/false).",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "key": {"type": "string", "description": "Setting key: language, model, or notifications"},
-                    "value": {"type": "string", "description": "Setting value"},
+                    "key": {"type": "string", "description": "Setting key. Use 'model' to change AI model. Examples: 'groq/qwen-qwq-32b', 'free-fast', 'free-smart'"},
+                    "value": {"type": "string", "description": "Setting value. For model: put the full model name like 'groq/qwen-qwq-32b' or 'free-fast' or empty string for default"},
                 },
                 "required": ["key", "value"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "user_settings_update",
+            "description": "Change MULTIPLE user settings at once. Pass a JSON object with the settings to change. Example: {\"model\": \"groq/qwen-qwq-32b\", \"language\": \"ru\"}. Leave model empty string for default.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "settings_json": {"type": "string", "description": "JSON object with settings: {\"model\": \"...\", \"language\": \"ru/en\", \"notifications\": true/false}"},
+                },
+                "required": ["settings_json"],
             },
         },
     },
@@ -974,6 +1009,7 @@ TOOL_NAME_MAP = {
     "gmail_unread_count": tool_gmail_unread_count,
     "user_settings_get": tool_user_settings_get,
     "user_settings_set": tool_user_settings_set,
+    "user_settings_update": tool_user_settings_update,
     "integration_list": tool_integration_list,
     "integration_connect": tool_integration_connect,
     "integration_disconnect": tool_integration_disconnect,
