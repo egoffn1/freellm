@@ -184,15 +184,17 @@ async def handle_callback(update: Update, _ctx):
 
     cmd = cmd_map.get(data)
     if cmd:
-        user_text_map = {
-            "/stop": "остановить задачу",
-            "/reset": "сбросить историю",
-            "/status": "показать статус",
-            "/clean": "очистить файлы",
+        handler_map = {
+            "/stop": stop_cmd,
+            "/reset": reset,
+            "/status": status,
+            "/clean": clean,
         }
-        fake_update = update
-        fake_update.message = query.message
-        await handle_message(fake_update, _ctx)
+        handler = handler_map.get(cmd)
+        if handler:
+            fake_update = update
+            fake_update.message = query.message
+            await handler(fake_update, _ctx)
 
 
 async def _handle_settings_callback(query, uid: int, data: str):
