@@ -130,9 +130,29 @@ async def run_agent(messages: list, on_status: callable = None, cancel_event: as
         except Exception as e:
             return f"❌ {e}"
 
+    # Deep reasoning step — create a plan before acting
+    plan = None
+    if needs_tools and len(user_text) > 20:
+        if on_status:
+            await on_status("🧠 Анализирую и составляю план...")
+        from reasoning import reason
+        ctx_parts = []
+        for m in messages[-6:]:
+            ctx_parts.append(f"{m['role']}: {m['content'][:300]}")
+        plan = await reason(user_text, "\n".join(ctx_parts))
+        if plan and plan.get("steps"):
+            plan_summary = "\n".join(f"  {s['step']}. [{s['tool']}] {s['description'][:100]}" for s in plan["steps"])
+            if on_status:
+                await on_status(f"📋 План:\n{plan_summary[:200]}...")
+            if plan.get("needs_web_search") and on_status:
+                await on_status("🔍 Потребуется веб-поиск — выполняю исследование...")
+
     ctx_note = ""
     if memory_context:
         ctx_note = f"\n\nRelevant context from previous conversations:\n{memory_context}"
+    if plan and plan.get("steps"):
+        plan_str = json.dumps(plan, ensure_ascii=False, indent=2)
+        ctx_note += f"\n\n## Reasoning Plan\nFollow this plan:\n{plan_str}"
 
     sys_msg = {"role": "system", "content": AGENT_SYSTEM_PROMPT + ctx_note}
     full_messages = [sys_msg] + messages

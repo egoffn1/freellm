@@ -1,60 +1,110 @@
+import json
 import re
-from config import FREELLM_BASE_URL, FREELLM_API_KEY
+import logging
+import asyncio
+from openai import OpenAI
 
-COT_SYSTEM_PROMPT = """You are a reasoning engine. Your ONLY job is to think step-by-step.
-Given a user request, you must:
+from config import FREELLM_BASE_URL, FREELLM_API_KEY, AGENT_MODEL
 
-1. **Analyze**: Break down the request into core components. What does the user want?
-2. **Plan**: List 3-5 concrete steps needed to accomplish it. For each step say which tool(s) are needed.
-3. **Anticipate**: What could go wrong? What edge cases exist? How will you handle them?
-4. **Output**: Return ONLY a JSON object with these keys:
-   - `analysis`: short summary of what's needed
-   - `steps`: array of {step, tool, description} objects
-   - `risks`: array of potential issues
-   - `success_criteria`: how to know the task is done
+logger = logging.getLogger(__name__)
+_client = OpenAI(base_url=FREELLM_BASE_URL, api_key=FREELLM_API_KEY)
 
-Example output:
+REASONING_PROMPT = """You are a methodical reasoning engine. Your task is to create a detailed plan.
+
+Given the user's request, think step by step:
+
+1. **Analyze the request**: What exactly does the user want? What are the key requirements?
+2. **Identify what you know vs what you need to find out**: Do you need to search the web? Read files? Write code?
+3. **Create a step-by-step plan**: Each step should specify which tool to use and why.
+
+Available tools: read, write, edit, glob, grep, bash, web_fetch, vision, sandbox, research, scaffold
+
+Return a JSON object:
+```json
 {
-  "analysis": "User wants a Python web server file",
+  "analysis": "what the user needs",
   "steps": [
-    {"step": 1, "tool": "write", "description": "Create main.py with FastAPI app"}
+    {"step": 1, "tool": "tool_name", "description": "what to do", "expected_outcome": "what result to expect"}
   ],
-  "risks": ["Requirements.txt not included"],
-  "success_criteria": "File created and validated"
+  "needs_web_search": true/false,
+  "risks": ["potential issues"]
 }
+```
 """
 
-REFLECTION_PROMPT = """You are a critical reviewer. Review the completed work:
-- Does the result fully satisfy the original request?
-- Are there any bugs, errors, or edge cases not handled?
-- Is the code idiomatic and well-structured?
-- What improvements would you suggest?
+REFLECTION_PROMPT = """Review the completed work critically:
+1. Does the result fully satisfy the original request?
+2. Are there any bugs, logical errors, or edge cases?
+3. Is the code clean and well-structured?
+4. What would you improve?
 
-Return a JSON: {"score": 1-10, "issues": [...], "suggestions": [...]}"""
+Respond in JSON:
+```json
+{"score": 1-10, "issues": [...], "suggestions": [...], "ready": true/false}
+```
+"""
 
 
-def build_cot_prompt(user_request: str, context: str = "") -> list[dict]:
-    msgs = [{"role": "system", "content": COT_SYSTEM_PROMPT}]
+async def reason(user_request: str, context: str = "") -> dict:
+    messages = [{"role": "system", "content": REASONING_PROMPT}]
     if context:
-        msgs.append({"role": "user", "content": f"Context:\n{context}\n\nRequest: {user_request}"})
+        messages.append({"role": "user", "content": f"Контекст:\n{context}\n\nЗапрос:\n{user_request}"})
     else:
-        msgs.append({"role": "user", "content": user_request})
-    return msgs
+        messages.append({"role": "user", "content": user_request})
+
+    loop = asyncio.get_event_loop()
+    try:
+        resp = await loop.run_in_executor(
+            None,
+            lambda: _client.chat.completions.create(
+                model=AGENT_MODEL,
+                messages=messages,
+                timeout=60,
+            ),
+        )
+        text = resp.choices[0].message.content or ""
+        return _parse_json(text) or {
+            "analysis": user_request,
+            "steps": [{"step": 1, "tool": "auto", "description": "Execute the request"}],
+            "needs_web_search": False,
+            "risks": [],
+        }
+    except Exception as e:
+        logger.warning(f"Reasoning failed: {e}")
+        return {
+            "analysis": user_request,
+            "steps": [{"step": 1, "tool": "auto", "description": "Execute the request"}],
+            "needs_web_search": False,
+            "risks": [str(e)],
+        }
 
 
-def build_reflection_prompt(task: str, result: str) -> list[dict]:
-    return [
+async def reflect(task: str, result: str) -> dict:
+    messages = [
         {"role": "system", "content": REFLECTION_PROMPT},
         {"role": "user", "content": f"Task: {task}\n\nResult:\n{result}"},
     ]
+    loop = asyncio.get_event_loop()
+    try:
+        resp = await loop.run_in_executor(
+            None,
+            lambda: _client.chat.completions.create(
+                model=AGENT_MODEL,
+                messages=messages,
+                timeout=30,
+            ),
+        )
+        text = resp.choices[0].message.content or ""
+        return _parse_json(text) or {"score": 5, "issues": ["Could not parse reflection"], "suggestions": [], "ready": True}
+    except Exception as e:
+        return {"score": 5, "issues": [str(e)], "suggestions": [], "ready": True}
 
 
-def parse_json_response(text: str) -> dict | None:
+def _parse_json(text: str) -> dict | None:
     text = text.strip()
     if text.startswith("```"):
         text = re.sub(r"^```(?:json)?\n?|```$", "", text, flags=re.MULTILINE).strip()
     try:
-        import json
         return json.loads(text)
     except json.JSONDecodeError:
         return None
