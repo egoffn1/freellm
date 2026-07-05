@@ -355,6 +355,44 @@ async def tool_host_file(filename: str) -> dict[str, Any]:
     return {"url": url, "filename": filename, "message": f"Файл доступен по ссылке: {url}"}
 
 
+# ─── Gmail tools ─────────────────────────────────────────────
+
+from config import GMAIL_ENABLED
+from gmail import gmail_list as _gmail_list, gmail_read as _gmail_read, gmail_send as _gmail_send, gmail_search as _gmail_search, gmail_unread_count as _gmail_unread_count
+
+
+async def tool_gmail_list(max_results: int = 10, query: str = "") -> str:
+    if not GMAIL_ENABLED:
+        return "❌ Gmail отключён. Установи GMAIL_ENABLED=true"
+    return await _gmail_list(max_results=max_results, query=query)
+
+
+async def tool_gmail_read(message_id: str) -> str:
+    if not GMAIL_ENABLED:
+        return "❌ Gmail отключён."
+    return await _gmail_read(message_id=message_id)
+
+
+async def tool_gmail_send(to: str, subject: str, body: str) -> str:
+    if not GMAIL_ENABLED:
+        return "❌ Gmail отключён."
+    return await _gmail_send(to=to, subject=subject, body=body)
+
+
+async def tool_gmail_search(query: str, max_results: int = 10) -> str:
+    if not GMAIL_ENABLED:
+        return "❌ Gmail отключён."
+    return await _gmail_search(query=query, max_results=max_results)
+
+
+async def tool_gmail_unread_count() -> str:
+    if not GMAIL_ENABLED:
+        return "❌ Gmail отключён."
+    return await _gmail_unread_count()
+
+
+# ─── Tool definitions ─────────────────────────────────────────
+
 TOOL_DEFINITIONS = [
     {
         "type": "function",
@@ -565,6 +603,76 @@ TOOL_DEFINITIONS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "gmail_list",
+            "description": "List emails from Gmail inbox. Optionally filter by query (same as Gmail search syntax). Returns sender, subject, date, and message ID for each.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "max_results": {"type": "integer", "description": "Max results to return (1-50)", "default": 10},
+                    "query": {"type": "string", "description": "Gmail search query (e.g. 'from:someone@gmail.com', 'is:unread')"},
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "gmail_read",
+            "description": "Read full content of a specific email by its message ID. Returns headers (from, to, subject, date) and body text.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "message_id": {"type": "string", "description": "ID of the message to read"},
+                },
+                "required": ["message_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "gmail_send",
+            "description": "Send an email via Gmail. Requires the recipient address, subject, and body text.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "to": {"type": "string", "description": "Recipient email address"},
+                    "subject": {"type": "string", "description": "Email subject"},
+                    "body": {"type": "string", "description": "Email body text"},
+                },
+                "required": ["to", "subject", "body"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "gmail_search",
+            "description": "Search emails using Gmail search syntax. Same as gmail_list but with required query.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Gmail search query"},
+                    "max_results": {"type": "integer", "description": "Max results (1-50)", "default": 10},
+                },
+                "required": ["query"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "gmail_unread_count",
+            "description": "Check Gmail inbox stats: unread count and total messages.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+            },
+        },
+    },
 ]
 
 TOOL_NAME_MAP = {
@@ -580,4 +688,9 @@ TOOL_NAME_MAP = {
     "research": tool_research,
     "scaffold": tool_scaffold,
     "host_file": tool_host_file,
+    "gmail_list": tool_gmail_list,
+    "gmail_read": tool_gmail_read,
+    "gmail_send": tool_gmail_send,
+    "gmail_search": tool_gmail_search,
+    "gmail_unread_count": tool_gmail_unread_count,
 }
