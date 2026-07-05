@@ -575,24 +575,6 @@ async def _execute_agent_task(
             del cancel_events[uid]
 
     files = get_and_clear_created_files(uid)
-
-    if not files:
-        user_ws = Path(WORKSPACE_DIR) / str(uid)
-        if "```" in answer:
-            import re
-            from tools import CREATED_FILES
-            blocks = re.findall(r"```(\w+)?\n(.*?)```", answer, re.DOTALL)
-            user_ws.mkdir(parents=True, exist_ok=True)
-            for i, (lang, code) in enumerate(blocks):
-                code = code.strip()
-                if not code:
-                    continue
-                name = f"bot_{i+1}.{lang or 'py'}" if lang else f"file_{i+1}.txt"
-                (user_ws / name).write_text(code, encoding="utf-8")
-                CREATED_FILES.setdefault(uid, set()).add(name)
-                files.append(name)
-            answer = re.sub(r"```\w*\n.*?```", "", answer, flags=re.DOTALL)
-            answer = re.sub(r"\n{3,}", "\n\n", answer).strip()
     if files:
         for fname in files:
             messages.append({"role": "system", "content": f"[Создан файл: {fname}]"})
