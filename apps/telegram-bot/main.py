@@ -7,8 +7,8 @@ import time
 from collections import defaultdict
 from pathlib import Path
 
-from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler
 
 from config import (
     TELEGRAM_BOT_TOKEN, FREELLM_BASE_URL, WORKSPACE_DIR, MAX_HISTORY,
@@ -33,6 +33,13 @@ async def reply(msg, text: str, **kw):
     return await msg.reply_text(md_to_html(text), **kw)
 
 
+async def reply_with_kb(msg, text: str, reply_markup=None, **kw):
+    kw["parse_mode"] = "HTML"
+    kw.pop("markdown", None)
+    from emoji import md_to_html
+    return await msg.reply_text(md_to_html(text), reply_markup=reply_markup, **kw)
+
+
 async def edit(msg, text: str, **kw):
     kw["parse_mode"] = "HTML"
     from emoji import md_to_html
@@ -45,69 +52,62 @@ async def edit(msg, text: str, **kw):
         raise
 
 
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    level=logging.INFO,
-)
-logger = logging.getLogger(__name__)
-
-user_history: dict[int, list] = defaultdict(list)
-running_tasks: dict[int, asyncio.Task] = {}
-cancel_events: dict[int, asyncio.Event] = {}
-HISTORY_DIR = Path(WORKSPACE_DIR) / ".histories"
-
-user_rate_limits: dict[int, list[float]] = defaultdict(list)
-task_semaphore = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
+def main_keyboard():
+    buttons = [
+        [KeyboardButton("🌐 Создать сайт"), KeyboardButton("🔍 Поиск")],
+        [KeyboardButton("📁 Мои файлы"), KeyboardButton("🧹 Очистить")],
+        [KeyboardButton("🛑 Стоп"), KeyboardButton("📋 Статус")],
+    ]
+    return ReplyKeyboardMarkup(buttons, resize_keyboard=True)
 
 
-def _rate_limit(uid: int) -> bool:
-    now = time.time()
-    window = 60.0
-    limits = user_rate_limits[uid]
-    limits[:] = [t for t in limits if now - t < window]
-    if len(limits) >= RATE_LIMIT_PER_MINUTE:
-        return False
-    limits.append(now)
-    return True
+def inline_task_actions() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("🔄 Повторить", callback_data="retry"),
+            InlineKeyboardButton("🛑 Стоп", callback_data="stop"),
+        ],
+        [
+            InlineKeyboardButton("📋 Статус", callback_data="status"),
+            InlineKeyboardButton("🗑 Сброс", callback_data="reset"),
+        ],
+    ])
 
 
-def _load_histories():
-    HISTORY_DIR.mkdir(parents=True, exist_ok=True)
-    loaded = 0
-    for f in HISTORY_DIR.iterdir():
-        if f.suffix == ".json":
-            if loaded >= MAX_HISTORY_LOAD_FILES:
-                logger.warning(f"Hit max history load limit ({MAX_HISTORY_LOAD_FILES})")
+async def handle_callback(update: Update, _ctx):
+    query = update.callback_query
+    await query.answer()
+    data = query.data
+    uid = update.effective_user.id
+
+    cmd_map = {
+        "stop": "/stop",
+        "reset": "/reset",
+        "status": "/status",
+        "clean": "/clean",
+        "retry": None,
+    }
+
+    if data == "retry":
+        messages = user_history.get(uid, [])
+        last_user = None
+        for m in reversed(messages):
+            if m["role"] == "user":
+                last_user = m["content"]
                 break
-            try:
-                if f.stat().st_size > 1024 * 1024:
-                    logger.warning(f"History file too large, skipping: {f.name}")
-                    f.unlink(missing_ok=True)
-                    continue
-                uid = int(f.stem)
-                data = json.loads(f.read_text())
-                user_history[uid] = data[-MAX_HISTORY * 2:]
-                loaded += 1
-            except Exception as e:
-                logger.warning(f"Failed to load history {f.name}: {e}")
-    logger.info(f"Loaded {loaded} user histories")
+        if last_user:
+            messages.append({"role": "user", "content": last_user})
+            status_msg = await query.message.reply_text("🤔 Повторяю...")
+            await _execute_agent_task(
+                update.effective_user, uid, messages, status_msg,
+                cancel_events, running_tasks, user_history, task_semaphore, user_rate_limits,
+            )
+        return
 
-
-def _save_history(uid: int, messages: list):
-    HISTORY_DIR.mkdir(parents=True, exist_ok=True)
-    path = HISTORY_DIR / f"{uid}.json"
-    try:
-        path.write_text(json.dumps(messages[-MAX_HISTORY * 2:], ensure_ascii=False))
-    except Exception as e:
-        logger.warning(f"Failed to save history for {uid}: {e}")
-
-
-def _trim_history_by_size(messages: list, max_chars: int = MAX_CONTEXT_SIZE_CHARS) -> list:
-    total = sum(len(m.get("content", "")) for m in messages)
-    while total > max_chars and len(messages) > 2:
-        removed = messages.pop(0)
-        total -= len(removed.get("content", ""))
-    return messages
+    cmd = cmd_map.get(data)
+    if cmd:
+        update.message = query.message
+        await handle_message(update, _ctx)
 
 
 async def start(update: Update, _ctx):
@@ -124,7 +124,7 @@ async def start(update: Update, _ctx):
     features.append("📦 Артефакты (multi-file проекты)")
     features.append("👁 Анализ изображений (Vision)")
 
-    await reply(update.message,
+    await update.message.reply_text(
         "🤖 *FreeLLM Agent Bot* — AI-ассистент как Opencode / Claude / ChatGPT\n\n"
         f"**Фишки:**\n" + "\n".join(f"• {f}" for f in features) + "\n\n"
         "**Как работать:**\n"
@@ -143,6 +143,8 @@ async def start(update: Update, _ctx):
         "/reset — сбросить историю\n"
         "/stop — остановить задачу\n"
         "/status — статус и фишки",
+        parse_mode="HTML",
+        reply_markup=main_keyboard(),
     )
 
 
@@ -468,20 +470,27 @@ async def _execute_agent_task(
                         document=f,
                         filename=fname,
                     )
+        kb = inline_task_actions()
         if answer.strip():
-            await reply(update.message, answer)
+            await reply_with_kb(update.message, answer, reply_markup=kb)
+        else:
+            await reply_with_kb(update.message, "✅ Готово.", reply_markup=kb)
     elif len(answer) > 4000:
         try:
             await status_msg.delete()
         except Exception:
             pass
-        for i in range(0, len(answer), 4000):
-            await reply(update.message, answer[i : i + 4000])
+        parts = [answer[i : i + 4000] for i in range(0, len(answer), 4000)]
+        for i, part in enumerate(parts):
+            kb = inline_task_actions() if i == len(parts) - 1 else None
+            await reply_with_kb(update.message, part, reply_markup=kb)
     else:
+        kb = inline_task_actions()
         try:
             await edit(status_msg, answer)
+            await status_msg.edit_reply_markup(reply_markup=kb)
         except Exception:
-            await reply(update.message, answer)
+            await reply_with_kb(update.message, answer, reply_markup=kb)
 
     _save_history(uid, messages)
 
@@ -502,11 +511,33 @@ async def stop_cmd(update: Update, _ctx):
         await reply(update.message, "🤷 Нет активной задачи для остановки.")
 
 
+BUTTON_COMMANDS = {
+    "🌐 Создать сайт": "создай сайт и запусти его",
+    "🔍 Поиск": "найди информацию в интернете",
+    "📁 Мои файлы": "/projects",
+    "🧹 Очистить": "/clean",
+    "🛑 Стоп": "/stop",
+    "📋 Статус": "/status",
+}
+
+
 async def handle_message(update: Update, _ctx):
     uid = update.effective_user.id
     text = update.message.text
     if not text:
         return
+
+    text = BUTTON_COMMANDS.get(text, text)
+    if text.startswith("/"):
+        cmd = text[1:].split()[0]
+        cmd_map = {
+            "stop": stop_cmd, "reset": reset, "clean": clean,
+            "status": status, "projects": projects_cmd,
+        }
+        handler = cmd_map.get(cmd)
+        if handler:
+            await handler(update, _ctx)
+            return
     messages = user_history[uid]
     messages.append({"role": "user", "content": text})
     status_msg = await reply(update.message, "🤔 Анализирую задачу...")
@@ -541,6 +572,7 @@ async def main():
     app.add_handler(CommandHandler("history", history_cmd))
     app.add_handler(CommandHandler("projects", projects_cmd))
     app.add_handler(CommandHandler("stop", stop_cmd))
+    app.add_handler(CallbackQueryHandler(handle_callback))
     app.add_handler(MessageHandler(filters.Document.ALL | filters.PHOTO, handle_file))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
