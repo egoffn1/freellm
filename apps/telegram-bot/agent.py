@@ -15,7 +15,8 @@ _client = OpenAI(base_url=FREELLM_BASE_URL, api_key=FREELLM_API_KEY)
 CASUAL_PATTERNS = re.compile(
     r"^(привет|здравствуй|хай|хелло|пока|до свидания|спасибо|благодарю|"
     r"как дела|что делаешь|кто ты|расскажи о себе|help|hi|hello|bye|"
-    r"как тебя зовут|ты кто|thanks|thank you|good morning|good evening)",
+    r"как тебя зовут|ты кто|thanks|thank you|good morning|good evening|"
+    r"алоо|ало|ты тут|ау|есть кто)",
     re.IGNORECASE,
 )
 
@@ -23,7 +24,7 @@ NEEDS_TOOLS = re.compile(
     r"(напиш|создай|сгенер|сделай|пофикс|исправ|отредакт|измен|"
     r"прочитай|покажи|найди|напиши|запуст|скомпил|установ|"
     r"склон|задепло|отформат|проверь|протест|"
-    r"рефактор|оптимиз|добав|удал|переимен|"
+    r"рефактор|оптимиз|добав|удал|переимен|убер|встав|"
     r"read|write|edit|create|generate|fix|refactor|run|test|"
     r"clone|deploy|build|compile|install|format|lint|check|"
     r"file|файл|код|code|баг|bug|функци|function|class|"
@@ -221,6 +222,11 @@ async def run_agent(messages: list, on_status: callable = None, on_log: callable
     tool_calls_count = 0
     tried_fallback = False
     no_tool_retries = 0
+
+    if on_status:
+        await on_status("🤔 Выполняю...")
+    if on_log:
+        await on_log("🚀 Запуск агента...")
 
     while tool_calls_count < MAX_TOOL_CALLS:
         if cancel_event and cancel_event.is_set():

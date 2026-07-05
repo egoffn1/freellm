@@ -443,7 +443,7 @@ async def _execute_agent_task(
 
     messages = _trim_history_by_size(messages, MAX_CONTEXT_SIZE_CHARS)
 
-    cancel_events[uid] = asyncio.Event()
+    cancel_event = cancel_events[uid] = asyncio.Event()
 
     log_lines = []
     status_text = "🤔 Выполняю..."
@@ -477,7 +477,7 @@ async def _execute_agent_task(
     async def run_with_timeout():
         async with task_semaphore:
             return await asyncio.wait_for(
-                run_agent(messages, on_status=on_status, on_log=on_log, cancel_event=cancel_events[uid]),
+                run_agent(messages, on_status=on_status, on_log=on_log, cancel_event=cancel_event),
                 timeout=AGENT_TIMEOUT_SECONDS,
             )
 
@@ -496,7 +496,7 @@ async def _execute_agent_task(
     finally:
         if uid in running_tasks and running_tasks[uid] is task:
             del running_tasks[uid]
-        if uid in cancel_events:
+        if uid in cancel_events and cancel_events[uid] is cancel_event:
             del cancel_events[uid]
 
     files = get_and_clear_created_files(uid)
