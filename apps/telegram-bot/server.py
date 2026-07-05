@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from pathlib import Path
 from aiohttp import web
 
@@ -7,7 +8,7 @@ from config import PORT, WORKSPACE_DIR
 
 logger = logging.getLogger(__name__)
 
-PUBLIC_URL = "https://freellm-bot.onrender.com"
+PUBLIC_URL = os.getenv("RENDER_EXTERNAL_URL", "https://freellm-bot.onrender.com")
 
 
 async def handle_health(_request):
@@ -30,10 +31,17 @@ async def handle_index(_request):
 
 async def handle_serve(request):
     filename = request.match_info.get("filename", "")
-    if not filename or ".." in filename or "/" in filename:
+    if not filename or ".." in filename:
         raise web.HTTPBadRequest(text="Invalid filename")
 
-    filepath = Path(WORKSPACE_DIR) / filename
+    parts = filename.split("/", 1)
+    if len(parts) == 2 and parts[0].isdigit():
+        filepath = Path(WORKSPACE_DIR) / parts[0] / parts[1]
+    else:
+        if "/" in filename:
+            raise web.HTTPBadRequest(text="Invalid filename")
+        filepath = Path(WORKSPACE_DIR) / filename
+
     if not filepath.exists() or not filepath.is_file():
         raise web.HTTPNotFound(text=f"File {filename} not found")
 
@@ -50,7 +58,11 @@ async def handle_serve(request):
         ".ico": "image/x-icon",
     }.get(ext, "application/octet-stream")
 
-    return web.Response(body=content, content_type=mime)
+    return web.Response(
+        body=content,
+        content_type=mime,
+        headers={"Access-Control-Allow-Origin": "*"},
+    )
 
 
 async def start_web_server(shutdown_event: asyncio.Event | None = None):

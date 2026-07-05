@@ -1,6 +1,7 @@
 import asyncio
 import resource
 import tempfile
+import shlex
 import os
 from pathlib import Path
 
@@ -11,7 +12,8 @@ MAX_OUTPUT_CHARS = 10000
 
 def _set_limits():
     try:
-        resource.setrlimit(resource.RLIMIT_AS, (MAX_MEMORY_MB * 1024 * 1024, -1))
+        limit = MAX_MEMORY_MB * 1024 * 1024
+        resource.setrlimit(resource.RLIMIT_AS, (limit, limit))
         resource.setrlimit(resource.RLIMIT_CPU, (15, 15))
     except (ValueError, resource.error):
         pass
@@ -60,11 +62,22 @@ async def _run_python_sandbox(code: str) -> dict:
             return {"error": str(e)}
 
 
+BLOCKED_SHELL_PATTERNS = [
+    "rm -rf", "rm -fr", "rm --recursive",
+    "mkfs", "dd if=", "> /dev/", "sudo", "su ",
+    ":()", "fork bomb", "chmod 777 /", "chown ",
+]
+
+
 async def _run_shell_sandbox(command: str) -> dict:
-    blocked = ["rm -rf", "mkfs", "dd if=", "> /dev/", "sudo", "su "]
-    for b in blocked:
-        if b in command:
+    for b in BLOCKED_SHELL_PATTERNS:
+        if b in command.lower():
             return {"error": f"Blocked command pattern: {b}"}
+
+    first_word = shlex.split(command)[0] if command.strip() else ""
+    dangerous = {"sudo", "su", "chown", "chgrp", "passwd", "dd", "mkfs", "reboot", "shutdown", "kill", "pkill"}
+    if first_word in dangerous:
+        return {"error": f"Command '{first_word}' is blocked for security"}
 
     try:
         proc = await asyncio.create_subprocess_shell(

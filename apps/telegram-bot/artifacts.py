@@ -7,13 +7,14 @@ from config import WORKSPACE_DIR
 PROJECTS_DIR = Path(WORKSPACE_DIR) / ".projects"
 
 
-def _project_path(name: str) -> Path:
-    PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
-    return PROJECTS_DIR / name
+def _project_path(name: str, user_id: int = 0) -> Path:
+    base = PROJECTS_DIR / str(user_id) if user_id else PROJECTS_DIR
+    base.mkdir(parents=True, exist_ok=True)
+    return base / name
 
 
-async def scaffold_project(name: str, files: list[dict]) -> dict:
-    proj_path = _project_path(name)
+async def scaffold_project(name: str, files: list[dict], user_id: int = 0) -> dict:
+    proj_path = _project_path(name, user_id)
     if proj_path.exists():
         shutil.rmtree(str(proj_path))
     proj_path.mkdir(parents=True, exist_ok=True)
@@ -32,6 +33,7 @@ async def scaffold_project(name: str, files: list[dict]) -> dict:
             entry = rel
     manifest = {
         "name": name,
+        "user_id": user_id,
         "files": created,
         "entry": entry,
     }
@@ -40,17 +42,27 @@ async def scaffold_project(name: str, files: list[dict]) -> dict:
 
 
 def get_project(name: str) -> dict | None:
-    proj_path = _project_path(name)
-    manifest_path = proj_path / ".manifest.json"
-    if not manifest_path.exists():
-        return None
-    return json.loads(manifest_path.read_text(encoding="utf-8"))
+    for base in [PROJECTS_DIR]:
+        if not base.exists():
+            continue
+        for uid_dir in base.iterdir():
+            if uid_dir.is_dir():
+                manifest_path = uid_dir / name / ".manifest.json"
+                if manifest_path.exists():
+                    return json.loads(manifest_path.read_text(encoding="utf-8"))
+    return None
 
 
 def list_projects() -> list[str]:
     if not PROJECTS_DIR.exists():
         return []
-    return sorted(d.name for d in PROJECTS_DIR.iterdir() if d.is_dir() and (d / ".manifest.json").exists())
+    projects = []
+    for uid_dir in PROJECTS_DIR.iterdir():
+        if uid_dir.is_dir():
+            for d in uid_dir.iterdir():
+                if d.is_dir() and (d / ".manifest.json").exists():
+                    projects.append(d.name)
+    return sorted(projects)
 
 
 def build_html_preview(name: str) -> str:

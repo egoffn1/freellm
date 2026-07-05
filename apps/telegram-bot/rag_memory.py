@@ -1,6 +1,7 @@
 import json
 import hashlib
 import logging
+import time
 import numpy as np
 from pathlib import Path
 from collections import defaultdict
@@ -9,6 +10,8 @@ from config import WORKSPACE_DIR
 
 logger = logging.getLogger(__name__)
 MEMORY_DIR = Path(WORKSPACE_DIR) / ".memory"
+MEMORY_TTL_DAYS = 7
+MAX_CHUNKS = 1000
 
 
 class SimpleRAG:
@@ -16,6 +19,7 @@ class SimpleRAG:
         self.chunks: list[dict] = []
         self.embeddings: list[np.ndarray] = []
         MEMORY_DIR.mkdir(parents=True, exist_ok=True)
+        self._clean_expired()
         self._load()
 
     def _hash(self, text: str) -> str:
@@ -38,10 +42,20 @@ class SimpleRAG:
         for c in self.chunks:
             if c["hash"] == h:
                 return
-        chunk = {"text": text, "hash": h, "metadata": metadata or {}}
+        chunk = {"text": text, "hash": h, "metadata": metadata or {}, "ts": time.time()}
         self.chunks.append(chunk)
         self.embeddings.append(self._simple_embed(text))
         self._save_chunk(chunk)
+        if len(self.chunks) > MAX_CHUNKS:
+            oldest = sorted(self.chunks, key=lambda c: c.get("ts", 0))
+            to_remove = oldest[:len(self.chunks) - MAX_CHUNKS]
+            for c in to_remove:
+                path = MEMORY_DIR / f"{c['hash']}.json"
+                try:
+                    path.unlink(missing_ok=True)
+                except Exception:
+                    pass
+            self._reload()
 
     def search(self, query: str, top_k: int = 5) -> list[dict]:
         if not self.chunks:
@@ -80,6 +94,19 @@ class SimpleRAG:
             total += len(snippet)
         return "\n\n".join(parts)
 
+    def _clean_expired(self):
+        if not MEMORY_DIR.exists():
+            return
+        cutoff = time.time() - MEMORY_TTL_DAYS * 86400
+        for f in list(MEMORY_DIR.iterdir()):
+            if f.suffix == ".json":
+                try:
+                    chunk = json.loads(f.read_text(encoding="utf-8"))
+                    if chunk.get("ts", 0) < cutoff:
+                        f.unlink()
+                except Exception:
+                    f.unlink()
+
     def _save_chunk(self, chunk: dict):
         path = MEMORY_DIR / f"{chunk['hash']}.json"
         try:
@@ -90,14 +117,23 @@ class SimpleRAG:
     def _load(self):
         if not MEMORY_DIR.exists():
             return
+        loaded = 0
         for f in sorted(MEMORY_DIR.iterdir()):
             if f.suffix == ".json":
+                if loaded >= MAX_CHUNKS:
+                    break
                 try:
                     chunk = json.loads(f.read_text(encoding="utf-8"))
                     self.chunks.append(chunk)
                     self.embeddings.append(self._simple_embed(chunk["text"]))
+                    loaded += 1
                 except Exception as e:
                     logger.warning(f"Failed to load memory {f.name}: {e}")
+
+    def _reload(self):
+        self.chunks.clear()
+        self.embeddings.clear()
+        self._load()
 
 
 rag = SimpleRAG()

@@ -3,18 +3,27 @@ import json
 import asyncio
 import signal
 import logging
+import time
 from collections import defaultdict
 from pathlib import Path
 
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
-from config import TELEGRAM_BOT_TOKEN, FREELLM_BASE_URL, WORKSPACE_DIR, MAX_HISTORY, MULTI_AGENT_ENABLED, RAG_ENABLED, GUARDRAILS_ENABLED, SANDBOX_ENABLED
+from config import (
+    TELEGRAM_BOT_TOKEN, FREELLM_BASE_URL, WORKSPACE_DIR, MAX_HISTORY,
+    MULTI_AGENT_ENABLED, RAG_ENABLED, GUARDRAILS_ENABLED, SANDBOX_ENABLED,
+    RATE_LIMIT_PER_MINUTE, MAX_CONCURRENT_TASKS, AGENT_TIMEOUT_SECONDS,
+    MAX_CONTEXT_SIZE_CHARS, MAX_HISTORY_LOAD_FILES, MAX_FILE_SIZE_MB,
+)
 from agent import run_agent
-from tools import get_and_clear_created_files
+from tools import get_and_clear_created_files, current_user_id
 from server import start_web_server
 from cleanup import run_cleanup_loop
 from emoji import premium
+
+
+MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
 
 
 async def reply(msg, text: str, **kw):
@@ -41,18 +50,41 @@ running_tasks: dict[int, asyncio.Task] = {}
 cancel_events: dict[int, asyncio.Event] = {}
 HISTORY_DIR = Path(WORKSPACE_DIR) / ".histories"
 
+user_rate_limits: dict[int, list[float]] = defaultdict(list)
+task_semaphore = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
+
+
+def _rate_limit(uid: int) -> bool:
+    now = time.time()
+    window = 60.0
+    limits = user_rate_limits[uid]
+    limits[:] = [t for t in limits if now - t < window]
+    if len(limits) >= RATE_LIMIT_PER_MINUTE:
+        return False
+    limits.append(now)
+    return True
+
 
 def _load_histories():
     HISTORY_DIR.mkdir(parents=True, exist_ok=True)
+    loaded = 0
     for f in HISTORY_DIR.iterdir():
         if f.suffix == ".json":
+            if loaded >= MAX_HISTORY_LOAD_FILES:
+                logger.warning(f"Hit max history load limit ({MAX_HISTORY_LOAD_FILES})")
+                break
             try:
+                if f.stat().st_size > 1024 * 1024:
+                    logger.warning(f"History file too large, skipping: {f.name}")
+                    f.unlink(missing_ok=True)
+                    continue
                 uid = int(f.stem)
                 data = json.loads(f.read_text())
                 user_history[uid] = data[-MAX_HISTORY * 2:]
+                loaded += 1
             except Exception as e:
                 logger.warning(f"Failed to load history {f.name}: {e}")
-    logger.info(f"Loaded {len(user_history)} user histories")
+    logger.info(f"Loaded {loaded} user histories")
 
 
 def _save_history(uid: int, messages: list):
@@ -62,6 +94,14 @@ def _save_history(uid: int, messages: list):
         path.write_text(json.dumps(messages[-MAX_HISTORY * 2:], ensure_ascii=False))
     except Exception as e:
         logger.warning(f"Failed to save history for {uid}: {e}")
+
+
+def _trim_history_by_size(messages: list, max_chars: int = MAX_CONTEXT_SIZE_CHARS) -> list:
+    total = sum(len(m.get("content", "")) for m in messages)
+    while total > max_chars and len(messages) > 2:
+        removed = messages.pop(0)
+        total -= len(removed.get("content", ""))
+    return messages
 
 
 async def start(update: Update, _ctx):
@@ -132,15 +172,19 @@ async def clone(update: Update, _ctx):
     msg = await reply(update.message, f"📦 Клонирую `{url}`...")
     try:
         proc = await asyncio.create_subprocess_shell(
-            f"git clone --depth 1 {url}",
+            f"git clone --depth 1 --single-branch {url}",
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             cwd=WORKSPACE_DIR,
         )
-        stdout, stderr = await proc.communicate(timeout=120)
+        try:
+            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=60)
+        except asyncio.TimeoutError:
+            proc.kill()
+            await edit(msg, "❌ Таймаут клонирования (60s).")
+            return
 
         if proc.returncode == 0:
-            # find cloned dir name
             lines = stdout.decode()
             import re
             m = re.search(r"'(.*?)'", stderr.decode() + stdout.decode())
@@ -224,9 +268,11 @@ async def projects_cmd(update: Update, _ctx):
 async def history_cmd(update: Update, _ctx):
     uid = update.effective_user.id
     msgs = user_history.get(uid, [])
+    total_size = sum(len(m.get("content", "")) for m in msgs)
     await reply(update.message,
         f"📋 История диалога: {len(msgs)} сообщений\n"
         f"Максимум: {MAX_HISTORY * 2}\n"
+        f"Размер: {total_size} / {MAX_CONTEXT_SIZE_CHARS} chars\n"
         f"Первое: {msgs[0]['content'][:50] if msgs else '—'}"
     )
 
@@ -239,28 +285,31 @@ async def handle_file(update: Update, ctx):
     if not file:
         return
 
+    if file.file_size and file.file_size > MAX_FILE_SIZE_BYTES:
+        await reply(msg, f"❌ Файл слишком большой (макс. {MAX_FILE_SIZE_MB}MB)")
+        return
+
     status = await reply(msg, "📥 Скачиваю файл...")
 
     try:
         tg_file = await ctx.bot.get_file(file.file_id)
         fname = getattr(file, "file_name", None) or f"file_{file.file_id[:8]}"
 
-        # Ensure unique name for photos without extension
         if msg.photo and "." not in fname:
             fname += ".jpg"
 
-        dest = Path(WORKSPACE_DIR) / fname
+        user_dir = Path(WORKSPACE_DIR) / str(uid)
+        dest = user_dir / fname
         dest.parent.mkdir(parents=True, exist_ok=True)
 
         await tg_file.download_to_drive(dest)
-        rel = str(dest.relative_to(Path(WORKSPACE_DIR).resolve()))
+        rel = str(dest.relative_to(user_dir))
 
         from tools import CREATED_FILES
-        CREATED_FILES.add(rel)
+        CREATED_FILES.setdefault(uid, set()).add(rel)
 
         messages = user_history[uid]
 
-        # photos → auto-analyze with vision
         if msg.photo:
             ext = Path(fname).suffix.lower()
             image_exts = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"}
@@ -315,7 +364,10 @@ async def handle_message(update: Update, _ctx):
     if not text:
         return
 
-    # Cancel any existing task for this user
+    if not _rate_limit(uid):
+        await reply(update.message, "⏳ Слишком много запросов. Подождите минуту.")
+        return
+
     if uid in running_tasks and not running_tasks[uid].done():
         if uid in cancel_events:
             cancel_events[uid].set()
@@ -330,6 +382,8 @@ async def handle_message(update: Update, _ctx):
     if len(messages) > max_len:
         messages[:] = messages[-max_len:]
 
+    messages = _trim_history_by_size(messages, MAX_CONTEXT_SIZE_CHARS)
+
     messages.append({"role": "user", "content": text})
 
     status_msg = await reply(update.message, "🤔 Анализирую задачу...")
@@ -337,9 +391,11 @@ async def handle_message(update: Update, _ctx):
     cancel_events[uid] = asyncio.Event()
 
     log_lines = []
+    status_text = "🤔 Выполняю..."
 
     async def on_status(text: str):
-        nonlocal status_msg
+        nonlocal status_msg, status_text
+        status_text = text
         try:
             await edit(status_msg, text)
         except Exception:
@@ -349,7 +405,7 @@ async def handle_message(update: Update, _ctx):
                 pass
 
     async def on_log(text: str):
-        nonlocal status_msg
+        nonlocal status_msg, status_text
         log_lines.append(text)
         visible = "\n".join(log_lines[-8:])
         try:
@@ -360,19 +416,25 @@ async def handle_message(update: Update, _ctx):
             except Exception:
                 pass
 
-    status_text = "🤔 Выполняю..."
+    get_and_clear_created_files(uid)
+    current_user_id.set(uid)
 
-    get_and_clear_created_files()
+    async def run_with_timeout():
+        async with task_semaphore:
+            return await asyncio.wait_for(
+                run_agent(messages, on_status=on_status, on_log=on_log, cancel_event=cancel_events[uid]),
+                timeout=AGENT_TIMEOUT_SECONDS,
+            )
 
-    task = asyncio.create_task(
-        run_agent(messages, on_status=on_status, on_log=on_log, cancel_event=cancel_events[uid])
-    )
+    task = asyncio.create_task(run_with_timeout())
     running_tasks[uid] = task
 
     try:
         answer = await task
     except asyncio.CancelledError:
         answer = "⏹ Задача отменена."
+    except asyncio.TimeoutError:
+        answer = f"⏱ Таймаут ({AGENT_TIMEOUT_SECONDS}с). Попробуйте разбить задачу на части."
     except Exception as e:
         logger.error(f"Task crashed: {e}", exc_info=True)
         answer = f"❌ Ошибка выполнения: {e}"
@@ -382,29 +444,25 @@ async def handle_message(update: Update, _ctx):
         if uid in cancel_events:
             del cancel_events[uid]
 
-    try:
-        await log_msg.delete()
-    except Exception:
-        pass
+    files = get_and_clear_created_files(uid)
 
-    files = get_and_clear_created_files()
-
-    if not files and "```" in answer:
-        import re
-        from tools import CREATED_FILES
-        blocks = re.findall(r"```(\w+)?\n(.*?)```", answer, re.DOTALL)
-        extract_dir = Path(WORKSPACE_DIR)
-        extract_dir.mkdir(parents=True, exist_ok=True)
-        for i, (lang, code) in enumerate(blocks):
-            code = code.strip()
-            if not code:
-                continue
-            name = f"bot_{i+1}.{lang or 'py'}" if lang else f"file_{i+1}.txt"
-            (extract_dir / name).write_text(code, encoding="utf-8")
-            CREATED_FILES.add(name)
-            files.append(name)
-        answer = re.sub(r"```\w*\n.*?```", "", answer, flags=re.DOTALL)
-        answer = re.sub(r"\n{3,}", "\n\n", answer).strip()
+    if not files:
+        user_ws = Path(WORKSPACE_DIR) / str(uid)
+        if "```" in answer:
+            import re
+            from tools import CREATED_FILES
+            blocks = re.findall(r"```(\w+)?\n(.*?)```", answer, re.DOTALL)
+            user_ws.mkdir(parents=True, exist_ok=True)
+            for i, (lang, code) in enumerate(blocks):
+                code = code.strip()
+                if not code:
+                    continue
+                name = f"bot_{i+1}.{lang or 'py'}" if lang else f"file_{i+1}.txt"
+                (user_ws / name).write_text(code, encoding="utf-8")
+                CREATED_FILES.setdefault(uid, set()).add(name)
+                files.append(name)
+            answer = re.sub(r"```\w*\n.*?```", "", answer, flags=re.DOTALL)
+            answer = re.sub(r"\n{3,}", "\n\n", answer).strip()
     if files:
         for fname in files:
             messages.append({"role": "system", "content": f"[Создан файл: {fname}]"})
@@ -413,7 +471,7 @@ async def handle_message(update: Update, _ctx):
         except Exception:
             pass
         for fname in files:
-            fpath = Path(WORKSPACE_DIR) / fname
+            fpath = Path(WORKSPACE_DIR) / str(uid) / fname
             if fpath.is_file():
                 with open(fpath, "rb") as f:
                     await update.message.reply_document(
@@ -470,13 +528,11 @@ async def main():
     await app.initialize()
     await app.start()
 
-    # Удаляем вебхук, если был установлен ранее — иначе polling не работает
     try:
         await app.bot.delete_webhook(drop_pending_updates=True)
     except Exception as e:
         logger.warning(f"delete_webhook error: {e}")
 
-    # Небольшая пауза, чтобы старый инстанс точно завершился
     await asyncio.sleep(2)
 
     await app.updater.start_polling(
@@ -490,6 +546,11 @@ async def main():
     shutdown_event = asyncio.Event()
 
     async def _shutdown():
+        logger.info("Shutting down...")
+        for uid, task in list(running_tasks.items()):
+            if not task.done():
+                task.cancel()
+        await asyncio.sleep(5)
         shutdown_event.set()
 
     loop = asyncio.get_event_loop()

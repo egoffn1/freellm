@@ -1,5 +1,6 @@
 import asyncio
 import base64
+import contextvars
 import subprocess
 import re
 from pathlib import Path
@@ -9,32 +10,48 @@ from openai import OpenAI
 
 from config import (
     WORKSPACE_DIR, ALLOWED_BASH_PREFIXES, CONFIRM_COMMANDS, MAX_TOOL_CALLS,
-    FREELLM_BASE_URL, FREELLM_API_KEY, AGENT_MODEL,
+    FREELLM_BASE_URL, FREELLM_API_KEY, AGENT_MODEL, MAX_FILE_SIZE_MB,
 )
 
 
 _vison_client = OpenAI(base_url=FREELLM_BASE_URL, api_key=FREELLM_API_KEY)
 
-
 WORKSPACE = Path(WORKSPACE_DIR).resolve()
+MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
 
-CREATED_FILES: set[str] = set()
+current_user_id = contextvars.ContextVar('current_user_id', default=0)
+
+CREATED_FILES: dict[int, set[str]] = {}
 
 
-def get_and_clear_created_files() -> set[str]:
+def get_and_clear_created_files(uid: int | None = None) -> set[str]:
     global CREATED_FILES
-    files = CREATED_FILES.copy()
+    if uid is not None:
+        files = CREATED_FILES.get(uid, set()).copy()
+        CREATED_FILES.pop(uid, None)
+        return files
+    all_files = set()
+    for u in list(CREATED_FILES.keys()):
+        all_files.update(CREATED_FILES[u])
     CREATED_FILES.clear()
-    return files
+    return all_files
+
+
+def _get_user_workspace() -> Path:
+    uid = current_user_id.get()
+    if uid:
+        return WORKSPACE / str(uid)
+    return WORKSPACE
 
 
 def _resolve_path(file_path: str) -> Path:
     p = Path(file_path)
     if not p.is_absolute():
-        p = WORKSPACE / p
+        p = _get_user_workspace() / p
     p = p.resolve()
-    if not str(p).startswith(str(WORKSPACE)):
-        raise PermissionError(f"Path outside workspace: {file_path}")
+    base = _get_user_workspace().resolve()
+    if not str(p).startswith(str(base)):
+        raise PermissionError(f"Path outside user workspace: {file_path}")
     return p
 
 
@@ -85,11 +102,14 @@ async def tool_read(file_path: str, offset: int = 0, limit: int = 2000) -> dict[
 
 async def tool_write(file_path: str, content: str) -> dict[str, Any]:
     try:
+        if len(content.encode("utf-8")) > MAX_FILE_SIZE_BYTES:
+            return {"error": f"File too large: max {MAX_FILE_SIZE_MB}MB"}
         p = _resolve_path(file_path)
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(content, encoding="utf-8")
-        rel = str(p.relative_to(WORKSPACE))
-        CREATED_FILES.add(rel)
+        uid = current_user_id.get()
+        rel = str(p.relative_to(_get_user_workspace()))
+        CREATED_FILES.setdefault(uid, set()).add(rel)
         return {"written": True, "path": str(p), "size": len(content)}
     except PermissionError as e:
         return {"error": str(e)}
@@ -108,9 +128,12 @@ async def tool_edit(file_path: str, old_string: str, new_string: str) -> dict[st
             return {"error": "old_string not found in file"}
 
         new_content = content.replace(old_string, new_string, 1)
+        if len(new_content.encode("utf-8")) > MAX_FILE_SIZE_BYTES:
+            return {"error": f"File too large after edit: max {MAX_FILE_SIZE_MB}MB"}
         p.write_text(new_content, encoding="utf-8")
-        rel = str(p.relative_to(WORKSPACE))
-        CREATED_FILES.add(rel)
+        uid = current_user_id.get()
+        rel = str(p.relative_to(_get_user_workspace()))
+        CREATED_FILES.setdefault(uid, set()).add(rel)
         return {"edited": True, "path": str(p)}
     except PermissionError as e:
         return {"error": str(e)}
@@ -120,9 +143,10 @@ async def tool_edit(file_path: str, old_string: str, new_string: str) -> dict[st
 
 async def tool_glob(pattern: str, path: str | None = None) -> dict[str, Any]:
     try:
-        search_dir = _resolve_path(path) if path else WORKSPACE
+        search_dir = _resolve_path(path) if path else _get_user_workspace()
         matches = sorted(search_dir.rglob(pattern))
-        return {"matches": [str(m.relative_to(WORKSPACE)) for m in matches if m.is_file()]}
+        base = _get_user_workspace()
+        return {"matches": [str(m.relative_to(base)) for m in matches if m.is_file()]}
     except PermissionError as e:
         return {"error": str(e)}
     except Exception as e:
@@ -131,7 +155,7 @@ async def tool_glob(pattern: str, path: str | None = None) -> dict[str, Any]:
 
 async def tool_grep(pattern: str, include: str | None = None, path: str | None = None) -> dict[str, Any]:
     try:
-        search_dir = _resolve_path(path) if path else WORKSPACE
+        search_dir = _resolve_path(path) if path else _get_user_workspace()
         cmd = ["rg", "-n", pattern, str(search_dir)]
         if include:
             cmd.extend(["-g", include])
@@ -162,9 +186,9 @@ async def tool_bash(command: str, timeout: int = 60, workdir: str | None = None)
         return {"error": danger, "requires_confirmation": True, "command": command}
 
     try:
-        cwd = _resolve_path(workdir) if workdir else WORKSPACE
+        cwd = _resolve_path(workdir) if workdir else _get_user_workspace()
     except PermissionError:
-        cwd = WORKSPACE
+        cwd = _get_user_workspace()
 
     try:
         proc = await asyncio.create_subprocess_shell(
@@ -221,6 +245,9 @@ async def tool_vision(file_path: str, prompt: str = "Опиши что на эт
         if not p.exists():
             return {"error": f"File not found: {file_path}"}
 
+        if len(p.read_bytes()) > MAX_FILE_SIZE_BYTES:
+            return {"error": f"Image too large: max {MAX_FILE_SIZE_MB}MB"}
+
         raw = p.read_bytes()
         b64 = base64.b64encode(raw).decode("utf-8")
         ext = p.suffix.lower()
@@ -269,7 +296,8 @@ async def tool_research(query: str) -> dict[str, Any]:
 
 async def tool_scaffold(name: str, files: list[dict]) -> dict[str, Any]:
     from artifacts import scaffold_project
-    manifest = await scaffold_project(name, files)
+    uid = current_user_id.get()
+    manifest = await scaffold_project(name, files, user_id=uid)
     return {"project": manifest["name"], "files": manifest["files"], "entry": manifest.get("entry")}
 
 
@@ -291,10 +319,12 @@ async def tool_host_file(filename: str) -> dict[str, Any]:
     from config import WORKSPACE_DIR
     import os
     PUBLIC_URL = os.getenv("RENDER_EXTERNAL_URL", "https://freellm-bot.onrender.com")
-    fpath = Path(WORKSPACE_DIR) / filename
+    uid = current_user_id.get()
+    fpath = _get_user_workspace() / filename
     if not fpath.exists():
         return {"error": f"File '{filename}' not found in workspace"}
-    url = f"{PUBLIC_URL}/serve/{filename}"
+    serve_path = f"{uid}/{filename}" if uid else filename
+    url = f"{PUBLIC_URL}/serve/{serve_path}"
     return {"url": url, "filename": filename, "message": f"Файл доступен по ссылке: {url}"}
 
 
@@ -498,7 +528,7 @@ TOOL_DEFINITIONS = [
         "type": "function",
         "function": {
             "name": "host_file",
-            "description": "Make a workspace file publicly accessible via URL and return the link. Use after creating HTML/CSS/JS files to let the user see them in a browser.",
+            "description": "CRITICAL: Make a workspace file publicly accessible via URL. You MUST call this after creating ANY HTML files so the user can see the result in a browser. The URL is the ONLY way for users to view web pages you create.",
             "parameters": {
                 "type": "object",
                 "properties": {

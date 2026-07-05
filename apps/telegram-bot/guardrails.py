@@ -38,13 +38,19 @@ CRITICAL_COMMANDS = re.compile(
 )
 
 
+def _normalize(text: str) -> str:
+    text = re.sub(r"\s+", " ", text)
+    return text
+
+
 def check_input(text: str) -> dict:
+    normalized = _normalize(text)
     issues = []
-    if BLOCKED_PATTERNS.search(text):
+    if BLOCKED_PATTERNS.search(normalized):
         issues.append("prompt_injection")
-    if CRITICAL_COMMANDS.search(text):
+    if CRITICAL_COMMANDS.search(normalized):
         issues.append("dangerous_command")
-    if SENSITIVE_PATTERNS.search(text):
+    if SENSITIVE_PATTERNS.search(normalized):
         issues.append("sensitive_data")
     warnings = []
     if "prompt_injection" in issues:

@@ -6,6 +6,7 @@ from openai import OpenAI
 from config import (
     FREELLM_BASE_URL, FREELLM_API_KEY,
     AGENT_MODEL, AGENT_FALLBACK_MODEL, MAX_TOOL_CALLS, MULTI_AGENT_ENABLED,
+    WORKSPACE_DIR, LLM_CALL_TIMEOUT,
 )
 
 logger = logging.getLogger(__name__)
@@ -56,6 +57,7 @@ AGENT_SYSTEM_PROMPT = """You are FreeLLM Agent — an advanced AI coding assista
 - Analyze images → use `vision`
 - Fetch web pages → use `web_fetch`
 - Host a file as public webpage → use `host_file`
+- IMPORTANT: When you create HTML/CSS/JS files for a website, you MUST call `host_file` for the main HTML file to provide the user a working URL. If you don't, the user can't see the result.
 
 ## 🔧 Tool Usage Guidelines
 - **sandbox**: Always test Python code before delivering it. Write code, test it with sandbox, fix errors, then deliver.
@@ -86,6 +88,37 @@ AGENT_SYSTEM_PROMPT = """You are FreeLLM Agent — an advanced AI coding assista
 - When fully done → call `task_done` with summary and list of changed files"""
 
 
+def _is_html(text: str) -> bool:
+    text_stripped = text.strip()[:200].lower()
+    return text_stripped.startswith("<!doctype") or text_stripped.startswith("<html")
+
+
+async def _ensure_html_hosted(result: str) -> str:
+    from tools import CREATED_FILES, tool_host_file, current_user_id, _get_user_workspace
+    uid = current_user_id.get()
+    user_files = CREATED_FILES.get(uid, set())
+    html_files = [f for f in user_files if f.endswith(".html")]
+    if not html_files:
+        return result
+    has_hosted = set()
+    urls = []
+    for f in sorted(html_files):
+        if f in has_hosted:
+            continue
+        has_hosted.add(f)
+        try:
+            r = await tool_host_file(filename=f)
+            if "url" in r:
+                urls.append(r["url"])
+        except Exception:
+            pass
+    if uid in CREATED_FILES:
+        CREATED_FILES[uid].difference_update(has_hosted)
+    if urls:
+        result += "\n\n🌐 Ссылки:\n" + "\n".join(f"• {u}" for u in urls)
+    return result
+
+
 async def _call_llm(
     messages: list,
     tools: list | None = None,
@@ -93,11 +126,14 @@ async def _call_llm(
     model: str | None = None,
 ):
     loop = asyncio.get_event_loop()
-    kwargs = dict(model=model or AGENT_MODEL, messages=messages, timeout=120)
+    kwargs = dict(model=model or AGENT_MODEL, messages=messages, timeout=LLM_CALL_TIMEOUT)
     if tools:
         kwargs["tools"] = tools
         kwargs["tool_choice"] = tool_choice
-    return await loop.run_in_executor(None, lambda: _client.chat.completions.create(**kwargs))
+    return await asyncio.wait_for(
+        loop.run_in_executor(None, lambda: _client.chat.completions.create(**kwargs)),
+        timeout=LLM_CALL_TIMEOUT + 5,
+    )
 
 
 def _needs_tools(text: str) -> bool:
@@ -131,7 +167,10 @@ async def run_agent(messages: list, on_status: callable = None, on_log: callable
             messages.append({"role": "assistant", "content": text})
             return text
         except Exception as e:
-            return f"❌ {e}"
+            err = str(e)
+            if _is_html(err):
+                err = err[:200] + "... (HTML ответ от API)"
+            return f"❌ {err}"
 
     # Deep reasoning step — create a plan before acting
     plan = None
@@ -207,7 +246,10 @@ async def run_agent(messages: list, on_status: callable = None, on_log: callable
                     "content": f"Previous model failed. Now using {AGENT_FALLBACK_MODEL}. Continue.",
                 })
                 continue
-            return f"❌ Ошибка AI: {e}"
+            err = str(e)
+            if _is_html(err):
+                err = err[:200] + "... (HTML ответ от API)"
+            return f"❌ Ошибка AI: {err}"
 
         if not resp or not resp.choices:
             continue
@@ -233,6 +275,7 @@ async def run_agent(messages: list, on_status: callable = None, on_log: callable
             messages[:] = [m for m in full_messages if m.get("role") != "system"]
             final = sanitize_output(final)
             rag.add(f"[Assistant] {final}", {"role": "assistant"})
+            final = await _ensure_html_hosted(final)
             return final
 
         no_tool_retries = 0
@@ -265,6 +308,7 @@ async def run_agent(messages: list, on_status: callable = None, on_log: callable
                 messages[:] = [m for m in full_messages if m.get("role") != "system"]
                 result = sanitize_output(result)
                 rag.add(f"[Done] {summary}", {"role": "system"})
+                result = await _ensure_html_hosted(result)
                 return result
 
             from tools import TOOL_NAME_MAP
@@ -286,4 +330,5 @@ async def run_agent(messages: list, on_status: callable = None, on_log: callable
     final = "⚠️ Достигнут лимит шагов."
     full_messages.append({"role": "assistant", "content": final})
     messages[:] = [m for m in full_messages if m.get("role") != "system"]
+    final = await _ensure_html_hosted(final)
     return final
