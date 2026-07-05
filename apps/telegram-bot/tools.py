@@ -30,6 +30,12 @@ def _get_user_token(uid: int) -> str:
     return tokens[suid]
 
 
+def _parse_json_arg(arg):
+    if isinstance(arg, str):
+        return json.loads(arg)
+    return arg
+
+
 def _resolve_uid_by_token(token: str) -> int | None:
     if not TOKEN_FILE.exists():
         return None
@@ -399,8 +405,8 @@ async def tool_user_settings_update(settings_json: str) -> str:
     if not uid:
         return "❌ Нет data пользователя."
     try:
-        updates = json.loads(settings_json)
-    except json.JSONDecodeError:
+        updates = _parse_json_arg(settings_json)
+    except (json.JSONDecodeError, TypeError):
         return "❌ Невалидный JSON."
 
     allowed = {"language", "model", "notifications"}
@@ -506,9 +512,9 @@ async def tool_mcp_connect(name: str, command: str, args_json: str = "[]", env_j
         return "❌ Нет data пользователя."
 
     try:
-        args = json.loads(args_json)
-        env = json.loads(env_json)
-    except json.JSONDecodeError:
+        args = _parse_json_arg(args_json)
+        env = _parse_json_arg(env_json)
+    except (json.JSONDecodeError, TypeError):
         return "❌ args_json или env_json невалидный JSON."
 
     save_mcp_server(uid, name, {"command": command, "args": args, "env": env, "enabled": True})
@@ -569,8 +575,8 @@ async def tool_mcp_test(name: str, tool_name: str = "", args_json: str = "{}") -
         return "\n".join(lines)
 
     try:
-        arguments = json.loads(args_json)
-    except json.JSONDecodeError:
+        arguments = _parse_json_arg(args_json)
+    except (json.JSONDecodeError, TypeError):
         return "❌ args_json невалидный JSON."
 
     result = await mcp_call_server(command, args, tool_name, arguments)
