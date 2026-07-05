@@ -270,6 +270,17 @@ async def run_agent(messages: list, on_status: callable = None, on_log: callable
         except asyncio.CancelledError:
             return "⏹ Задача отменена."
         except Exception as e:
+            err_str = str(e)
+            is_429 = "429" in err_str or "rate_limit" in err_str.lower() or "all_providers_exhausted" in err_str
+
+            if is_429 and tool_calls_count < MAX_TOOL_CALLS - 1:
+                if on_log:
+                    await on_log("⏳ Rate limit, жду 10 секунд и повторяю...")
+                if on_status:
+                    await on_status("⏳ Лимит запросов, жду...")
+                await asyncio.sleep(10)
+                continue
+
             logger.error(f"AI call failed: {e}", exc_info=True)
             if not tried_fallback:
                 tried_fallback = True
@@ -283,10 +294,9 @@ async def run_agent(messages: list, on_status: callable = None, on_log: callable
                     "content": f"Previous model failed. Now using {AGENT_FALLBACK_MODEL}. Continue.",
                 })
                 continue
-            err = str(e)
-            if _is_html(err):
-                err = err[:200] + "... (HTML ответ от API)"
-            return f"❌ Ошибка AI: {err}"
+            if _is_html(err_str):
+                err_str = err_str[:200] + "... (HTML ответ от API)"
+            return f"❌ Ошибка AI: {err_str}"
 
         if not resp or not resp.choices:
             continue
