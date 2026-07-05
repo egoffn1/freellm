@@ -334,21 +334,21 @@ async def handle_message(update: Update, _ctx):
     cancel_events[uid] = asyncio.Event()
 
     async def on_status(text: str):
+        nonlocal status_msg
         try:
             await edit(status_msg, text)
         except Exception:
             try:
-                nonlocal status_msg
                 status_msg = await reply(update.message, text)
             except Exception:
                 pass
 
     async def log_action(text: str):
+        nonlocal log_msg
         try:
             await edit(log_msg, f"📋 Лог:\n{text[:3500]}")
         except Exception:
             try:
-                nonlocal log_msg
                 log_msg = await reply(update.message, f"📋 Лог:\n{text[:3500]}")
             except Exception:
                 pass
