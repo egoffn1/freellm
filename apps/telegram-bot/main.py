@@ -36,7 +36,13 @@ async def reply(msg, text: str, **kw):
 async def edit(msg, text: str, **kw):
     kw["parse_mode"] = "HTML"
     from emoji import md_to_html
-    return await msg.edit_text(md_to_html(text), **kw)
+    from telegram.error import BadRequest
+    try:
+        return await msg.edit_text(md_to_html(text), **kw)
+    except BadRequest as e:
+        if "message is not modified" in str(e).lower():
+            return
+        raise
 
 
 logging.basicConfig(
@@ -371,8 +377,6 @@ async def _execute_agent_task(
         messages[:] = messages[-max_len:]
 
     messages = _trim_history_by_size(messages, MAX_CONTEXT_SIZE_CHARS)
-
-    await edit(status_msg, "🤔 Анализирую задачу...")
 
     cancel_events[uid] = asyncio.Event()
 
