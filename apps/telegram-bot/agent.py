@@ -305,6 +305,16 @@ async def run_agent(messages: list, on_status: callable = None, on_log: callable
                 continue
             if _is_html(err_str):
                 err_str = err_str[:200] + "... (HTML ответ от API)"
+
+            try:
+                from prompt_critic import analyze_error
+                from prompt_loader import add_rule
+                result = analyze_error(user_text, str(full_messages[-3:]), err_str)
+                if result and result.get("rule"):
+                    add_rule(result["rule"])
+            except Exception:
+                pass
+
             return f"❌ Ошибка AI: {err_str}"
 
         if not resp or not resp.choices:

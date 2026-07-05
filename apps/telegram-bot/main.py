@@ -21,6 +21,7 @@ from tools import get_and_clear_created_files, current_user_id
 from server import start_web_server
 from cleanup import run_cleanup_loop
 from firebase_db import init_firebase
+from prompt_loader import init_prompts
 from emoji import premium
 
 
@@ -687,6 +688,33 @@ async def integrations_cmd(update: Update, _ctx):
     await reply(update.message, "\n".join(lines))
 
 
+async def prompts_cmd(update: Update, _ctx):
+    from prompt_loader import get_prompt_stats
+    await reply(update.message, get_prompt_stats())
+
+
+async def feedback_cmd(update: Update, _ctx):
+    text = update.message.text.replace("/feedback", "").strip()
+    if not text:
+        await reply(update.message, "Напиши что пошло не так:\n`/feedback бот неправильно понял задачу`")
+        return
+
+    await reply(update.message, "📝 Спасибо! Отправляю на анализ...")
+
+    from prompt_critic import analyze_error
+    result = analyze_error(
+        user_message=text,
+        ai_response="(жалоба пользователя)",
+        error_info=text,
+    )
+    if result and result.get("rule"):
+        from prompt_loader import add_rule
+        filename = add_rule(result["rule"], category="feedback")
+        await reply(update.message, f"✅ Проанализировано. Добавлено правило: `{filename}`\n\n{result['analysis']}")
+    else:
+        await reply(update.message, "❌ Не удалось извлечь правило. Ошибка может быть внешней.")
+
+
 BUTTON_COMMANDS = {
     "🌐 Создать сайт": "создай сайт и запусти его",
     "🔍 Поиск": "найди информацию в интернете",
@@ -711,6 +739,7 @@ async def handle_message(update: Update, _ctx):
             "stop": stop_cmd, "reset": reset, "clean": clean,
             "status": status, "projects": projects_cmd,
             "settings": settings_cmd, "integrations": integrations_cmd,
+            "prompts": prompts_cmd, "feedback": feedback_cmd,
         }
         handler = cmd_map.get(cmd)
         if handler:
@@ -752,12 +781,15 @@ async def main():
     app.add_handler(CommandHandler("stop", stop_cmd))
     app.add_handler(CommandHandler("settings", settings_cmd))
     app.add_handler(CommandHandler("integrations", integrations_cmd))
+    app.add_handler(CommandHandler("prompts", prompts_cmd))
+    app.add_handler(CommandHandler("feedback", feedback_cmd))
     app.add_handler(CallbackQueryHandler(handle_callback))
     app.add_handler(MessageHandler(filters.Document.ALL | filters.PHOTO, handle_file))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     _load_histories()
     init_firebase()
+    init_prompts()
     await app.initialize()
     await app.start()
 
