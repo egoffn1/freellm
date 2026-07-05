@@ -749,8 +749,16 @@ PREMIUM = {
 
 
 def premium(text: str) -> str:
+    # deduplicate by base char (strip variation selector FE0F)
+    seen = {}
     for char, tag in PREMIUM.items():
-        text = text.replace(char, tag)
+        base = char.replace('\ufe0f', '')
+        if base not in seen:
+            seen[base] = tag
+    # strip FE0F from input, then replace by base char
+    text = text.replace('\ufe0f', '')
+    for base, tag in seen.items():
+        text = text.replace(base, tag)
     return text
 
 
