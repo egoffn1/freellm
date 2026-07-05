@@ -25,6 +25,7 @@ PREMIUM = {
     "📀": '<tg-emoji emoji-id="5462956611033117422">📀</tg-emoji>',
     "🛡": '<tg-emoji emoji-id="5251203410396458957">🛡</tg-emoji>',
     "🔒": '<tg-emoji emoji-id="5296369303661067030">🔒</tg-emoji>',
+    "📋": '<tg-emoji emoji-id="5197269100878907942">📋</tg-emoji>',
 }
 
 
