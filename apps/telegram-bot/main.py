@@ -36,7 +36,8 @@ MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
 user_history: dict[int, list] = defaultdict(list)
 running_tasks: dict[int, asyncio.Task] = {}
 cancel_events: dict[int, asyncio.Event] = {}
-stop_requests: set[int] = set()
+stop_requests: set[int] = set()           # per-user stop request (after /stop)
+stop_all_requests: set[int] = set()       # per-user stop request (after /stop_all, blocks ALL task starts)
 user_rate_limits: dict[int, list[float]] = defaultdict(list)
 task_semaphore = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
 HISTORY_DIR = Path(WORKSPACE_DIR) / ".histories"
@@ -518,6 +519,10 @@ async def _execute_agent_task(
         await edit(status_msg, "⏹ Задача остановлена.")
         return
 
+    if uid in stop_all_requests:
+        await edit(status_msg, "⏹ Все задачи остановлены.")
+        return
+
     if uid in running_tasks and not running_tasks[uid].done():
         if uid in cancel_events:
             cancel_events[uid].set()
@@ -650,6 +655,26 @@ async def stop_cmd(update: Update, _ctx):
         await reply(update.message, "⏹ Нет активной задачи.")
 
 
+async def stop_all_cmd(update: Update, _ctx):
+    uid = update.effective_user.id
+    stop_all_requests.add(uid)
+
+    task_count = len(running_tasks)
+
+    for ev_uid, ev in list(cancel_events.items()):
+        ev.set()
+    for task_uid, task in list(running_tasks.items()):
+        if not task.done():
+            task.cancel()
+
+    running_tasks.clear()
+    cancel_events.clear()
+    stop_requests.clear()
+
+    await reply(update.message, "⏹ **Все** задачи остановлены.")
+    logger.warning(f"User {uid} stopped ALL tasks ({task_count} running)")
+
+
 async def settings_cmd(update: Update, _ctx):
     uid = update.effective_user.id
     from firebase_db import get_user_settings, list_integrations
@@ -744,7 +769,7 @@ async def handle_message(update: Update, _ctx):
     if text.startswith("/"):
         cmd = text[1:].split()[0]
         cmd_map = {
-            "stop": stop_cmd, "reset": reset, "clean": clean,
+            "stop": stop_cmd, "stop_all": stop_all_cmd, "reset": reset, "clean": clean,
             "status": status, "projects": projects_cmd,
             "settings": settings_cmd, "integrations": integrations_cmd,
             "prompts": prompts_cmd, "feedback": feedback_cmd,
@@ -755,6 +780,7 @@ async def handle_message(update: Update, _ctx):
             return
     # non-command message → user wants to continue, clear stop state
     stop_requests.discard(uid)
+    stop_all_requests.discard(uid)
     messages = user_history[uid]
     messages.append({"role": "user", "content": text})
     status_msg = await reply(update.message, "🤔 Анализирую задачу...")
@@ -789,6 +815,7 @@ async def main():
     app.add_handler(CommandHandler("history", history_cmd))
     app.add_handler(CommandHandler("projects", projects_cmd))
     app.add_handler(CommandHandler("stop", stop_cmd))
+    app.add_handler(CommandHandler("stop_all", stop_all_cmd))
     app.add_handler(CommandHandler("settings", settings_cmd))
     app.add_handler(CommandHandler("integrations", integrations_cmd))
     app.add_handler(CommandHandler("prompts", prompts_cmd))

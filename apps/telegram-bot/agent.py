@@ -138,7 +138,10 @@ async def _call_llm(
     tools: list | None = None,
     tool_choice: str = "auto",
     model: str | None = None,
+    cancel_event: asyncio.Event | None = None,
 ):
+    if cancel_event and cancel_event.is_set():
+        raise asyncio.CancelledError()
     loop = asyncio.get_event_loop()
     kwargs = dict(model=model or AGENT_MODEL, messages=messages, timeout=LLM_CALL_TIMEOUT)
     if tools:
@@ -176,7 +179,7 @@ async def run_agent(messages: list, on_status: callable = None, on_log: callable
             await on_log("💬 Ответ на приветствие")
         sys_msg = {"role": "system", "content": "You are a helpful AI assistant. Respond conversationally."}
         try:
-            resp = await _call_llm([sys_msg] + messages)
+            resp = await _call_llm([sys_msg] + messages, cancel_event=cancel_event)
             text = resp.choices[0].message.content or ""
             messages.append({"role": "assistant", "content": text})
             return text
@@ -300,7 +303,7 @@ async def run_agent(messages: list, on_status: callable = None, on_log: callable
         from tools import TOOL_DEFINITIONS
 
         try:
-            resp = await _call_llm(full_messages, TOOL_DEFINITIONS, "auto", model=current_model)
+            resp = await _call_llm(full_messages, TOOL_DEFINITIONS, "auto", model=current_model, cancel_event=cancel_event)
         except asyncio.CancelledError:
             return "⏹ Задача отменена."
         except Exception as e:
@@ -418,7 +421,7 @@ async def run_agent(messages: list, on_status: callable = None, on_log: callable
                             review_resp = await _call_llm(
                                 [{"role": "system", "content": "You are a code reviewer. Find bugs, output fixes."},
                                  {"role": "user", "content": review_prompt}],
-                                model=AGENT_CODE_MODEL,
+                                model=AGENT_CODE_MODEL, cancel_event=cancel_event,
                             )
                             review_text = review_resp.choices[0].message.content or ""
                             if review_text.strip() != "OK":
@@ -496,7 +499,7 @@ async def run_agent(messages: list, on_status: callable = None, on_log: callable
                     review_resp = await _call_llm(
                         [{"role": "system", "content": "You are a code reviewer. Find bugs, output fixes."},
                          {"role": "user", "content": review_prompt}],
-                        model=AGENT_CODE_MODEL,
+                        model=AGENT_CODE_MODEL, cancel_event=cancel_event,
                     )
                     review_text = review_resp.choices[0].message.content or ""
                     if review_text.strip() != "OK":
