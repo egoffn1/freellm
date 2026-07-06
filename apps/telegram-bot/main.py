@@ -729,10 +729,6 @@ async def handle_message(update: Update, _ctx):
     if not text:
         return
 
-    # skip if message has media — handled by handle_file
-    if update.message.photo or update.message.document or update.message.voice or update.message.video or update.message.audio:
-        return
-
     text = BUTTON_COMMANDS.get(text, text)
     if text.startswith("/"):
         cmd = text[1:].split()[0]
