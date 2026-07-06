@@ -39,6 +39,7 @@ cancel_events: dict[int, asyncio.Event] = {}
 stop_requests: set[int] = set()           # per-user stop request (after /stop)
 stop_all_requests: set[int] = set()       # per-user stop request (after /stop_all, blocks ALL task starts)
 user_rate_limits: dict[int, list[float]] = defaultdict(list)
+task_cancel_counter: dict[int, list[float]] = defaultdict(list)
 task_semaphore = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
 HISTORY_DIR = Path(WORKSPACE_DIR) / ".histories"
 
@@ -165,6 +166,9 @@ async def handle_callback(update: Update, _ctx):
     }
 
     if data == "retry":
+        if uid in stop_requests or uid in stop_all_requests:
+            await query.message.reply_text("⏹ Задача остановлена. Напиши новое сообщение.")
+            return
         messages = user_history.get(uid, [])
         last_user = None
         for m in reversed(messages):
@@ -510,13 +514,23 @@ async def _execute_agent_task(
     task_semaphore: asyncio.Semaphore,
     user_rate_limits: dict,
 ):
+    logger.info(f"_execute_agent_task: uid={uid} stop_req={uid in stop_requests} stop_all={uid in stop_all_requests} running={uid in running_tasks}")
+
     if not _rate_limit(uid):
         await reply(update.message, "⏳ Слишком много запросов. Подождите минуту.")
         return
 
+    # Anti-flood: если за последние 30 секунд было > 5 отмен — не даём стартовать
+    now = time.time()
+    recent = [t for t in task_cancel_counter.get(uid, []) if now - t < 30]
+    task_cancel_counter[uid] = recent
+    if len(recent) > 5:
+        logger.warning(f"Task flood blocked for uid={uid}: {len(recent)} cancels in 30s")
+        await edit(status_msg, "⏹ Слишком много отмен подряд. Напиши новое сообщение чтобы продолжить.")
+        return
+
     if uid in stop_requests:
-        stop_requests.discard(uid)
-        await edit(status_msg, "⏹ Задача остановлена.")
+        await edit(status_msg, "⏹ Задача остановлена по /stop. Напиши новое сообщение чтобы продолжить.")
         return
 
     if uid in stop_all_requests:
@@ -527,6 +541,7 @@ async def _execute_agent_task(
         if uid in cancel_events:
             cancel_events[uid].set()
         running_tasks[uid].cancel()
+        task_cancel_counter[uid].append(time.time())
         await asyncio.sleep(0.3)
 
     await update.message.chat.send_action("typing")
@@ -648,6 +663,7 @@ async def stop_cmd(update: Update, _ctx):
     for task_uid, task in list(running_tasks.items()):
         if task_uid == uid and not task.done():
             task.cancel()
+            task_cancel_counter[uid].append(time.time())
             logger.info(f"stop_cmd: cancelled task for {uid}")
 
     await reply(update.message, "⏹ Задача остановлена.")
@@ -667,7 +683,7 @@ async def stop_all_cmd(update: Update, _ctx):
 
     running_tasks.clear()
     cancel_events.clear()
-    stop_requests.clear()
+    stop_requests.discard(uid)
 
     await reply(update.message, "⏹ **Все** задачи остановлены.")
     logger.warning(f"User {uid} stopped ALL tasks ({task_count} running)")
