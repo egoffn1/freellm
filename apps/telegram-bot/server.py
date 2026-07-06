@@ -11,10 +11,16 @@ logger = logging.getLogger(__name__)
 
 PUBLIC_URL = os.getenv("RENDER_EXTERNAL_URL", "https://freellm-bot.onrender.com")
 _telegram_app = None
+_webhook_set = False
 
 
 async def handle_health(_request):
-    return web.json_response({"status": "ok", "service": "freellm-bot"})
+    return web.json_response({
+        "status": "ok",
+        "service": "freellm-bot",
+        "webhook": _webhook_set,
+        "public_url": PUBLIC_URL,
+    })
 
 
 async def handle_index(_request):
@@ -114,14 +120,19 @@ async def start_web_server(telegram_app=None, shutdown_event: asyncio.Event | No
 
     if _telegram_app:
         webhook_url = f"{PUBLIC_URL}/webhook"
-        try:
-            await _telegram_app.bot.set_webhook(
-                url=webhook_url,
-                allowed_updates=["message", "edited_message", "callback_query"],
-            )
-            logger.info(f"Webhook set to {webhook_url}")
-        except Exception as e:
-            logger.warning(f"Failed to set webhook: {e}")
+        for attempt in range(5):
+            try:
+                await _telegram_app.bot.set_webhook(
+                    url=webhook_url,
+                    allowed_updates=["message", "edited_message", "callback_query"],
+                )
+                _webhook_set = True
+                logger.info(f"Webhook set to {webhook_url}")
+                break
+            except Exception as e:
+                logger.warning(f"Failed to set webhook (attempt {attempt+1}/5): {e}")
+                if attempt < 4:
+                    await asyncio.sleep(3 * (attempt + 1))
 
     if shutdown_event:
         await shutdown_event.wait()
