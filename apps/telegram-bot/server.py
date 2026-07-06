@@ -100,6 +100,30 @@ async def handle_webhook(request):
         return web.json_response({"error": str(e)}, status=500)
 
 
+async def set_bot_webhook():
+    global _webhook_set
+    if not _telegram_app:
+        logger.warning("_telegram_app not set, cannot set webhook")
+        return False
+    webhook_url = f"{PUBLIC_URL}/webhook"
+    for attempt in range(5):
+        try:
+            await _telegram_app.bot.set_webhook(
+                url=webhook_url,
+                allowed_updates=["message", "edited_message", "callback_query"],
+                drop_pending_updates=True,
+            )
+            _webhook_set = True
+            logger.info(f"Webhook set to {webhook_url}")
+            return True
+        except Exception as e:
+            logger.warning(f"Failed to set webhook (attempt {attempt+1}/5): {e}")
+            if attempt < 4:
+                await asyncio.sleep(3 * (attempt + 1))
+    _webhook_set = False
+    return False
+
+
 async def start_web_server(telegram_app=None, shutdown_event: asyncio.Event | None = None):
     global _telegram_app
     _telegram_app = telegram_app
@@ -119,20 +143,7 @@ async def start_web_server(telegram_app=None, shutdown_event: asyncio.Event | No
     logger.info(f"Static files served at {PUBLIC_URL}/serve/")
 
     if _telegram_app:
-        webhook_url = f"{PUBLIC_URL}/webhook"
-        for attempt in range(5):
-            try:
-                await _telegram_app.bot.set_webhook(
-                    url=webhook_url,
-                    allowed_updates=["message", "edited_message", "callback_query"],
-                )
-                _webhook_set = True
-                logger.info(f"Webhook set to {webhook_url}")
-                break
-            except Exception as e:
-                logger.warning(f"Failed to set webhook (attempt {attempt+1}/5): {e}")
-                if attempt < 4:
-                    await asyncio.sleep(3 * (attempt + 1))
+        await set_bot_webhook()
 
     if shutdown_event:
         await shutdown_event.wait()

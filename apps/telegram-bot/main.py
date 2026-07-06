@@ -688,6 +688,13 @@ async def stop_all_cmd(update: Update, _ctx):
     logger.warning(f"User {uid} stopped ALL tasks ({task_count} running)")
 
 
+async def set_webhook_cmd(update: Update, _ctx):
+    from server import set_bot_webhook
+    msg = await reply(update.message, "🔄 Устанавливаю вебхук...")
+    ok = await set_bot_webhook()
+    await edit(msg, "✅ Вебхук установлен." if ok else "❌ Не удалось установить вебхук. Проверь логи Render.")
+
+
 async def settings_cmd(update: Update, _ctx):
     uid = update.effective_user.id
     from firebase_db import get_user_settings, list_integrations
@@ -788,6 +795,7 @@ async def handle_message(update: Update, _ctx):
             "status": status, "projects": projects_cmd,
             "settings": settings_cmd, "integrations": integrations_cmd,
             "prompts": prompts_cmd, "feedback": feedback_cmd,
+            "set_webhook": set_webhook_cmd,
         }
         handler = cmd_map.get(cmd)
         if handler:
@@ -836,6 +844,7 @@ async def main():
     app.add_handler(CommandHandler("integrations", integrations_cmd))
     app.add_handler(CommandHandler("prompts", prompts_cmd))
     app.add_handler(CommandHandler("feedback", feedback_cmd))
+    app.add_handler(CommandHandler("set_webhook", set_webhook_cmd))
     app.add_handler(CallbackQueryHandler(handle_callback))
     app.add_handler(MessageHandler(filters.Document.ALL | filters.PHOTO, handle_file))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
