@@ -36,6 +36,7 @@ MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
 user_history: dict[int, list] = defaultdict(list)
 running_tasks: dict[int, asyncio.Task] = {}
 cancel_events: dict[int, asyncio.Event] = {}
+stop_requests: set[int] = set()
 user_rate_limits: dict[int, list[float]] = defaultdict(list)
 task_semaphore = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
 HISTORY_DIR = Path(WORKSPACE_DIR) / ".histories"
@@ -512,6 +513,11 @@ async def _execute_agent_task(
         await reply(update.message, "⏳ Слишком много запросов. Подождите минуту.")
         return
 
+    if uid in stop_requests:
+        stop_requests.discard(uid)
+        await edit(status_msg, "⏹ Задача остановлена.")
+        return
+
     if uid in running_tasks and not running_tasks[uid].done():
         if uid in cancel_events:
             cancel_events[uid].set()
@@ -626,17 +632,22 @@ async def _execute_agent_task(
 async def stop_cmd(update: Update, _ctx):
     uid = update.effective_user.id
     stopped = False
-    if uid in cancel_events and not cancel_events[uid].is_set():
+
+    stop_requests.add(uid)
+
+    if uid in cancel_events:
         cancel_events[uid].set()
         stopped = True
-    if uid in running_tasks and not running_tasks[uid].done():
-        running_tasks[uid].cancel()
-        stopped = True
+    if uid in running_tasks:
+        if not running_tasks[uid].done():
+            running_tasks[uid].cancel()
+            stopped = True
+
     if stopped:
         await reply(update.message, "⏹ Задача остановлена.")
         logger.info(f"User {uid} cancelled their task")
     else:
-        await reply(update.message, "🤷 Нет активной задачи для остановки.")
+        await reply(update.message, "⏹ Нет активной задачи.")
 
 
 async def settings_cmd(update: Update, _ctx):
@@ -742,6 +753,8 @@ async def handle_message(update: Update, _ctx):
         if handler:
             await handler(update, _ctx)
             return
+    # non-command message → user wants to continue, clear stop state
+    stop_requests.discard(uid)
     messages = user_history[uid]
     messages.append({"role": "user", "content": text})
     status_msg = await reply(update.message, "🤔 Анализирую задачу...")
