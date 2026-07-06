@@ -592,6 +592,10 @@ async def _execute_agent_task(
             del running_tasks[uid]
         if uid in cancel_events and cancel_events[uid] is cancel_event:
             del cancel_events[uid]
+        if uid in running_tasks and running_tasks.get(uid) is not task:
+            logger.info(f"Task for {uid} was replaced — orphaned task ended")
+        if uid in cancel_events and cancel_events.get(uid) is not cancel_event:
+            cancel_events[uid].set()
 
     files = get_and_clear_created_files(uid)
     if files:
@@ -636,23 +640,17 @@ async def _execute_agent_task(
 
 async def stop_cmd(update: Update, _ctx):
     uid = update.effective_user.id
-    stopped = False
-
     stop_requests.add(uid)
 
-    if uid in cancel_events:
-        cancel_events[uid].set()
-        stopped = True
-    if uid in running_tasks:
-        if not running_tasks[uid].done():
-            running_tasks[uid].cancel()
-            stopped = True
+    for ev_uid, ev in list(cancel_events.items()):
+        if ev_uid == uid:
+            ev.set()
+    for task_uid, task in list(running_tasks.items()):
+        if task_uid == uid and not task.done():
+            task.cancel()
+            logger.info(f"stop_cmd: cancelled task for {uid}")
 
-    if stopped:
-        await reply(update.message, "⏹ Задача остановлена.")
-        logger.info(f"User {uid} cancelled their task")
-    else:
-        await reply(update.message, "⏹ Нет активной задачи.")
+    await reply(update.message, "⏹ Задача остановлена.")
 
 
 async def stop_all_cmd(update: Update, _ctx):
@@ -661,9 +659,9 @@ async def stop_all_cmd(update: Update, _ctx):
 
     task_count = len(running_tasks)
 
-    for ev_uid, ev in list(cancel_events.items()):
+    for ev in cancel_events.values():
         ev.set()
-    for task_uid, task in list(running_tasks.items()):
+    for task in list(running_tasks.values()):
         if not task.done():
             task.cancel()
 

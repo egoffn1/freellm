@@ -455,6 +455,15 @@ async def run_agent(messages: list, on_status: callable = None, on_log: callable
                 result = await _ensure_html_hosted(result)
                 return result
 
+            if fn_name == "stop_agent":
+                reason = fn_args.get("reason", "")
+                msg = "⏹ Задача остановлена по запросу."
+                if reason:
+                    msg += f" Причина: {reason}"
+                if on_log:
+                    await on_log(msg)
+                return msg
+
             from tools import TOOL_NAME_MAP
             tool_fn = TOOL_NAME_MAP.get(fn_name)
             if not tool_fn:

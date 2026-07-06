@@ -586,6 +586,10 @@ async def tool_mcp_test(name: str, tool_name: str = "", args_json: str = "{}") -
 
 # ─── Tool definitions ─────────────────────────────────────────
 
+async def tool_stop_agent(reason: str = "") -> dict:
+    return {"message": "stopping agent", "reason": reason}
+
+
 TOOL_DEFINITIONS = [
     {
         "type": "function",
@@ -998,6 +1002,19 @@ TOOL_DEFINITIONS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "stop_agent",
+            "description": "CRITICAL: Stop the current task immediately. Call this when you detect an infinite loop, error loop, or if the user asks you to stop. Provide a brief reason.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "reason": {"type": "string", "description": "Why the task is being stopped"},
+                },
+            },
+        },
+    },
 ]
 
 TOOL_NAME_MAP = {
@@ -1028,4 +1045,5 @@ TOOL_NAME_MAP = {
     "mcp_connect": tool_mcp_connect,
     "mcp_disconnect": tool_mcp_disconnect,
     "mcp_test": tool_mcp_test,
+    "stop_agent": tool_stop_agent,
 }
