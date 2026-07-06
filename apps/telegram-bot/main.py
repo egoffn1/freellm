@@ -179,7 +179,7 @@ async def handle_callback(update: Update, _ctx):
             from emoji import md_to_html
             status_msg = await query.message.reply_text(md_to_html("🤔 Повторяю..."), parse_mode="HTML")
             await _execute_agent_task(
-                update.effective_user, uid, messages, status_msg,
+                update, uid, messages, status_msg,
                 cancel_events, running_tasks, user_history, task_semaphore, user_rate_limits,
             )
         return
@@ -484,7 +484,6 @@ async def handle_file(update: Update, ctx):
                 messages.append({"role": "user", "content": f"[Загружено изображение: {rel}]" + (f" — {caption}" if caption else "")})
                 messages.append({"role": "assistant", "content": analysis})
 
-                _save_history(uid, messages)
                 await edit(status,
                     f"👁 {analysis[:4000]}",
                 )
@@ -779,6 +778,8 @@ async def handle_message(update: Update, _ctx):
     if not text:
         return
 
+    logger.info(f"handle_message: uid={uid} text={text[:50]}")
+
     text = BUTTON_COMMANDS.get(text, text)
     if text.startswith("/"):
         cmd = text[1:].split()[0]
@@ -802,6 +803,7 @@ async def handle_message(update: Update, _ctx):
         update, uid, messages, status_msg,
         cancel_events, running_tasks, user_history, task_semaphore, user_rate_limits,
     )
+    logger.info(f"handle_message: done uid={uid}")
 
 
 async def main():
